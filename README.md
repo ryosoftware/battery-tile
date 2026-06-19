@@ -114,14 +114,16 @@
 
 <p align="center">
   <img src="assets/screenshots/settings_1.png" width="180" alt="Main screen"/>
-  <img src="assets/screenshots/settings_2.png" width="180" alt="App options"/>
-  <img src="assets/screenshots/settings_3.png" width="180" alt="App info"/>
-  <img src="assets/screenshots/tile_settings_1.png" width="180" alt="Tile settings"/>
+  <img src="assets/screenshots/settings_2.png" width="180" alt="Tile options"/>
 </p>
 <p align="center">
-  <img src="assets/screenshots/notification_settings_1.png" width="180" alt="Notification settings top"/>
-  <img src="assets/screenshots/notification_settings_2.png" width="180" alt="Notification settings fields"/>
-  <img src="assets/screenshots/notification_settings_3.png" width="180" alt="Notification settings fields scroll"/>
+  <img src="assets/screenshots/settings_3.png" width="180" alt="Notification options"/>
+  <img src="assets/screenshots/settings_4.png" width="180" alt="Notification options"/>
+  <img src="assets/screenshots/settings_5.png" width="180" alt="Notification options"/>
+</p>
+<p align="center">
+  <img src="assets/screenshots/settings_6.png" width="180" alt="Battery info"/>
+  <img src="assets/screenshots/settings_7.png" width="180" alt="Debug info"/>
   <img src="assets/screenshots/statusbar_1.png" width="180" alt="Status bar notification"/>
 </p>
 
