@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="github_repo">https://github.com/ryosoftware/battery-tile</string>
+
+    <!-- Log only while charging -->
+
+    <bool name="logging_only_while_charging_default">false</bool>
+
+    <!-- Temperature unit: celsius, fahrenheit, or kelvin -->
+
+    <string name="temperature_unit_default">celsius</string>
+
+    <!-- What occurs when user clicks the Tile or Notification:
+        app: open the app
+        system-battery-settings: opens the system battery activity
+    -->
+
+    <string name="what_opens_when_user_clicks_tile_or_notification_default">app</string>
+
+    <!-- What element shows Tile Icon by default
+
+        You can use: battery-level, battery-level-icon, battery-status, battery-temperature and cpu-deep-sleep-percent-since-boot
+    -->
+
+    <string name="tile_icon_default">battery-level</string>
+
+    <!-- Default values for Tile Items:
+
+        For each available item we define a 3 elements array.
+
+        First element is a number indicating the default relative order for the related item (first index is 1)
+
+        Second element is a number indicating the default line for the related item (1 or 2)
+            1 -> line 1
+            2 -> line 2
+
+        Third element is the default visibility (true or false)
+    -->
+
+    <string-array name="level_data_for_tile_default">
+        <item>1</item>
+        <item>1</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="status_data_for_tile_default">
+        <item>2</item>
+        <item>1</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="temperature_data_for_tile_default">
+        <item>3</item>
+        <item>1</item>
+        <item>true</item>
+    </string-array>
+
+    <string-array name="voltage_data_for_tile_default">
+        <item>4</item>
+        <item>2</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="health_data_for_tile_default">
+        <item>5</item>
+        <item>2</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="cycles_count_data_for_tile_default">
+        <item>6</item>
+        <item>2</item>
+        <item>true</item>
+    </string-array>
+
+    <string-array name="deep_sleep_data_for_tile_default">
+        <item>7</item>
+        <item>1</item>
+        <item>true</item>
+    </string-array>
+
+    <!-- Notifications enabled or disabled -->
+
+    <bool name="notification_enabled_default">false</bool>
+
+    <!-- Battery Charged percent and repeat interval -->
+
+    <integer name="battery_charged_percent_default">100</integer>
+    <integer name="battery_charged_delay_default">10</integer>
+    <integer name="battery_charged_repeat_interval_default">5</integer>
+
+    <!-- Block disconnect notification when battery is charged -->
+
+    <bool name="block_power_disconnect_notification_when_battery_is_charged_default">true</bool>
+
+    <!-- Stats reset -->
+
+    <bool name="auto_reset_stats_enabled_default">true</bool>
+    <integer name="stats_reset_after_charge_threshold_percent_default">1</integer>
+    <integer name="stats_reset_after_charge_time_minutes_default">5</integer>
+
+    <!-- Battery temperature threshold -->
+
+    <string name="battery_temperature_threshold_in_celsius_default">40</string>
+
+    <!-- Default values for Notification Items:
+
+        For each available item we define a 2 elements array.
+
+        First element is a number indicating the default relative order for the related item (first index is 1)
+
+        Second element is the default visibility (true or false)
+    -->
+
+    <string-array name="level_data_for_notification_default">
+        <item>1</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="status_data_for_notification_default">
+        <item>2</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="temperature_data_for_notification_default">
+        <item>3</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="voltage_data_for_notification_default">
+        <item>4</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="health_data_for_notification_default">
+        <item>5</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="cycles_count_data_for_notification_default">
+        <item>6</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="charging_time_data_for_notification_default">
+        <item>7</item>
+        <item>true</item>
+    </string-array>
+
+    <string-array name="screen_on_time_since_last_stats_reset_data_for_notification_default">
+        <item>8</item>
+        <item>true</item>
+    </string-array>
+
+    <string-array name="screen_on_percent_since_last_stats_reset_data_for_notification_default">
+        <item>9</item>
+        <item>true</item>
+    </string-array>
+
+    <string-array name="deep_sleep_time_since_last_stats_reset_data_for_notification_default">
+        <item>10</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="deep_sleep_percent_since_last_stats_reset_data_for_notification_default">
+        <item>11</item>
+        <item>true</item>
+    </string-array>
+
+    <string-array name="uptime_since_last_stats_reset_data_for_notification_default">
+        <item>12</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="screen_on_time_since_boot_data_for_notification_default">
+        <item>13</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="screen_on_percent_since_boot_data_for_notification_default">
+        <item>14</item>
+        <item>true</item>
+    </string-array>
+
+    <string-array name="deep_sleep_time_since_boot_data_for_notification_default">
+        <item>15</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="deep_sleep_percent_since_boot_data_for_notification_default">
+        <item>16</item>
+        <item>true</item>
+    </string-array>
+
+    <string-array name="uptime_since_boot_data_for_notification_default">
+        <item>17</item>
+        <item>false</item>
+    </string-array>
+
+</resources>

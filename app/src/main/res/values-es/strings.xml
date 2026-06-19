@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="app_name">Monitor de Batería</string>
+    <string name="app_version">Versión %1$s</string>
+
+    <string name="background_service_notification">Servicio en segundo plano</string>
+    <string name="power_connected_notification">Conexión a una fuente de energía</string>
+    <string name="power_disconnected_notification">Desconexión de una fuente de energía</string>
+    <string name="battery_charged_notification">La batería está cargada</string>
+    <string name="battery_temperature_notification">Alerta de temperatura de la batería</string>
+
+    <string name="foreground_service_explanation">Monitorización persistente del estado de la batería y el dispositivo con notificación continua visible</string>
+
+    <string name="power_connected_notification_title">Conectado a una fuente de energía</string>
+    <string name="power_connected_notification_title_with_charge_value">Conectado a una fuente de energía — %1$d%%</string>
+    <string name="power_disconnected_notification_title">Desconectado de una fuente de energía</string>
+    <string name="power_disconnected_notification_title_with_charge_value">Desconectado de una fuente de energía — %1$d%%</string>
+    <string name="battery_charged_with_charge_value">Batería cargada — %1$d%%</string>
+    <string name="temperature_with_temperature_value">Alerta de temperatura — %1$s</string>
+
+    <string name="general_information">Añade el icono de Batería a tu panel de Ajustes Rápidos para ver el porcentaje de batería de un vistazo, o añade una notificación persistente para obtener mucha más información y notificaciones adicionales.\n\nEsta app no envía ningún tipo de información fuera de tu dispositivo (no incluye el permiso de acceso a Internet) ni solicita ningún permiso especial, así que puedes usarla tranquilamente.</string>
+
+    <string name="battery_charged_section_title">Notificación de batería cargada</string>
+    <string name="battery_charged_section_body">Puedes configurar el nivel de carga necesario para considerar el dispositivo cargado, el retardo para la primera notificación y si quieres notificaciones periódicas.\n\nTenga en cuenta que, si selecciona un valor inferior al 100%, el dispositivo continuará cargándose hasta que lo desconecte.</string>
+    <string name="battery_charged_threshold">Umbral de notificación</string>
+    <string name="battery_charged_interval">Retardo de notificación de carga</string>
+    <string name="battery_charged_repeat_interval">Intervalo de repetición</string>
+
+    <string name="power_connected_or_disconnected_section_title">Notificationes de conexión o desconexión</string>
+    <string name="power_connected_or_disconnected_section_body">Recibirás una notificación cuando el dispositivo se conecte o desconecte de una fuente de carga.</string>
+    <string name="block_power_disconnect_notification_when_battery_is_charged">Bloquea la notificación de desconexión si la batería está cargada</string>
+
+    <string name="battery_temperature_section_title">Notificación de temperatura alta de la batería</string>
+    <string name="battery_temperature_section_body">Recibirás una notificación cuando la temperatura de la batería supere el umbral configurado.</string>
+    <string name="battery_temperature_threshold">Umbral de temperatura</string>
+
+    <string name="settings">Ajustes</string>
+
+    <string name="battery_information">Información de la batería</string>
+
+    <string name="tile_settings">Ajustes del mosaico</string>
+    <string name="tile_label">Batería</string>
+    <string name="tile_general">Desde Android 10, los mosaicos admiten un icono y hasta dos líneas de información, aunque si estás usando una versión de Android personalizadas por un fabricante, esta funcionalidad podría no estar disponible o comportarse de forma diferente.</string>
+    <string name="tile_icon_title">Elige qué mostrar en el icono del mosaico</string>
+    <string name="tile_lines_title">Selecciona la información que quieres mostrar en el mosaico y la línea en la que mostrar cada elemento.</string>
+    <string name="line_1">Línea 1</string>
+    <string name="line_2">Línea 2</string>
+
+    <string name="battery_status">Estado</string>
+    <string name="battery_status_charging">Cargando</string>
+    <string name="battery_status_charging_with_plug_ac">Cargando con un adaptador de CA</string>
+    <string name="battery_status_charging_with_plug_ac_short">Cargando (CA)</string>
+    <string name="battery_status_charging_with_plug_dock">Cargando con una base</string>
+    <string name="battery_status_charging_with_plug_dock_short">Cargando (Base)</string>
+    <string name="battery_status_charging_with_plug_usb">Cargando con un cable USB</string>
+    <string name="battery_status_charging_with_plug_usb_short">Cargando (USB)</string>
+    <string name="battery_status_charging_with_plug_wireless">Cargando con un cargador inalámbrico</string>
+    <string name="battery_status_charging_with_plug_wireless_short">Cargando (sin cables)</string>
+    <string name="battery_status_discharging">Descargando</string>
+    <string name="battery_status_not_charging">No se está cargando</string>
+    <string name="battery_status_full">Carga completa</string>
+    <string name="battery_status_unknown">Desconocido</string>
+
+    <string name="battery_plug_type">Tipo de cargador</string>
+    <string name="battery_plug_ac">Adaptador de CA</string>
+    <string name="battery_plug_dock">Base</string>
+    <string name="battery_plug_usb">Cable USB</string>
+    <string name="battery_plug_wireless">Cargador inalámbrico</string>
+
+    <string name="battery_health">Salud</string>
+    <string name="battery_health_good">Buena</string>
+    <string name="battery_health_overheat">Sobrecalentada</string>
+    <string name="battery_health_dead">Agotada</string>
+    <string name="battery_health_over_voltage">Sobretensión</string>
+    <string name="battery_health_failure">Fallo</string>
+    <string name="battery_health_cold">Fría</string>
+    <string name="battery_health_unknown">Desconocido</string>
+
+    <string name="battery_voltage">Voltaje</string>
+    <string name="voltage_value">%1$d mV</string>
+
+    <string name="battery_level">Nivel</string>
+    <string name="battery_level_icon">Nivel (icono)</string>
+
+    <string name="battery_capacity">Capacidad</string>
+    <string name="battery_capacity_full">Completa</string>
+    <string name="battery_capacity_high">Alta</string>
+    <string name="battery_capacity_normal">Normal</string>
+    <string name="battery_capacity_low">Baja</string>
+    <string name="battery_capacity_critical">Crítica</string>
+    <string name="battery_capacity_unknown">Desconocida</string>
+    <string name="battery_capacity_unsupported">No soportada</string>
+    <string name="battery_capacity_description">La capacidad de la batería, que no debe confundirse con el nivel actual de la batería, es un indicador clave del estado de la batería y las capacidades del sistema que ayuda tanto al éste como a las aplicaciones a tomar decisiones de administración de energía.</string>
+
+    <string name="battery_technology">Tecnología</string>
+
+    <string name="battery_temperature">Temperatura</string>
+    <string name="temperature_unit">Unidad de temperatura</string>
+    <string name="celsius_unit">°C</string>
+    <string name="celsius_unit_min">°</string>
+    <string name="celsius_unit_with_name">Celsius (°C)</string>
+    <string name="fahrenheit_unit">°F</string>
+    <string name="fahrenheit_unit_min">°</string>
+    <string name="fahrenheit_unit_with_name">Fahrenheit (°F)</string>
+    <string name="kelvin_unit">K</string>
+    <string name="kelvin_unit_min">K</string>
+    <string name="kelvin_unit_with_name">Kelvin (K)</string>
+    <string name="temperature_value_float">%.1f%2$s</string>
+    <string name="temperature_value_integer">%1$d%2$s</string>
+
+    <string name="battery_cycles">Ciclos de carga</string>
+    <string name="battery_cycles_count">%1$d ciclos</string>
+
+    <string name="since_boot">desde inicio</string>
+    <string name="since_last_stats_reset">desde borrado</string>
+
+    <string name="cpu_deep_sleep_time">Reposo prof. (%1$s)</string>
+    <string name="cpu_deep_sleep_time_long">Tiempo de CPU en reposo profundo (%1$s)</string>
+    <string name="cpu_deep_sleep_percent">Reposo prof. (%1$s)</string>
+    <string name="cpu_deep_sleep_percent_long">Porcentaje de CPU en reposo profundo (%1$s)</string>
+
+    <string name="screen_on_time">Tiempo de pantalla (%1$s)</string>
+    <string name="screen_on_time_long">Tiempo con la pantalla encendida (%1$s)</string>
+    <string name="screen_on_percent">Tiempo de pantalla (%1$s)</string>
+    <string name="screen_on_percent_long">Porcentaje de tiempo con la pantalla encendida (%1$s)</string>
+
+    <string name="time_charging">Tiempo cargando</string>
+    <string name="time_charging_long">Tiempo cargando</string>
+
+    <string name="uptime">Tiempo (%1$s)</string>
+    <string name="uptime_long">Tiempo (%1$s)</string>
+
+    <string name="percent_value_integer">%1$d%%</string>
+    <string name="percent_value_float">%.1f%%</string>
+
+    <string name="days_and_hours_and_minutes">%1$dd %2$dh %3$dm</string>
+    <string name="hours_and_minutes">%1$dh %2$dm</string>
+    <string name="minutes">%1$dm</string>
+
+    <string name="time_and_percent">%1$s (%2$s)</string>
+
+    <string name="label_and_value">%1$s: %2$s</string>
+
+    <string name="notification_settings">Ajustes de notificaciones</string>
+    <string name="allow_background_service_execution">Permite la monitorización en segundo plano</string>
+    <string name="service_enabled_and_running">Recogiendo datos en segundo plano</string>
+    <string name="service_enabled_but_not_running">No se están recogiendo datos.\n(Pruebe a desactivar y reactivar el interruptor)</string>
+    <string name="service_not_allowed">Monitorización en segundo plano no permitida</string>
+
+    <string name="notification_fields_section_title">Notificación de servicio</string>
+    <string name="notification_fields_section_body">Selecciona la información que quieres ver en la notificación que añade el servicio de recolección de datos, y el orden en que se mostrará.\n\n\"%1$s\" se refiere al inicio del dispositivo y \"%2$s\" se refiere al último restablecimiento de las estadísticas (puede leer sobre la hora y el motivo a continuación, si está disponible).\n\n%3$s.</string>
+
+    <string name="stats_reset_threshold_section_title">Reinicio automático al desconectar</string>
+    <string name="stats_reset_threshold_section_body">Reinicia las estadísticas de tiempo de pantalla y reposo de la CPU cuando se desconecte de la fuente de energía y la batería se haya cargado almenos el porcentaje y tiempo indicados, o esté completamente cargada.</string>
+    <string name="auto_reset_stats">Reinicio automático al desconectar</string>
+    <string name="minimum_load_required">Carga mínima requerida</string>
+    <string name="minimum_time_required">Tiempo mínimo de carga</string>
+    <string name="reset_stats_now">¡Reiniciar ahora!</string>
+    <string name="reset_stats_confirm_title">¿Reiniciar estadísticas?</string>
+    <string name="reset_stats_confirm_body">Se reiniciarán las estadísticas de tiempo de pantalla y reposo de la CPU inmediatamente.\n\nEsta acción no se puede deshacer.</string>
+    <string name="power_disconnected">Desconectado del cargador (config. del usuario)</string>
+    <string name="device_reboot">Reinicio del dispositivo</string>
+    <string name="user_request">Solicitado explícitamente por el usuario</string>
+    <string name="expired_data">Datos caducados</string>
+    <string name="no_data_found">Sin datos</string>
+    <string name="reset_time_and_reason_and_deep_sleep_and_battery_level">Último borrado de datos: %1$s\nMotivo: %2$s\nCarga de la batería: %4$s\nPorcentaje en reposo profundo: %3$s</string>
+    <string name="reset_time_and_reason_and_deep_sleep">Último borrado de datos: %1$s\nMotivo: %2$s\nPorcentaje en reposo profundo: %3$s</string>
+
+    <string name="request_notification_permission">Permitir notificaciones</string>
+    <string name="request_battery_optimization_permission">Ignorar optimizaciones de batería (recomendado)</string>
+    <string name="request_exact_alarm_permission">Permitir alarmas exactas (recomendado)</string>
+
+    <string name="what_opens_when_user_clicks_tile_or_notification">Abrir al tocar el mosaico o la notificación</string>
+    <string name="what_opens_app">Esta app</string>
+    <string name="what_opens_system_power_usage_summary">Resumen de uso de energía del sistema</string>
+
+    <string name="debug_information">Información de depuración</string>
+    <string name="debug_information_enabled">Se están guardando registros</string>
+    <string name="debug_information_enabled_but_only_while_charging">Se están guardando registros durante la carga</string>
+    <string name="debug_information_disabled">No se están guardando registros</string>
+    <string name="log_to_file">Generar archivo de registro</string>
+    <string name="log_only_while_charging">Sólo durante la carga</string>
+    <string name="no_log_data">Aún no hay datos</string>
+
+    <plurals name="log_file_lines_count">
+        <item quantity="one">%1$d línea</item>
+        <item quantity="many">%1$d líneas</item>
+        <item quantity="other">%1$d líneas</item>
+    </plurals>
+
+    <string name="share_log">Compartir archivo de depuración</string>
+    <string name="cant_read_log_file">No se ha podido leer el archivo de registro</string>
+    <string name="logging_dialog_title">Depuración</string>
+    <string name="start_logging_dialog_body">¿Quieres eliminar el archivo actual y empezar uno nuevo?</string>
+    <string name="stop_logging_dialog_body">¿Quieres dejar de guardar registros de depuración y eliminar el archivo actual?</string>
+
+    <string name="data_is_not_available">No hay datos disponibles</string>
+    <string name="not_available">-</string>
+    <string name="off">Desactivado</string>
+    <string name="confirm">Confirmar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="yes">Sí</string>
+    <string name="no">No</string>
+    <string name="no_delay">Inmediato</string>
+    <string name="tile_separator">&#160;|&#160;</string>
+    <string name="back">Atrás</string>
+    <string name="tile_unknown_value">\?</string>
+</resources>
