@@ -3,6 +3,8 @@ package com.ryosoftware.battery_tile
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +29,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,6 +68,25 @@ fun DebugLogScreen(onBack: () -> Unit) {
 
     val logFileTime by app.logger.logFileTime.collectAsState()
 
+    val saveLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                try {
+                    val shareContent = app.logger.getLogFileContents(null)
+                    if (shareContent != null) {
+                        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                            outputStream.write(shareContent.joinToString("\n").toByteArray(Charsets.UTF_8))
+                        }
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(context, R.string.cant_read_log_file, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
     LaunchedEffect(logFileTime, loggingEnabled) {
         if (loggingEnabled) {
             val isAtBottom = scrollState.value >= scrollState.maxValue
@@ -95,7 +117,7 @@ fun DebugLogScreen(onBack: () -> Unit) {
                         IconButton(onClick = {
                             scope.launch {
                                 try {
-                                    val shareContent = app.logger.getLogFileContents("es")
+                                    val shareContent = app.logger.getLogFileContents(null)
                                     if (shareContent == null) {
                                         Toast.makeText(context, R.string.cant_read_log_file, Toast.LENGTH_LONG).show()
                                         return@launch
@@ -123,12 +145,21 @@ fun DebugLogScreen(onBack: () -> Unit) {
                                 contentDescription = stringResource(R.string.share_log)
                             )
                         }
+                        IconButton(onClick = {
+                            saveLauncher.launch("debug_log.txt")
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.Save,
+                                contentDescription = stringResource(R.string.save_log)
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         }

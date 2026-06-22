@@ -190,6 +190,7 @@
     </plurals>
 
     <string name="share_log">Compartir archivo de depuración</string>
+    <string name="save_log">Guardar archivo de depuración</string>
     <string name="cant_read_log_file">No se ha podido leer el archivo de registro</string>
     <string name="logging_dialog_title">Depuración</string>
     <string name="start_logging_dialog_body">¿Quieres eliminar el archivo actual y empezar uno nuevo?</string>
