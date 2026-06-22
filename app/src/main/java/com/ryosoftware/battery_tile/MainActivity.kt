@@ -35,7 +35,7 @@ import com.ryosoftware.battery_tile.Main.Companion.requestPostNotificationsPermi
 
 class MainActivity : ComponentActivity() {
 
-    private enum class Screen { Main, Selector, TileSettings, NotificationSettings, DebugLog, BatteryInfo }
+    private enum class Screen { Main, Selector, TileSettings, NotificationSettings, DebugLog, BatteryInfo, BatteryHistory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -77,7 +77,8 @@ class MainActivity : ComponentActivity() {
                                 onTileSettings = { screen = Screen.TileSettings },
                                 onNotificationSettings = { screen = Screen.NotificationSettings },
                                 onDebugLog = { screen = Screen.DebugLog },
-                                onBatteryInfo = { screen = Screen.BatteryInfo }
+                                onBatteryInfo = { screen = Screen.BatteryInfo },
+                                onBatteryHistory = { screen = Screen.BatteryHistory }
                             )
                         }
 
@@ -117,6 +118,15 @@ class MainActivity : ComponentActivity() {
 
                             BatteryInfoScreen(
                                 prefs = prefs,
+                                appPrefs = appPrefs,
+                                onBack = { screen = Screen.Selector }
+                            )
+                        }
+
+                        Screen.BatteryHistory -> {
+                            BackHandler { screen = Screen.Selector }
+
+                            BatteryHistoryScreen(
                                 appPrefs = appPrefs,
                                 onBack = { screen = Screen.Selector }
                             )

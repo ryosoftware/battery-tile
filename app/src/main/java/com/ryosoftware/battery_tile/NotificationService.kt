@@ -25,8 +25,15 @@ import com.ryosoftware.battery_tile.Main.Companion.hasPostNotificationsPermissio
 import com.ryosoftware.battery_tile.Main.Companion.isScreenOn
 import com.ryosoftware.battery_tile.NotificationBatteryIntentHelper.NotificationField.Companion.getLabel
 import com.ryosoftware.battery_tile.WhatAppOpens.Companion.getIntent
+import com.ryosoftware.battery_tile.data.BatteryReading
+import com.ryosoftware.battery_tile.data.BatteryRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 enum class LastStatsResetReason(val key: String) {
     POWER_DISCONNECTED(key = "POWER-DISCONNECTED"),
@@ -87,6 +94,9 @@ class NotificationService : Service() {
         private const val ACTION_CHARGED_NOTIFICATION_DELETED = "${BuildConfig.APPLICATION_ID}.CHARGED_NOTIFICATION_DELETED"
         private const val ACTION_TEMPERATURE_NOTIFICATION_DELETED = "${BuildConfig.APPLICATION_ID}.TEMPERATURE_NOTIFICATION_DELETED"
         private const val EXTRA_TEMPERATURE = "temperature"
+        private const val SAVE_READINGS_BATTERY_LEVEL_THRESHOLD = 1
+        private const val SAVE_READINGS_BATTERY_TEMPERATURE_THRESHOLD = 0.5f
+
         private var _isRunning = MutableStateFlow(false)
         val isRunning = _isRunning.asStateFlow()
 
@@ -194,6 +204,8 @@ class NotificationService : Service() {
     private val prefs by lazy { NotificationPreferences(this) }
     private val appPrefs by lazy { AppPreferences(this) }
     private val handler = Handler(Looper.getMainLooper())
+    private val repository by lazy { BatteryRepository(this) }
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val updateNotificationTask by lazy {
         RepeatingTask(handler, "Update Notification Task", logger) {
@@ -251,6 +263,10 @@ class NotificationService : Service() {
 
     private var batteryTemperatureNotifiedLevel = -1f
     private var batteryTemperatureNotificationDeletionLevel = -1
+
+    private var lastSavedBatteryLevel = -1
+    private var lastSavedTemperature = -1f
+    private var lastSavedIsCharging = false
 
     override fun onCreate() {
         super.onCreate()
@@ -518,6 +534,56 @@ class NotificationService : Service() {
             batteryTemperatureNotifiedLevel = -1f
             batteryTemperatureNotificationDeletionLevel = -1
             hideTemperatureNotification()
+        }
+
+        saveBatteryReading(batteryIntentHelper)
+    }
+
+    private fun saveBatteryReading(batteryIntentHelper: BatteryIntentHelper) {
+        val now = System.currentTimeMillis()
+        val level = batteryIntentHelper.level
+        val temperature = batteryIntentHelper.temperatureCelsius
+        val isCharging = batteryIntentHelper.isCharging
+
+        val levelChanged = if (lastSavedBatteryLevel < 0) {
+            level >= 0
+        } else {
+            abs(level - lastSavedBatteryLevel) >= SAVE_READINGS_BATTERY_LEVEL_THRESHOLD
+        }
+        val tempChanged = if (lastSavedTemperature < 0f) {
+            temperature >= 0f
+        } else {
+            abs(temperature - lastSavedTemperature) >= SAVE_READINGS_BATTERY_TEMPERATURE_THRESHOLD
+        }
+        val chargingChanged = isCharging != lastSavedIsCharging
+
+        if ((!levelChanged) && (!tempChanged) && (!chargingChanged)) return
+
+        lastSavedBatteryLevel = level
+        lastSavedTemperature = temperature
+        lastSavedIsCharging = isCharging
+
+        serviceScope.launch {
+            try {
+                val reading = BatteryReading(
+                    timestamp = now,
+                    batteryLevel = level,
+                    batteryStatus = batteryIntentHelper.status,
+                    temperatureCelsius = temperature,
+                    voltage = batteryIntentHelper.voltage,
+                    health = batteryIntentHelper.health,
+                    isCharging = isCharging,
+                    plugType = batteryIntentHelper.plugType
+                )
+                repository.insert(reading)
+
+                val cutOffTime = now - (appPrefs.batteryHistoryWindow * 24 * 60 * 60 * 1000L)
+                repository.deleteOlderThan(cutOffTime)
+
+                logger.log("Success saving Battery reading")
+            } catch (e: Exception) {
+                logger.log("Error saving battery reading: ${e.message}")
+            }
         }
     }
 

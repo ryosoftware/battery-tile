@@ -52,7 +52,8 @@ fun SettingsSelector(
     onTileSettings: () -> Unit,
     onNotificationSettings: () -> Unit,
     onDebugLog: () -> Unit,
-    onBatteryInfo: () -> Unit
+    onBatteryInfo: () -> Unit,
+    onBatteryHistory: () -> Unit
 ) {
     var tempUnit by remember { mutableStateOf(appPrefs.temperatureUnit) }
     val context = LocalContext.current
@@ -192,6 +193,17 @@ fun SettingsSelector(
                 ) {
                     Text(
                         text = stringResource(R.string.battery_information),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(20.dp)
+                    )
+                }
+
+                Card(
+                    onClick = onBatteryHistory,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.battery_history),
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(20.dp)
                     )

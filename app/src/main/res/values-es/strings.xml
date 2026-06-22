@@ -206,4 +206,36 @@
     <string name="tile_separator">&#160;|&#160;</string>
     <string name="back">Atrás</string>
     <string name="tile_unknown_value">\?</string>
+
+    <string name="battery_history">Historial de Batería</string>
+    <string name="battery_level_chart_title">Histórico de carga de la batería</string>
+    <string name="temperature_chart_title">Histórico de temperaturas</string>
+    <string name="chart_scroll_hint">Desliza en el gráfico para ver toda la información</string>
+    <string name="no_history_data">Sin datos históricos.\nLos datos se recopilan periódicamente si el servicio de notificaciones esté activo.</string>
+    <string name="clear_history">Borrar Historial</string>
+
+    <plurals name="history_retention_days">
+        <item quantity="one">Se guardan los datos del último día</item>
+        <item quantity="other">Se guardan datos de los últimos %1$d días</item>
+        <item quantity="many">Se guardan datos de los últimos %1$d días</item>
+    </plurals>
+
+    <plurals name="readings_count">
+        <item quantity="one">El gráfico incluye %1$d lectura, obtenida el %2$s</item>
+        <item quantity="other">El gráfico incluye %1$d lecturas, obtenidas del %2$s al %3$s</item>
+        <item quantity="many">El gráfico incluye %1$d lecturas, obtenidas del %2$s al %3$s</item>
+    </plurals>
+
+    <string name="share_history">Compartir Historial</string>
+    <string name="save_history">Guardar Historial</string>
+    <string name="error_exporting_history">Error al exportar el historial</string>
+    <string name="csv_header_timestamp">Fecha/Hora</string>
+    <string name="csv_header_battery_level">Nivel de Batería</string>
+    <string name="csv_header_battery_status">Estado de Batería</string>
+    <string name="csv_header_temperature">Temperatura (%1$s)</string>
+    <string name="csv_header_voltage">Voltaje (mV)</string>
+    <string name="csv_header_health">Salud</string>
+    <string name="csv_header_is_charging">¿Cargando?</string>
+    <string name="csv_header_plug_type">Tipo de Cargador</string>
+
 </resources>

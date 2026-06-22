@@ -197,4 +197,8 @@
         <item>false</item>
     </string-array>
 
+    <!-- Battery history window (older recordings will be automatically removed) -->
+
+    <integer name="battery_history_window_in_days_default">7</integer>
+
 </resources>

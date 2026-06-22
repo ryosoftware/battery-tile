@@ -3,6 +3,7 @@ package com.ryosoftware.battery_tile
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import androidx.annotation.IntegerRes
 import androidx.core.content.edit
 
 enum class TemperatureUnit(val key: String) {
@@ -91,6 +92,8 @@ class AppPreferences(context: Context) {
 
         const val KEY_LOG_TO_FILE = "log-to-file"
         const val KEY_LOG_ONLY_WHILE_CHARGING = "log-only-while-charging"
+
+        const val KEY_BATTERY_HISTORY_WINDOW = "battery-history-window"
     }
 
     private val resources = context.resources
@@ -136,4 +139,8 @@ class AppPreferences(context: Context) {
     var isLoggingOnlyWhileCharging: Boolean
         get() = prefs.getBoolean(KEY_LOG_ONLY_WHILE_CHARGING, resources.getBoolean(R.bool.logging_only_while_charging_default))
         set(value) { prefs.edit { putBoolean(KEY_LOG_ONLY_WHILE_CHARGING, value) } }
+
+    var batteryHistoryWindow: Int
+        get() = prefs.getInt(KEY_BATTERY_HISTORY_WINDOW, resources.getInteger(R.integer.battery_history_window_in_days_default))
+        set(value) { prefs.edit { putInt(KEY_BATTERY_HISTORY_WINDOW, value) } }
 }
