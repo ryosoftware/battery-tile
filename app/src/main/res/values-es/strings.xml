@@ -38,6 +38,7 @@
     <string name="settings">Ajustes</string>
 
     <string name="battery_information">Información de la batería</string>
+    <string name="shows_realtime_data">Muestra datos en tiempo real</string>
 
     <string name="tile_settings">Ajustes del mosaico</string>
     <string name="tile_label">Batería</string>
@@ -209,6 +210,7 @@
     <string name="tile_unknown_value">\?</string>
 
     <string name="battery_history">Historial de Batería</string>
+    <string name="shows_historical_data">Muestra gráficas de evolución temporal, requiere ejecución en segundo plano</string>
     <string name="battery_level_chart_title">Histórico de carga de la batería</string>
     <string name="temperature_chart_title">Histórico de temperaturas</string>
     <string name="chart_scroll_hint">Desliza en el gráfico para ver toda la información</string>
