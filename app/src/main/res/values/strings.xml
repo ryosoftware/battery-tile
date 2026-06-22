@@ -9,6 +9,7 @@
     <string name="power_disconnected_notification">Power disconnected</string>
     <string name="battery_charged_notification">Battery Charged</string>
     <string name="battery_temperature_notification">Battery Temperature Warning</string>
+    <string name="battery_health_notification">Battery Health Warning</string>
 
     <string name="foreground_service_explanation">Persistent battery and device status monitoring with ongoing user-visible notification</string>
 
@@ -17,7 +18,8 @@
     <string name="power_disconnected_notification_title">Power disconnected</string>
     <string name="power_disconnected_notification_title_with_charge_value">Power disconnected — %1$d%%</string>
     <string name="battery_charged_with_charge_value">Battery charged — %1$d%%</string>
-    <string name="temperature_with_temperature_value">Temperature Alert — %1$s</string>
+    <string name="temperature_alert_with_temperature_value">Temperature Alert — %1$s</string>
+    <string name="health_alert_with_value">Health Alert — %1$s</string>
 
     <string name="general_information">Add the battery tile to your Quick Settings panel to check the battery level at a glance, or enable a persistent notification for detailed battery information and customizable alerts.\n\nThis app does not send any data outside your device and does not require Internet access. It also requests no special permissions, so you can use it with confidence.</string>
 

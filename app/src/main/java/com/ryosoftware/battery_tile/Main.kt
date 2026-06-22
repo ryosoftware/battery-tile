@@ -97,5 +97,6 @@ class Main : Application() {
         createNotificationChannel(NotificationService.POWER_DISCONNECTED_CHANNEL_ID, R.string.power_disconnected_notification, NotificationManager.IMPORTANCE_HIGH)
         createNotificationChannel(NotificationService.BATTERY_CHARGED_CHANNEL_ID, R.string.battery_charged_notification, NotificationManager.IMPORTANCE_HIGH)
         createNotificationChannel(NotificationService.BATTERY_TEMPERATURE_WARNING_CHANNEL_ID, R.string.battery_temperature_notification, NotificationManager.IMPORTANCE_HIGH)
+        createNotificationChannel(NotificationService.BATTERY_HEALTH_WARNING_CHANNEL_ID, R.string.battery_health_notification, NotificationManager.IMPORTANCE_HIGH)
     }
 }

@@ -9,6 +9,7 @@
     <string name="power_disconnected_notification">Desconexión de una fuente de energía</string>
     <string name="battery_charged_notification">La batería está cargada</string>
     <string name="battery_temperature_notification">Alerta de temperatura de la batería</string>
+    <string name="battery_health_notification">Alerta de salud de la batería</string>
 
     <string name="foreground_service_explanation">Monitorización persistente del estado de la batería y el dispositivo con notificación continua visible</string>
 
@@ -17,7 +18,8 @@
     <string name="power_disconnected_notification_title">Desconectado de una fuente de energía</string>
     <string name="power_disconnected_notification_title_with_charge_value">Desconectado de una fuente de energía — %1$d%%</string>
     <string name="battery_charged_with_charge_value">Batería cargada — %1$d%%</string>
-    <string name="temperature_with_temperature_value">Alerta de temperatura — %1$s</string>
+    <string name="temperature_alert_with_temperature_value">Alerta de temperatura — %1$s</string>
+    <string name="health_alert_with_value">Alerta de salud — %1$s</string>
 
     <string name="general_information">Añade el icono de Batería a tu panel de Ajustes Rápidos para ver el porcentaje de batería de un vistazo, o añade una notificación persistente para obtener mucha más información y notificaciones adicionales.\n\nEsta app no envía ningún tipo de información fuera de tu dispositivo (no incluye el permiso de acceso a Internet) ni solicita ningún permiso especial, así que puedes usarla tranquilamente.</string>
 

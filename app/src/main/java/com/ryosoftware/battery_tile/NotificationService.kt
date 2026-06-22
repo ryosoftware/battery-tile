@@ -12,6 +12,7 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.content.res.Configuration
+import android.os.BatteryManager
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -60,11 +61,14 @@ class NotificationService : Service() {
         const val POWER_DISCONNECTED_CHANNEL_ID = "power-disconnected"
         const val BATTERY_CHARGED_CHANNEL_ID = "battery-charged"
         const val BATTERY_TEMPERATURE_WARNING_CHANNEL_ID = "battery-temperature-warning"
+
+        const val BATTERY_HEALTH_WARNING_CHANNEL_ID = "battery-health-warning"
         const val NOTIFICATION_ID = 1
         private const val POWER_CONNECTED_NOTIFICATION_ID = NOTIFICATION_ID + 1
         private const val POWER_DISCONNECTED_NOTIFICATION_ID = POWER_CONNECTED_NOTIFICATION_ID + 1
         private const val CHARGED_NOTIFICATION_ID = POWER_DISCONNECTED_NOTIFICATION_ID + 1
         private const val TEMPERATURE_WARNING_NOTIFICATION_ID = CHARGED_NOTIFICATION_ID + 1
+        private const val HEALTH_WARNING_NOTIFICATION_ID = TEMPERATURE_WARNING_NOTIFICATION_ID + 1
 
         private const val NOTIFICATION_CLICK_REQUEST_CODE = 1
         private const val POWER_CONNECTED_NOTIFICATION_CLICK_REQUEST_CODE = NOTIFICATION_CLICK_REQUEST_CODE + 1
@@ -73,6 +77,8 @@ class NotificationService : Service() {
         private const val CHARGED_NOTIFICATION_DELETE_REQUEST_CODE = CHARGED_NOTIFICATION_CLICK_REQUEST_CODE + 1
         private const val TEMPERATURE_WARNING_NOTIFICATION_CLICK_REQUEST_CODE = CHARGED_NOTIFICATION_DELETE_REQUEST_CODE + 1
         private const val TEMPERATURE_WARNING_NOTIFICATION_DELETE_REQUEST_CODE = TEMPERATURE_WARNING_NOTIFICATION_CLICK_REQUEST_CODE + 1
+
+        private const val HEALTH_WARNING_NOTIFICATION_CLICK_REQUEST_CODE = TEMPERATURE_WARNING_NOTIFICATION_DELETE_REQUEST_CODE + 1
         private const val POWER_CONNECTED_NOTIFICATION_TIMEOUT = 10_000L
         private const val POWER_DISCONNECTED_NOTIFICATION_TIMEOUT = POWER_CONNECTED_NOTIFICATION_TIMEOUT
         private const val UPDATE_SERVICE_NOTIFICATION_INTERVAL = 15_000L
@@ -267,6 +273,8 @@ class NotificationService : Service() {
     private var lastSavedBatteryLevel = -1
     private var lastSavedTemperature = -1f
     private var lastSavedIsCharging = false
+
+    private var healthNotificationShown = false
 
     override fun onCreate() {
         super.onCreate()
@@ -528,12 +536,24 @@ class NotificationService : Service() {
         if (shouldTemperatureBeNotified && shouldTemperatureBeNotifiedAgain) {
             logger.log("Temperature Alert notification will be shown")
             batteryTemperatureNotifiedLevel = batteryIntentHelper.temperatureCelsius
-            showBatteryTemperatureNotification(batteryIntentHelper)
+            showTemperatureNotification(batteryIntentHelper)
         } else if (!shouldTemperatureBeNotified && (batteryTemperatureNotifiedLevel != -1f)) {
             logger.log("Temperature Alert notification will be hidden")
             batteryTemperatureNotifiedLevel = -1f
             batteryTemperatureNotificationDeletionLevel = -1
             hideTemperatureNotification()
+        }
+
+        val shouldHealthBeNotified = batteryIntentHelper.health !in listOf(BatteryManager.BATTERY_HEALTH_GOOD, BatteryManager.BATTERY_HEALTH_UNKNOWN)
+        val shouldHealthBeNotifiedAgain = !healthNotificationShown
+        if (shouldHealthBeNotified && shouldHealthBeNotifiedAgain) {
+            logger.log("Health Alert notification will be shown")
+            healthNotificationShown = true
+            showHealthNotification(batteryIntentHelper)
+        } else if (!shouldHealthBeNotified && healthNotificationShown) {
+            logger.log("Health Alert notification will be hidden")
+            hideHealthNotification()
+            healthNotificationShown = false
         }
 
         saveBatteryReading(batteryIntentHelper)
@@ -712,8 +732,8 @@ class NotificationService : Service() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun showBatteryTemperatureNotification(batteryIntentHelper: BatteryIntentHelper) {
-        val text = getString(R.string.temperature_with_temperature_value, batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_TEMPERATURE, appPrefs, false))
+    private fun showTemperatureNotification(batteryIntentHelper: BatteryIntentHelper) {
+        val text = getString(R.string.temperature_alert_with_temperature_value, batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_TEMPERATURE, appPrefs, false))
 
         val clickIntent = WhatAppOpens.APP.getIntent(this)
 
@@ -758,6 +778,38 @@ class NotificationService : Service() {
     private fun onTemperatureNotificationDeleted(intent: Intent) {
         batteryTemperatureNotificationDeletionLevel = intent.getIntExtra(EXTRA_TEMPERATURE, -1)
     }
+
+    @SuppressLint("MissingPermission")
+    private fun showHealthNotification(batteryIntentHelper: BatteryIntentHelper) {
+        val text = getString(R.string.health_alert_with_value, batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_HEALTH, appPrefs, false))
+
+        val clickIntent = WhatAppOpens.APP.getIntent(this)
+
+        val notification = NotificationCompat.Builder(this, BATTERY_HEALTH_WARNING_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_statusbar_notification_battery_health)
+            .setContentTitle(text)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(false)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_EVENT)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    HEALTH_WARNING_NOTIFICATION_CLICK_REQUEST_CODE,
+                    clickIntent,
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+            )
+            .build()
+
+        if (hasPostNotificationsPermission()) {
+            NotificationManagerCompat.from(this).notify(HEALTH_WARNING_NOTIFICATION_ID, notification)
+            logger.log("Health Warning notification has been posted")
+        }
+    }
+
+    private fun hideHealthNotification() =
+        NotificationManagerCompat.from(this).cancel(HEALTH_WARNING_NOTIFICATION_ID)
 
     @SuppressLint("MissingPermission")
     private fun showChargedNotification(batteryIntentHelper: BatteryIntentHelper) {
