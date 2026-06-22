@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import com.ryosoftware.battery_tile.data.BatteryReading
 import com.ryosoftware.battery_tile.data.BatteryRepository
 import com.ryosoftware.battery_tile.data.ChargingSession
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import androidx.core.content.FileProvider
 import java.io.File
 import java.text.DateFormat
@@ -66,6 +67,7 @@ import java.util.Date
 import androidx.compose.ui.platform.LocalLocale
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
+import java.io.OutputStream
 import java.util.Calendar
 import java.util.Locale
 
@@ -83,13 +85,12 @@ fun BatteryHistoryScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
 
     val saveLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/csv")
+        contract = ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     ) { uri ->
         if (uri != null) {
             try {
                 context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    outputStream.write("\uFEFF".toByteArray(Charsets.UTF_8))
-                    outputStream.write(buildCsv(context, readings, appPrefs).toByteArray(Charsets.UTF_8))
+                    buildExcel(context, readings, chargingSessions, appPrefs, outputStream)
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, R.string.error_exporting_history, Toast.LENGTH_LONG).show()
@@ -114,16 +115,15 @@ fun BatteryHistoryScreen(
                         IconButton(onClick = {
                             scope.launch {
                                 try {
-                                    val tempFile = File(context.cacheDir, "battery_history.csv")
+                                    val tempFile = File(context.cacheDir, "battery_history.xlsx")
                                     tempFile.outputStream().use { os ->
-                                        os.write("\uFEFF".toByteArray(Charsets.UTF_8))
-                                        os.write(buildCsv(context, readings, appPrefs).toByteArray(Charsets.UTF_8))
+                                        buildExcel(context, readings, chargingSessions, appPrefs, os)
                                     }
 
                                     val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.file_provider", tempFile)
 
                                     val intent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/csv"
+                                        type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                                         putExtra(Intent.EXTRA_STREAM, uri)
                                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                     }
@@ -139,7 +139,7 @@ fun BatteryHistoryScreen(
                             )
                         }
                         IconButton(onClick = {
-                            saveLauncher.launch("battery_history.csv")
+                            saveLauncher.launch("battery_history.xlsx")
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.Save,
@@ -582,30 +582,6 @@ fun ChargingPatternsTab(
     sessions: List<ChargingSession>,
     appPrefs: AppPreferences
 ) {
-    fun getStringTimeFromInterval(context: Context, interval: Long): String {
-        val totalMinutes = interval / 60_000
-        val days = totalMinutes / (24 * 60)
-        val hours = (totalMinutes % (24 * 60)) / 60
-        val minutes = totalMinutes % 60
-
-        return if (days > 0) {
-            context.getString(R.string.days_and_hours_and_minutes, days, hours, minutes)
-        } else if (hours > 0) {
-            context.getString(R.string.hours_and_minutes, hours, minutes)
-        } else {
-            context.getString(R.string.minutes, minutes)
-        }
-    }
-
-    fun getStringPercent(context: Context, percent: Float?): String {
-        if (percent == null) return context.getString(R.string.not_available)
-
-        val hasNoDecimals = percent % 1f == 0f
-
-        return if (hasNoDecimals) context.getString(R.string.percent_value_integer, percent.toInt())
-        else context.getString(R.string.percent_value_float, percent)
-    }
-
     val dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault())
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -698,8 +674,14 @@ fun ChargingPatternsTab(
     }
 }
 
-private fun buildCsv(context: Context, readings: List<BatteryReading>, appPrefs: AppPreferences): String {
-    fun formatBatteryStatus(context: Context, status: Int): String =
+private fun buildExcel(
+    context: Context,
+    batteryReadings: List<BatteryReading>,
+    chargingSessions: List<ChargingSession>,
+    appPrefs: AppPreferences,
+    outputStream: OutputStream
+) {
+    fun formatBatteryStatus(status: Int): String =
         when (status) {
             BatteryManager.BATTERY_STATUS_CHARGING -> context.getString(R.string.battery_status_charging)
             BatteryManager.BATTERY_STATUS_DISCHARGING -> context.getString(R.string.battery_status_discharging)
@@ -708,7 +690,7 @@ private fun buildCsv(context: Context, readings: List<BatteryReading>, appPrefs:
             else -> context.getString(R.string.battery_status_unknown)
         }
 
-    fun formatHealth(context: Context, health: Int): String =
+    fun formatHealth(health: Int): String =
         when (health) {
             BatteryManager.BATTERY_HEALTH_GOOD -> context.getString(R.string.battery_health_good)
             BatteryManager.BATTERY_HEALTH_OVERHEAT -> context.getString(R.string.battery_health_overheat)
@@ -719,7 +701,7 @@ private fun buildCsv(context: Context, readings: List<BatteryReading>, appPrefs:
             else -> context.getString(R.string.battery_health_unknown)
         }
 
-    fun formatPlugType(context: Context, plugType: Int): String =
+    fun formatPlugType(plugType: Int): String =
         when (plugType) {
             BatteryManager.BATTERY_PLUGGED_AC -> context.getString(R.string.battery_plug_ac)
             BatteryManager.BATTERY_PLUGGED_DOCK -> context.getString(R.string.battery_plug_dock)
@@ -728,39 +710,117 @@ private fun buildCsv(context: Context, readings: List<BatteryReading>, appPrefs:
             else -> context.getString(R.string.not_available)
         }
 
-    val dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault())
-    val stringBuilder = StringBuilder()
-    val temperatureUnit = appPrefs.temperatureUnit
-    val yes = context.getString(R.string.yes)
-    val no = context.getString(R.string.no)
+    XSSFWorkbook().use { workbook ->
+        val temperatureUnit = appPrefs.temperatureUnit
+        val yes = context.getString(R.string.yes)
+        val no = context.getString(R.string.no)
 
-    stringBuilder.appendLine(
-        listOf(
-            context.getString(R.string.csv_header_timestamp),
-            context.getString(R.string.csv_header_battery_level),
-            context.getString(R.string.csv_header_battery_status),
-            context.getString(R.string.csv_header_temperature, temperatureUnit.toString(context)),
-            context.getString(R.string.csv_header_voltage),
-            context.getString(R.string.csv_header_health),
-            context.getString(R.string.csv_header_is_charging),
-            context.getString(R.string.csv_header_plug_type)
-        ).joinToString(";")
-    )
-
-    for (reading in readings) {
-        stringBuilder.appendLine(
-            listOf(
-                dateFormat.format(Date(reading.timestamp)),
-                reading.batteryLevel,
-                formatBatteryStatus(context, reading.batteryStatus),
-                temperatureUnit.fromCelsius(reading.temperatureCelsius),
-                reading.voltage,
-                formatHealth(context, reading.health),
-                if (reading.isCharging) yes else no,
-                formatPlugType(context, reading.plugType)
-            ).joinToString(";")
+        val batteryReadingsSheet = workbook.createSheet(context.getString(R.string.battery_level))
+        val batteryReadingsHeaders = listOf(
+            context.getString(R.string.excel_header_timestamp),
+            context.getString(R.string.excel_header_battery_level),
+            context.getString(R.string.excel_header_battery_status),
+            context.getString(R.string.excel_header_temperature, temperatureUnit.toString(context)),
+            context.getString(R.string.excel_header_voltage),
+            context.getString(R.string.excel_header_health),
+            context.getString(R.string.excel_header_is_charging),
+            context.getString(R.string.excel_header_plug_type)
         )
-    }
 
-    return stringBuilder.toString()
+        val batteryReadingsHeaderRow = batteryReadingsSheet.createRow(0)
+        batteryReadingsHeaders.forEachIndexed { index, header ->
+            batteryReadingsHeaderRow.createCell(index).setCellValue(header)
+        }
+
+        for ((rowIndex, reading) in batteryReadings.withIndex()) {
+            val batteryReadingsBodyRow = batteryReadingsSheet.createRow(rowIndex + 1)
+            batteryReadingsBodyRow.createCell(0).setCellValue(Date(reading.timestamp))
+            batteryReadingsBodyRow.createCell(1).setCellValue(reading.batteryLevel.toDouble())
+            batteryReadingsBodyRow.createCell(2).setCellValue(formatBatteryStatus(reading.batteryStatus))
+            batteryReadingsBodyRow.createCell(3).setCellValue(temperatureUnit.fromCelsius(reading.temperatureCelsius).toDouble())
+            batteryReadingsBodyRow.createCell(4).setCellValue(reading.voltage.toDouble())
+            batteryReadingsBodyRow.createCell(5).setCellValue(formatHealth(reading.health))
+            batteryReadingsBodyRow.createCell(6).setCellValue(if (reading.isCharging) yes else no)
+            batteryReadingsBodyRow.createCell(7).setCellValue(formatPlugType(reading.plugType))
+        }
+
+        for (i in batteryReadingsHeaders.indices) {
+            batteryReadingsSheet.setColumnWidth(i, 500)
+        }
+
+        val chargingSessionsSheet = workbook.createSheet(context.getString(R.string.charging_patterns_tab))
+        val chargingSessionsHeaders = listOf(
+            context.getString(R.string.excel_header_start_timestamp),
+            context.getString(R.string.excel_header_end_timestamp),
+            context.getString(R.string.charging_session_duration),
+            context.getString(R.string.excel_header_battery_start_level),
+            context.getString(R.string.excel_header_battery_end_level),
+            context.getString(R.string.excel_header_session_speed),
+            context.getString(R.string.excel_header_min_temperature, temperatureUnit.toString(context)),
+            context.getString(R.string.excel_header_max_temperature, temperatureUnit.toString(context)),
+            context.getString(R.string.excel_header_avg_temperature, temperatureUnit.toString(context)),
+            context.getString(R.string.charging_session_plug_type)
+        )
+
+        val chargingSessionsHeaderRow = chargingSessionsSheet.createRow(0)
+        chargingSessionsHeaders.forEachIndexed { index, header ->
+            chargingSessionsHeaderRow.createCell(index).setCellValue(header)
+        }
+
+        for ((rowIndex, session) in chargingSessions.withIndex()) {
+            val chargingSessionsBodyRow = chargingSessionsSheet.createRow(rowIndex + 1)
+
+            chargingSessionsBodyRow.createCell(0).setCellValue(Date(session.startTime))
+            if (session.endTime != null)
+                chargingSessionsBodyRow.createCell(1).setCellValue(Date(session.endTime))
+
+            if (session.durationMinutes != null)
+                chargingSessionsBodyRow.createCell(2).setCellValue(session.durationMinutes.toDouble())
+
+            chargingSessionsBodyRow.createCell(3).setCellValue(session.startLevel.toDouble())
+            if (session.endLevel != null) chargingSessionsBodyRow.createCell(4).setCellValue(session.endLevel.toDouble())
+
+            if (session.endLevel != null && session.durationMinutes != null && session.durationMinutes > 0) {
+                val delta = session.endLevel - session.startLevel
+                val speedPerHour = delta.toFloat() / (session.durationMinutes / 60f)
+                chargingSessionsBodyRow.createCell(5).setCellValue(speedPerHour.toDouble())
+            }
+
+            if (session.minTemperatureCelsius != null) chargingSessionsBodyRow.createCell(6).setCellValue(temperatureUnit.fromCelsius(session.minTemperatureCelsius).toDouble())
+            if (session.maxTemperatureCelsius != null) chargingSessionsBodyRow.createCell(7).setCellValue(temperatureUnit.fromCelsius(session.maxTemperatureCelsius).toDouble())
+            if (session.avgTemperatureCelsius != null) chargingSessionsBodyRow.createCell(8).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
+
+            chargingSessionsBodyRow.createCell(5).setCellValue(formatPlugType(session.plugType))
+        }
+
+        for (i in chargingSessionsHeaders.indices) {
+            chargingSessionsSheet.setColumnWidth(i, 500)
+        }
+
+        workbook.write(outputStream)
+    }
+}
+
+fun getStringTimeFromInterval(context: Context, interval: Long): String {
+    val totalMinutes = interval / 60_000
+    val days = totalMinutes / (24 * 60)
+    val hours = (totalMinutes % (24 * 60)) / 60
+    val minutes = totalMinutes % 60
+
+    return if (days > 0) {
+        context.getString(R.string.days_and_hours_and_minutes, days, hours, minutes)
+    } else if (hours > 0) {
+        context.getString(R.string.hours_and_minutes, hours, minutes)
+    } else {
+        context.getString(R.string.minutes, minutes)
+    }
+}
+
+fun getStringPercent(context: Context, percent: Float?): String {
+    if (percent == null) return context.getString(R.string.not_available)
+
+    val hasNoDecimals = percent % 1f == 0f
+
+    return if (hasNoDecimals) context.getString(R.string.percent_value_integer, percent.toInt())
+    else context.getString(R.string.percent_value_float, percent)
 }

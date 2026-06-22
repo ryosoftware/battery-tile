@@ -11,6 +11,7 @@ uiText = "1.11.3"
 material="1.14.0"
 room = "2.8.4"
 ksp = "2.3.9"
+poiOoxml = "5.5.1"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -36,4 +37,5 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+poi-ooxml = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "poiOoxml" }
 
