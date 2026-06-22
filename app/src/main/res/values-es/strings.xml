@@ -215,6 +215,16 @@
     <string name="shows_historical_data">Muestra gráficas de evolución temporal, requiere ejecución en segundo plano</string>
     <string name="battery_level_chart_title">Histórico de carga de la batería</string>
     <string name="temperature_chart_title">Histórico de temperaturas</string>
+    <string name="charging_patterns_tab">Patrones de carga</string>
+    <string name="charging_session_duration">Duración</string>
+    <string name="charging_session_level_change">Cambio de nivel</string>
+    <string name="charging_session_speed">Velocidad</string>
+    <string name="percent_per_hour">%1$s/h</string>
+    <string name="charging_session_temperature">Temperatura</string>
+    <string name="charging_temperature_min_max_avg">%1$s - %2$s (%3$s de promedio)</string>
+    <string name="charging_session_plug_type">Tipo de conector</string>
+    <string name="no_charging_sessions">Aún no hay sesiones de carga registradas.</string>
+    <string name="charging_session_ongoing">En curso</string>
     <string name="chart_scroll_hint">Desliza en el gráfico para ver toda la información</string>
     <string name="no_history_data">Sin datos históricos.\nLos datos se recopilan periódicamente si el servicio de notificaciones esté activo.</string>
     <string name="clear_history">Borrar Historial</string>
@@ -231,6 +241,7 @@
         <item quantity="many">El gráfico incluye %1$d lecturas, obtenidas del %2$s al %3$s</item>
     </plurals>
 
+    <string name="from_date_to_date">%1$s → %2$s</string>
     <string name="share_history">Compartir Historial</string>
     <string name="save_history">Guardar Historial</string>
     <string name="error_exporting_history">Error al exportar el historial</string>
@@ -242,5 +253,7 @@
     <string name="csv_header_health">Salud</string>
     <string name="csv_header_is_charging">¿Cargando?</string>
     <string name="csv_header_plug_type">Tipo de Cargador</string>
+    <string name="battery_level_from_to">Se carga del %1$s al %2$s</string>
+    <string name="battery_level_unknown">\?</string>
 
 </resources>

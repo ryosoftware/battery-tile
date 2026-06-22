@@ -28,6 +28,7 @@ import com.ryosoftware.battery_tile.NotificationBatteryIntentHelper.Notification
 import com.ryosoftware.battery_tile.WhatAppOpens.Companion.getIntent
 import com.ryosoftware.battery_tile.data.BatteryReading
 import com.ryosoftware.battery_tile.data.BatteryRepository
+import com.ryosoftware.battery_tile.data.ChargingSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -556,10 +557,10 @@ class NotificationService : Service() {
             healthNotificationShown = false
         }
 
-        saveBatteryReading(batteryIntentHelper)
+        saveDataToDB(batteryIntentHelper)
     }
 
-    private fun saveBatteryReading(batteryIntentHelper: BatteryIntentHelper) {
+    private fun saveDataToDB(batteryIntentHelper: BatteryIntentHelper) {
         val now = System.currentTimeMillis()
         val level = batteryIntentHelper.level
         val temperature = batteryIntentHelper.temperatureCelsius
@@ -597,12 +598,57 @@ class NotificationService : Service() {
                 )
                 repository.insert(reading)
 
-                val cutOffTime = now - (appPrefs.batteryHistoryWindow * 24 * 60 * 60 * 1000L)
-                repository.deleteOlderThan(cutOffTime)
+                val batteryHistoryWindowInMillis = appPrefs.batteryHistoryWindow * 24 * 60 * 60 * 1_000L
+                val batteryHistoryCutOffTime = now - batteryHistoryWindowInMillis
+                repository.deleteOlderThan(batteryHistoryCutOffTime)
 
-                logger.log("Success saving Battery reading")
+                logger.log("Battery reading stored at DB")
+
+                if (chargingChanged) {
+                    if (isCharging) {
+                        val session = ChargingSession(
+                            startTime = now,
+                            endTime = null,
+                            startLevel = level,
+                            endLevel = null,
+                            plugType = batteryIntentHelper.plugType,
+                            durationMinutes = null,
+                            avgTemperatureCelsius = null,
+                            maxTemperatureCelsius = null,
+                            minTemperatureCelsius = null
+                        )
+                        repository.insertChargingSession(session)
+                        logger.log("Charging session start stored at DB")
+                    } else {
+                        val openSession = repository.getOpenChargingSession()
+                        if (openSession != null) {
+                            val readings = repository.getReadingsBetween(openSession.startTime, now)
+                            val temps = readings.map { it.temperatureCelsius }.filter { it >= 0f }
+                            val durationMs = now - openSession.startTime
+
+                            if (durationMs > batteryHistoryWindowInMillis) {
+                                repository.deleteChargingSession(openSession.id)
+                                logger.log("Charging session discarded from DB due to exceeds readings window")
+                            } else {
+                                val updated = openSession.copy(
+                                    endTime = now,
+                                    endLevel = level,
+                                    durationMinutes = durationMs / 60_000L,
+                                    avgTemperatureCelsius = if (temps.isNotEmpty()) temps.average().toFloat() else null,
+                                    maxTemperatureCelsius = if (temps.isNotEmpty()) temps.max() else null,
+                                    minTemperatureCelsius = if (temps.isNotEmpty()) temps.min() else null
+                                )
+                                repository.updateChargingSession(updated)
+                                logger.log("Charging session end stored at DB (${updated.durationMinutes} min, ${openSession.startLevel}% → ${level}%)")
+                            }
+                        }
+                    }
+                }
+
+                val chargingCutOffTime = now - (appPrefs.chargingHistoryWindow * 24 * 60 * 60 * 1_000L)
+                repository.deleteOlderChargingSessions(chargingCutOffTime)
             } catch (e: Exception) {
-                logger.log("Error saving battery reading: ${e.message}")
+                logger.log("Error saving data to DB: ${e.message}")
             }
         }
     }

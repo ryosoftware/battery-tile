@@ -214,6 +214,16 @@
     <string name="shows_historical_data">Displays graphs of temporal evolution, requires background running</string>
     <string name="battery_level_chart_title">Battery Level History</string>
     <string name="temperature_chart_title">Temperature History</string>
+    <string name="charging_patterns_tab">Charging Patterns</string>
+    <string name="charging_session_duration">Duration</string>
+    <string name="charging_session_level_change">Level Change</string>
+    <string name="charging_session_speed">Speed</string>
+    <string name="percent_per_hour">%1$s/h</string>
+    <string name="charging_session_temperature">Temperature</string>
+    <string name="charging_temperature_min_max_avg">%1$s - %2$s (avg. %3$s)</string>
+    <string name="charging_session_plug_type">Plug Type</string>
+    <string name="no_charging_sessions">No charging sessions recorded yet.</string>
+    <string name="charging_session_ongoing">Ongoing</string>
     <string name="chart_scroll_hint">Swipe into graphic to see more data</string>
     <string name="no_history_data">No history data yet.\nData will be collected each time to time if the notification service is running.</string>
     <string name="clear_history">Clear History</string>
@@ -228,6 +238,7 @@
         <item quantity="other">Graph includes %1$d readings, taken from %2$s to %3$s</item>
     </plurals>
 
+    <string name="from_date_to_date">%1$s → %2$s</string>
     <string name="share_history">Share History</string>
     <string name="save_history">Save History</string>
     <string name="error_exporting_history">Error exporting history</string>
@@ -239,5 +250,7 @@
     <string name="csv_header_health">Health</string>
     <string name="csv_header_is_charging">Is Charging?</string>
     <string name="csv_header_plug_type">Plug Type</string>
+    <string name="battery_level_from_to">It charges from %1$s to %2$s</string>
+    <string name="battery_level_unknown">\?</string>
 
 </resources>

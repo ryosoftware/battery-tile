@@ -201,4 +201,8 @@
 
     <integer name="battery_history_window_in_days_default">7</integer>
 
+    <!-- Charging sessions history window (older sessions will be automatically removed) -->
+
+    <integer name="charging_history_window_in_days_default">90</integer>
+
 </resources>

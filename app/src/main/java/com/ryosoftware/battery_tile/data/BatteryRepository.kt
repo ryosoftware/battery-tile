@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 class BatteryRepository(context: Context) {
     private val batteryReadingDao = BatteryDatabase.getDatabase(context).batteryReadingDao()
+    private val chargingSessionDao = BatteryDatabase.getDatabase(context).chargingSessionDao()
 
     fun getAll(): Flow<List<BatteryReading>> = batteryReadingDao.getAll()
 
@@ -18,7 +19,29 @@ class BatteryRepository(context: Context) {
 
     suspend fun deleteOlderThan(timestamp: Long) = batteryReadingDao.deleteOlderThan(timestamp)
 
+    suspend fun getReadingsBetween(start: Long, end: Long): List<BatteryReading> =
+        batteryReadingDao.getBetween(start, end)
+
     suspend fun deleteAll() = batteryReadingDao.deleteAll()
+
+    fun getAllChargingSessions(): Flow<List<ChargingSession>> = chargingSessionDao.getAll()
+
+    fun getChargingSessionsFromTime(startTime: Long): Flow<List<ChargingSession>> =
+        chargingSessionDao.getFromTime(startTime)
+
+    suspend fun getOpenChargingSession(): ChargingSession? = chargingSessionDao.getOpenSession()
+
+    suspend fun insertChargingSession(session: ChargingSession): Long =
+        chargingSessionDao.insert(session)
+
+    suspend fun updateChargingSession(session: ChargingSession) = chargingSessionDao.update(session)
+
+    suspend fun deleteOlderChargingSessions(timestamp: Long) =
+        chargingSessionDao.deleteOlderThan(timestamp)
+
+    suspend fun deleteChargingSession(id: Long) = chargingSessionDao.deleteById(id)
+
+    suspend fun deleteAllChargingSessions() = chargingSessionDao.deleteAll()
 
     companion object {
         @Volatile

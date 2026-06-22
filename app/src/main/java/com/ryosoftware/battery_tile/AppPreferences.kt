@@ -94,6 +94,7 @@ class AppPreferences(context: Context) {
         const val KEY_LOG_ONLY_WHILE_CHARGING = "log-only-while-charging"
 
         const val KEY_BATTERY_HISTORY_WINDOW = "battery-history-window"
+        const val KEY_CHARGING_HISTORY_WINDOW = "charging-history-window"
     }
 
     private val resources = context.resources
@@ -143,4 +144,8 @@ class AppPreferences(context: Context) {
     var batteryHistoryWindow: Int
         get() = prefs.getInt(KEY_BATTERY_HISTORY_WINDOW, resources.getInteger(R.integer.battery_history_window_in_days_default))
         set(value) { prefs.edit { putInt(KEY_BATTERY_HISTORY_WINDOW, value) } }
+
+    var chargingHistoryWindow: Int
+        get() = prefs.getInt(KEY_CHARGING_HISTORY_WINDOW, resources.getInteger(R.integer.charging_history_window_in_days_default))
+        set(value) { prefs.edit { putInt(KEY_CHARGING_HISTORY_WINDOW, value) } }
 }

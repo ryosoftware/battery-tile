@@ -22,6 +22,9 @@ interface BatteryReadingDao {
     @Query("DELETE FROM battery_readings WHERE timestamp < :timestamp")
     suspend fun deleteOlderThan(timestamp: Long)
 
+    @Query("SELECT * FROM battery_readings WHERE timestamp BETWEEN :start AND :end ORDER BY timestamp ASC")
+    suspend fun getBetween(start: Long, end: Long): List<BatteryReading>
+
     @Query("DELETE FROM battery_readings")
     suspend fun deleteAll()
 }

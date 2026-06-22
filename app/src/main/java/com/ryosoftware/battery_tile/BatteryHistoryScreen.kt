@@ -13,6 +13,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Card
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -57,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ryosoftware.battery_tile.data.BatteryReading
 import com.ryosoftware.battery_tile.data.BatteryRepository
+import com.ryosoftware.battery_tile.data.ChargingSession
 import androidx.core.content.FileProvider
 import java.io.File
 import java.text.DateFormat
@@ -77,6 +79,7 @@ fun BatteryHistoryScreen(
     val repository = remember { BatteryRepository.getInstance(context) }
     val scope = rememberCoroutineScope()
     val readings by repository.getAll().collectAsState(initial = emptyList())
+    val chargingSessions by repository.getAllChargingSessions().collectAsState(initial = emptyList())
     var selectedTab by remember { mutableIntStateOf(0) }
 
     val saveLauncher = rememberLauncherForActivityResult(
@@ -187,13 +190,25 @@ fun BatteryHistoryScreen(
                     onClick = { selectedTab = 1 },
                     label = { Text(stringResource(R.string.battery_temperature)) }
                 )
+                FilterChip(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
+                    label = { Text(stringResource(R.string.charging_patterns_tab)) }
+                )
             }
 
             Spacer(Modifier.height(16.dp))
 
-            if (readings.size < 2) {
+            if (selectedTab < 2 && readings.size < 2) {
                 Text(
                     text = stringResource(R.string.no_history_data),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else if (selectedTab == 2 && chargingSessions.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.no_charging_sessions),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -224,29 +239,42 @@ fun BatteryHistoryScreen(
 
                         TemperatureChart(context = context, readings = displayReadings, appPrefs = appPrefs)
                     }
+                    2 -> {
+                        Text(
+                            text = stringResource(R.string.charging_patterns_tab),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+
+                        ChargingPatternsTab(context = context, sessions = chargingSessions, appPrefs = appPrefs)
+                    }
                 }
 
                 Spacer(Modifier.height(16.dp))
 
-                val dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, LocalLocale.current.platformLocale)
-                val oldest = readings.last()
-                val newest = readings.first()
+                if (selectedTab < 2) {
+                    val dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, LocalLocale.current.platformLocale)
+                    val oldest = readings.last()
+                    val newest = readings.first()
 
-                @SuppressLint("LocalContextResourcesRead")
-                Text(
-                    text = context.resources.getQuantityString(R.plurals.readings_count, readings.size, readings.size, dateFormat.format(Date(oldest.timestamp)), dateFormat.format(Date(newest.timestamp))),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    @SuppressLint("LocalContextResourcesRead")
+                    Text(
+                        text = context.resources.getQuantityString(R.plurals.readings_count, readings.size, readings.size, dateFormat.format(Date(oldest.timestamp)), dateFormat.format(Date(newest.timestamp))),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(4.dp))
 
-                @SuppressLint("LocalContextResourcesRead")
-                Text(
-                    text = context.resources.getQuantityString(R.plurals.history_retention_days, appPrefs.batteryHistoryWindow, appPrefs.batteryHistoryWindow),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
+                    @SuppressLint("LocalContextResourcesRead")
+                    Text(
+                        text = context.resources.getQuantityString(R.plurals.history_retention_days, appPrefs.batteryHistoryWindow, appPrefs.batteryHistoryWindow),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
             }
 
             Spacer(Modifier.height(32.dp))
@@ -545,6 +573,128 @@ fun TemperatureChart(
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             textAlign = TextAlign.Center
         )
+    }
+}
+
+@Composable
+fun ChargingPatternsTab(
+    context: Context,
+    sessions: List<ChargingSession>,
+    appPrefs: AppPreferences
+) {
+    fun getStringTimeFromInterval(context: Context, interval: Long): String {
+        val totalMinutes = interval / 60_000
+        val days = totalMinutes / (24 * 60)
+        val hours = (totalMinutes % (24 * 60)) / 60
+        val minutes = totalMinutes % 60
+
+        return if (days > 0) {
+            context.getString(R.string.days_and_hours_and_minutes, days, hours, minutes)
+        } else if (hours > 0) {
+            context.getString(R.string.hours_and_minutes, hours, minutes)
+        } else {
+            context.getString(R.string.minutes, minutes)
+        }
+    }
+
+    fun getStringPercent(context: Context, percent: Float?): String {
+        if (percent == null) return context.getString(R.string.not_available)
+
+        val hasNoDecimals = percent % 1f == 0f
+
+        return if (hasNoDecimals) context.getString(R.string.percent_value_integer, percent.toInt())
+        else context.getString(R.string.percent_value_float, percent)
+    }
+
+    val dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault())
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        sessions.forEach { session ->
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = if (session.endTime != null)
+                                stringResource(R.string.from_date_to_date,
+                                    dateFormat.format(Date(session.startTime)),
+                                    dateFormat.format(Date(session.endTime)))
+                            else
+                                dateFormat.format(Date(session.startTime)),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        if (session.endTime == null) {
+                            Text(
+                                text = stringResource(R.string.charging_session_ongoing),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(4.dp))
+
+                    val endLevel = session.endLevel?.let { stringResource(R.string.percent_value_integer, it) } ?: stringResource(R.string.battery_level_unknown)
+
+                    Text(
+                        text = stringResource(R.string.battery_level_from_to,
+                               stringResource(R.string.percent_value_integer, session.startLevel),
+                               endLevel),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        if (session.durationMinutes != null) {
+                            Text(
+                                text = stringResource(R.string.label_and_value,
+                                       stringResource(R.string.charging_session_duration),
+                                       getStringTimeFromInterval(context, session.durationMinutes * 60_000L)),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (session.endLevel != null) {
+                            val delta = session.endLevel - session.startLevel
+                            val speedPerHour = if (session.durationMinutes != null && session.durationMinutes > 0) {
+                                delta.toFloat() / (session.durationMinutes / 60f)
+                            } else null
+
+                            Text(
+                                text = stringResource(R.string.label_and_value,
+                                       stringResource(R.string.charging_session_speed),
+                                       stringResource(R.string.percent_per_hour, getStringPercent(context, speedPerHour))),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    if (session.avgTemperatureCelsius != null) {
+                        Spacer(Modifier.height(4.dp))
+                        val tempUnit = appPrefs.temperatureUnit
+                        Text(
+                            text = stringResource(R.string.label_and_value,
+                                   stringResource(R.string.charging_session_temperature),
+                                   stringResource(R.string.charging_temperature_min_max_avg,
+                                      tempUnit.toString(context, tempUnit.fromCelsius(session.minTemperatureCelsius!!), false),
+                                      tempUnit.toString(context, tempUnit.fromCelsius(session.maxTemperatureCelsius!!), false),
+                                      tempUnit.toString(context, tempUnit.fromCelsius(session.avgTemperatureCelsius), false))),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
