@@ -261,6 +261,9 @@
     <string name="excel_header_health">Salud</string>
     <string name="excel_header_is_charging">¿Cargando?</string>
     <string name="excel_header_plug_type">Tipo de Cargador</string>
+    <string name="excel_header_screen_on">¿Pantalla encendida?</string>
+    <string name="chart_legend_screen_on">Pantalla encendida</string>
+    <string name="chart_legend_screen_off">Pantalla apagada</string>
     <string name="battery_level_from_to">Se carga del %1$s al %2$s</string>
     <string name="battery_level_unknown">\?</string>
 

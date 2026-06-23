@@ -258,6 +258,9 @@
     <string name="excel_header_health">Health</string>
     <string name="excel_header_is_charging">Is Charging?</string>
     <string name="excel_header_plug_type">Plug Type</string>
+    <string name="excel_header_screen_on">Is Screen On?</string>
+    <string name="chart_legend_screen_on">Screen On</string>
+    <string name="chart_legend_screen_off">Screen Off</string>
     <string name="battery_level_from_to">It charges from %1$s to %2$s</string>
     <string name="battery_level_unknown">\?</string>
 
