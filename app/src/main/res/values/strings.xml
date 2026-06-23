@@ -242,9 +242,9 @@
     <string name="share_history">Share History</string>
     <string name="save_history">Save History</string>
     <string name="error_exporting_history">Error exporting history</string>
-    <string name="excel_header_timestamp">Timestamp</string>
-    <string name="excel_header_start_timestamp">Start Time</string>
-    <string name="excel_header_end_timestamp">End Time</string>
+    <string name="excel_header_timestamp">Event Date/Time</string>
+    <string name="excel_header_start_timestamp">Start Date/Time</string>
+    <string name="excel_header_end_timestamp">End Date/Time</string>
     <string name="excel_header_battery_level">Battery Level</string>
     <string name="excel_header_battery_start_level">Battery Start Level</string>
     <string name="excel_header_battery_end_level">Battery End Level</string>

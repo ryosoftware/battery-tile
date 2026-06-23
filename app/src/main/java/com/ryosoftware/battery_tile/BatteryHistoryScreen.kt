@@ -75,6 +75,7 @@ import java.io.OutputStream
 import java.util.Calendar
 import java.util.Locale
 import androidx.core.content.edit
+import org.apache.poi.ss.usermodel.CellStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -693,6 +694,13 @@ private fun buildExcel(
         val yes = context.getString(R.string.yes)
         val no = context.getString(R.string.no)
 
+        val dateTimeStyle = workbook.createCellStyle().apply {
+            dataFormat = 22
+        }
+        val durationTimeStyle = workbook.createCellStyle().apply {
+            dataFormat = workbook.creationHelper.createDataFormat().getFormat("[h]:mm:ss")
+        }
+
         val batteryReadingsSheet = workbook.createSheet(context.getString(R.string.battery_level))
         val batteryReadingsHeaders = listOf(
             context.getString(R.string.excel_header_timestamp),
@@ -708,11 +716,12 @@ private fun buildExcel(
         val batteryReadingsHeaderRow = batteryReadingsSheet.createRow(0)
         batteryReadingsHeaders.forEachIndexed { index, header ->
             batteryReadingsHeaderRow.createCell(index).setCellValue(header)
+            batteryReadingsSheet.setColumnWidth(index, (header.length + 2) * 256)
         }
 
         for ((rowIndex, reading) in batteryReadings.withIndex()) {
             val batteryReadingsBodyRow = batteryReadingsSheet.createRow(rowIndex + 1)
-            batteryReadingsBodyRow.createCell(0).setCellValue(Date(reading.timestamp))
+            batteryReadingsBodyRow.createCell(0).apply { setCellValue(Date(reading.timestamp)); cellStyle = dateTimeStyle }
             batteryReadingsBodyRow.createCell(1).setCellValue(reading.batteryLevel.toDouble())
             batteryReadingsBodyRow.createCell(2).setCellValue(formatBatteryStatus(reading.batteryStatus))
             batteryReadingsBodyRow.createCell(3).setCellValue(temperatureUnit.fromCelsius(reading.temperatureCelsius).toDouble())
@@ -720,10 +729,6 @@ private fun buildExcel(
             batteryReadingsBodyRow.createCell(5).setCellValue(formatHealth(reading.health))
             batteryReadingsBodyRow.createCell(6).setCellValue(if (reading.isCharging) yes else no)
             batteryReadingsBodyRow.createCell(7).setCellValue(formatPlugType(reading.plugType))
-        }
-
-        for (i in batteryReadingsHeaders.indices) {
-            batteryReadingsSheet.setColumnWidth(i, 500)
         }
 
         val chargingSessionsSheet = workbook.createSheet(context.getString(R.string.charging_patterns_tab))
@@ -743,17 +748,21 @@ private fun buildExcel(
         val chargingSessionsHeaderRow = chargingSessionsSheet.createRow(0)
         chargingSessionsHeaders.forEachIndexed { index, header ->
             chargingSessionsHeaderRow.createCell(index).setCellValue(header)
+            chargingSessionsSheet.setColumnWidth(index, (header.length + 2) * 256)
         }
 
         for ((rowIndex, session) in chargingSessions.withIndex()) {
             val chargingSessionsBodyRow = chargingSessionsSheet.createRow(rowIndex + 1)
 
-            chargingSessionsBodyRow.createCell(0).setCellValue(Date(session.startTime))
+            chargingSessionsBodyRow.createCell(0).apply { setCellValue(Date(session.startTime)); cellStyle = dateTimeStyle }
             if (session.endTime != null)
-                chargingSessionsBodyRow.createCell(1).setCellValue(Date(session.endTime))
+                chargingSessionsBodyRow.createCell(1).apply { setCellValue(Date(session.endTime)); cellStyle = dateTimeStyle }
 
             if (session.durationMinutes != null)
-                chargingSessionsBodyRow.createCell(2).setCellValue(session.durationMinutes.toDouble())
+                chargingSessionsBodyRow.createCell(2).apply {
+                    setCellValue(session.durationMinutes / 1440.0)
+                    cellStyle = durationTimeStyle
+                }
 
             chargingSessionsBodyRow.createCell(3).setCellValue(session.startLevel.toDouble())
             if (session.endLevel != null) chargingSessionsBodyRow.createCell(4).setCellValue(session.endLevel.toDouble())
@@ -768,11 +777,7 @@ private fun buildExcel(
             if (session.maxTemperatureCelsius != null) chargingSessionsBodyRow.createCell(7).setCellValue(temperatureUnit.fromCelsius(session.maxTemperatureCelsius).toDouble())
             if (session.avgTemperatureCelsius != null) chargingSessionsBodyRow.createCell(8).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
 
-            chargingSessionsBodyRow.createCell(5).setCellValue(formatPlugType(session.plugType))
-        }
-
-        for (i in chargingSessionsHeaders.indices) {
-            chargingSessionsSheet.setColumnWidth(i, 500)
+            chargingSessionsBodyRow.createCell(9).setCellValue(formatPlugType(session.plugType))
         }
 
         workbook.write(outputStream)
