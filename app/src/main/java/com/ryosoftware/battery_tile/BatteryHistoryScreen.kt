@@ -251,7 +251,7 @@ fun BatteryHistoryScreen(
 
                         Spacer(Modifier.height(16.dp))
 
-                        TemperatureChart(context = context, readings = displayReadings, screenStates = screenStates, appPrefs = appPrefs)
+                        TemperatureChart(context = context, readings = displayReadings, screenStates = screenStates, thresholdTemperatureCelsius = remember { NotificationPreferences(context).getBatteryTemperatureThreshold(TemperatureUnit.CELSIUS) }, appPrefs = appPrefs)
                     }
                     2 -> {
                         Text(
@@ -367,7 +367,10 @@ private fun TimeBasedChart(
     lineColor: Color,
     labelWidthDp: Dp,
     yLabels: DrawScope.(textColor: Color) -> Unit,
-    yValue: (BatteryReading) -> Float
+    yValue: (BatteryReading) -> Float,
+    referenceLineNormalizedY: Float? = null,
+    referenceLineLabel: String? = null,
+    referenceLineColor: Color = MaterialTheme.colorScheme.error
 ) {
     val gridColor = MaterialTheme.colorScheme.outlineVariant
     val textColor = MaterialTheme.colorScheme.onSurface
@@ -495,6 +498,29 @@ private fun TimeBasedChart(
                             strokeWidth = 2.dp.toPx()
                         )
                     }
+
+                    if (referenceLineNormalizedY != null) {
+                        val y = paddingTop + chartDrawHeight * (1f - referenceLineNormalizedY)
+                        drawLine(
+                            color = referenceLineColor,
+                            start = Offset(0f, y),
+                            end = Offset(width - paddingRight, y),
+                            strokeWidth = 1.dp.toPx(),
+                            pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))
+                        )
+                        if (referenceLineLabel != null) {
+                            drawContext.canvas.nativeCanvas.drawText(
+                                referenceLineLabel,
+                                width - paddingRight,
+                                y - 4.dp.toPx(),
+                                Paint().apply {
+                                    color = referenceLineColor.hashCode()
+                                    textSize = 8.sp.toPx()
+                                    textAlign = Paint.Align.RIGHT
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -572,12 +598,24 @@ fun TemperatureChart(
     context: Context,
     readings: List<BatteryReading>,
     screenStates: List<ScreenState>,
+    thresholdTemperatureCelsius: Float?,
     appPrefs: AppPreferences
 ) {
     val temps = remember(readings) { readings.map { it.temperatureCelsius } }
     val minTemp = remember(temps) { (temps.min() - 5f).coerceAtLeast(0f) }
     val maxTemp = remember(temps) { (temps.max() + 5f).coerceAtMost(60f) }
     val tempRange = remember(minTemp, maxTemp) { maxTemp - minTemp }
+
+    val thresholdNormalizedY = remember(thresholdTemperatureCelsius, minTemp, tempRange) {
+        if (thresholdTemperatureCelsius != null && tempRange > 0f) {
+            ((thresholdTemperatureCelsius - minTemp) / tempRange).coerceIn(0f, 1f)
+        } else null
+    }
+    val thresholdLabel = remember(thresholdTemperatureCelsius, appPrefs.temperatureUnit) {
+        if (thresholdTemperatureCelsius != null) {
+            appPrefs.temperatureUnit.toString(context, appPrefs.temperatureUnit.fromCelsius(thresholdTemperatureCelsius), false)
+        } else null
+    }
 
     TimeBasedChart(
         readings = readings,
@@ -600,7 +638,10 @@ fun TemperatureChart(
                 )
             }
         },
-        yValue = { reading -> (reading.temperatureCelsius - minTemp) / tempRange }
+        yValue = { reading -> (reading.temperatureCelsius - minTemp) / tempRange },
+        referenceLineNormalizedY = thresholdNormalizedY,
+        referenceLineLabel = thresholdLabel,
+        referenceLineColor = MaterialTheme.colorScheme.error
     )
 }
 
