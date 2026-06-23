@@ -43,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
@@ -70,6 +71,7 @@ import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
 import java.io.OutputStream
 import java.util.Calendar
 import java.util.Locale
+import androidx.core.content.edit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,7 +84,12 @@ fun BatteryHistoryScreen(
     val scope = rememberCoroutineScope()
     val readings by repository.getAll().collectAsState(initial = emptyList())
     val chargingSessions by repository.getAllChargingSessions().collectAsState(initial = emptyList())
-    var selectedTab by remember { mutableIntStateOf(0) }
+    val prefs = remember { context.getSharedPreferences("battery_history_prefs", Context.MODE_PRIVATE) }
+    var selectedTab by remember { mutableIntStateOf(prefs.getInt("selected-tab", 0)) }
+
+    LaunchedEffect(selectedTab) {
+        prefs.edit { putInt("selected-tab", selectedTab) }
+    }
 
     val saveLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
