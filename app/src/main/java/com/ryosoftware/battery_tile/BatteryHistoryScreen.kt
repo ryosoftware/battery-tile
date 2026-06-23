@@ -401,6 +401,21 @@ private fun TimeBasedChart(
             ) {
                 if (readings.size < 2) return@Canvas
                 yLabels(textColor)
+
+                if (referenceLineNormalizedY != null && referenceLineLabel != null) {
+                    val height = size.height
+                    val y = height * (1f - referenceLineNormalizedY)
+                    drawContext.canvas.nativeCanvas.drawText(
+                        referenceLineLabel,
+                        size.width - 4.dp.toPx(),
+                        y + 4.dp.toPx(),
+                        Paint().apply {
+                            color = referenceLineColor.hashCode()
+                            textSize = 9.sp.toPx()
+                            textAlign = Paint.Align.RIGHT
+                        }
+                    )
+                }
             }
 
             Box(
@@ -508,18 +523,6 @@ private fun TimeBasedChart(
                             strokeWidth = 1.dp.toPx(),
                             pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))
                         )
-                        if (referenceLineLabel != null) {
-                            drawContext.canvas.nativeCanvas.drawText(
-                                referenceLineLabel,
-                                width - paddingRight,
-                                y - 4.dp.toPx(),
-                                Paint().apply {
-                                    color = referenceLineColor.hashCode()
-                                    textSize = 8.sp.toPx()
-                                    textAlign = Paint.Align.RIGHT
-                                }
-                            )
-                        }
                     }
                 }
             }
