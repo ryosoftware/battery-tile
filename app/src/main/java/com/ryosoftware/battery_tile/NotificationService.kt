@@ -29,6 +29,7 @@ import com.ryosoftware.battery_tile.WhatAppOpens.Companion.getIntent
 import com.ryosoftware.battery_tile.data.BatteryReading
 import com.ryosoftware.battery_tile.data.BatteryRepository
 import com.ryosoftware.battery_tile.data.ChargingSession
+import com.ryosoftware.battery_tile.data.ScreenState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -440,10 +441,13 @@ class NotificationService : Service() {
 
         return ScreenOnFields(screenOnTimeSinceBoot + interval, screenOnTimeSinceLastStatsReset + interval)
     }
+
     private fun onScreenTurnedOn() {
         persistData()
 
         isScreenOn = true
+
+        saveScreenStateToDB()
 
         updateNotificationTask.startRepeating(0L, UPDATE_SERVICE_NOTIFICATION_INTERVAL)
     }
@@ -452,7 +456,15 @@ class NotificationService : Service() {
 
         isScreenOn = false
 
+        saveScreenStateToDB()
+
         updateNotificationTask.stop()
+    }
+
+    private fun saveScreenStateToDB() {
+        serviceScope.launch {
+            repository.insertScreenState(ScreenState(timestamp = System.currentTimeMillis(), screenOn = isScreenOn))
+        }
     }
 
     private fun onPowerConnected() {
@@ -557,10 +569,10 @@ class NotificationService : Service() {
             healthNotificationShown = false
         }
 
-        saveDataToDB(batteryIntentHelper)
+        saveBatteryDataToDB(batteryIntentHelper)
     }
 
-    private fun saveDataToDB(batteryIntentHelper: BatteryIntentHelper) {
+    private fun saveBatteryDataToDB(batteryIntentHelper: BatteryIntentHelper) {
         val now = System.currentTimeMillis()
         val level = batteryIntentHelper.level
         val temperature = batteryIntentHelper.temperatureCelsius

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 class BatteryRepository(context: Context) {
     private val batteryReadingDao = BatteryDatabase.getDatabase(context).batteryReadingDao()
     private val chargingSessionDao = BatteryDatabase.getDatabase(context).chargingSessionDao()
+    private val screenStateDao = BatteryDatabase.getDatabase(context).screenStateDao()
 
     fun getAll(): Flow<List<BatteryReading>> = batteryReadingDao.getAll()
 
@@ -42,6 +43,18 @@ class BatteryRepository(context: Context) {
     suspend fun deleteChargingSession(id: Long) = chargingSessionDao.deleteById(id)
 
     suspend fun deleteAllChargingSessions() = chargingSessionDao.deleteAll()
+
+    fun getAllScreenStates(): Flow<List<ScreenState>> = screenStateDao.getAll()
+
+    fun getScreenStatesFromTime(startTime: Long): Flow<List<ScreenState>> =
+        screenStateDao.getFromTime(startTime)
+
+    suspend fun getScreenStatesBetween(start: Long, end: Long): List<ScreenState> =
+        screenStateDao.getBetween(start, end)
+
+    suspend fun insertScreenState(state: ScreenState) = screenStateDao.insert(state)
+
+    suspend fun deleteOlderScreenStates(timestamp: Long) = screenStateDao.deleteOlderThan(timestamp)
 
     companion object {
         @Volatile
