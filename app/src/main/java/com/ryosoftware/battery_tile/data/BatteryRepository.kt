@@ -1,7 +1,6 @@
 package com.ryosoftware.battery_tile.data
 
 import android.content.Context
-import com.ryosoftware.battery_tile.Main
 import kotlinx.coroutines.flow.Flow
 
 class BatteryRepository(context: Context) {
@@ -9,52 +8,33 @@ class BatteryRepository(context: Context) {
     private val chargingSessionDao = BatteryDatabase.getDatabase(context).chargingSessionDao()
     private val screenStateDao = BatteryDatabase.getDatabase(context).screenStateDao()
 
-    fun getAll(): Flow<List<BatteryReading>> = batteryReadingDao.getAll()
-
-    fun getFromTime(timestamp: Long): Flow<List<BatteryReading>> =
-        batteryReadingDao.getFromTime(timestamp)
-
-    suspend fun getLatest(): BatteryReading? = batteryReadingDao.getLatest()
-
-    suspend fun insert(reading: BatteryReading) = batteryReadingDao.insert(reading)
-
-    suspend fun deleteOlderThan(timestamp: Long) = batteryReadingDao.deleteOlderThan(timestamp)
-
-    suspend fun getReadingsBetween(start: Long, end: Long): List<BatteryReading> =
+    fun getAllBatteryReadings(): Flow<List<BatteryReading>> = batteryReadingDao.getAll()
+    suspend fun insertBatteryReading(reading: BatteryReading) = batteryReadingDao.insert(reading)
+    suspend fun deleteBatteryReadingsOlderThan(timestamp: Long) = batteryReadingDao.deleteOlderThan(timestamp)
+    suspend fun getBatteryReadingsBetween(start: Long, end: Long): List<BatteryReading> =
         batteryReadingDao.getBetween(start, end)
-
-    suspend fun deleteAll() = batteryReadingDao.deleteAll()
+    suspend fun deleteAllBatteryReadings() = batteryReadingDao.deleteAll()
 
     fun getAllChargingSessions(): Flow<List<ChargingSession>> = chargingSessionDao.getAll()
-
-    fun getChargingSessionsFromTime(startTime: Long): Flow<List<ChargingSession>> =
-        chargingSessionDao.getFromTime(startTime)
-
     suspend fun getOpenChargingSession(): ChargingSession? = chargingSessionDao.getOpenSession()
-
     suspend fun insertChargingSession(session: ChargingSession): Long =
         chargingSessionDao.insert(session)
-
     suspend fun updateChargingSession(session: ChargingSession) = chargingSessionDao.update(session)
-
-    suspend fun deleteOlderChargingSessions(timestamp: Long) =
+    suspend fun deleteChargingSessionsOlderThan(timestamp: Long) =
         chargingSessionDao.deleteOlderThan(timestamp)
-
     suspend fun deleteChargingSession(id: Long) = chargingSessionDao.deleteById(id)
-
     suspend fun deleteAllChargingSessions() = chargingSessionDao.deleteAll()
 
     fun getAllScreenStates(): Flow<List<ScreenState>> = screenStateDao.getAll()
-
-    fun getScreenStatesFromTime(startTime: Long): Flow<List<ScreenState>> =
-        screenStateDao.getFromTime(startTime)
-
-    suspend fun getScreenStatesBetween(start: Long, end: Long): List<ScreenState> =
-        screenStateDao.getBetween(start, end)
-
     suspend fun insertScreenState(state: ScreenState) = screenStateDao.insert(state)
+    suspend fun deleteScreenStatesOlderThan(timestamp: Long) = screenStateDao.deleteOlderThan(timestamp)
+    suspend fun deleteAllScreenStates() = screenStateDao.deleteAll()
 
-    suspend fun deleteOlderScreenStates(timestamp: Long) = screenStateDao.deleteOlderThan(timestamp)
+    suspend fun deleteAll() {
+        deleteAllBatteryReadings()
+        deleteAllChargingSessions()
+        deleteAllScreenStates()
+    }
 
     companion object {
         @Volatile

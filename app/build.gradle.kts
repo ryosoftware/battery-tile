@@ -13,8 +13,8 @@ android {
 
     defaultConfig {
         applicationId = "com.ryosoftware.battery_tile"
-        versionCode = 3
-        versionName = "2.1"
+        versionCode = 4
+        versionName = "2.2"
 
         minSdk = 29
         targetSdk = 37

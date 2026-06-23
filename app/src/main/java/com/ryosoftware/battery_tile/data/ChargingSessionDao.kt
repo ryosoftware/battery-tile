@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.descriptors.PrimitiveKind
 
 @Dao
 interface ChargingSessionDao {
@@ -13,6 +14,9 @@ interface ChargingSessionDao {
 
     @Query("SELECT * FROM charging_sessions WHERE startTime >= :startTime ORDER BY startTime DESC")
     fun getFromTime(startTime: Long): Flow<List<ChargingSession>>
+
+    @Query("SELECT * FROM charging_sessions ORDER BY startTime DESC LIMIT 1")
+    suspend fun getLatest(): ChargingSession?
 
     @Query("SELECT * FROM charging_sessions WHERE endTime IS NULL ORDER BY startTime DESC LIMIT 1")
     suspend fun getOpenSession(): ChargingSession?

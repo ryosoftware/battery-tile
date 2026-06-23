@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -52,9 +51,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -79,7 +76,6 @@ import java.io.OutputStream
 import java.util.Calendar
 import java.util.Locale
 import androidx.core.content.edit
-import org.apache.poi.ss.usermodel.CellStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,7 +86,7 @@ fun BatteryHistoryScreen(
     val context = LocalContext.current
     val repository = remember { BatteryRepository.getInstance(context) }
     val scope = rememberCoroutineScope()
-    val readings by repository.getAll().collectAsState(initial = emptyList())
+    val readings by repository.getAllBatteryReadings().collectAsState(initial = emptyList())
     val chargingSessions by repository.getAllChargingSessions().collectAsState(initial = emptyList())
     val screenStates by repository.getAllScreenStates().collectAsState(initial = emptyList())
     val prefs = remember { context.getSharedPreferences("battery_history_prefs", Context.MODE_PRIVATE) }
@@ -360,7 +356,7 @@ private fun isScreenOnAt(timestamp: Long, screenStates: List<ScreenState>): Bool
         if (state.timestamp > timestamp) break
         lastState = state.screenOn
     }
-    
+
     return lastState
 }
 

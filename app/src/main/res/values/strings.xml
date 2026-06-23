@@ -187,7 +187,7 @@
     <string name="no_log_data">No log data yet</string>
 
     <plurals name="log_file_lines_count">
-        <item quantity="one">%1$d líne</item>
+        <item quantity="one">%1$d line</item>
         <item quantity="other">%1$d lines</item>
     </plurals>
 

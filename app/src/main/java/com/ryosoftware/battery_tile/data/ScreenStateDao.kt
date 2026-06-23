@@ -13,6 +13,9 @@ interface ScreenStateDao {
     @Query("SELECT * FROM screen_states WHERE timestamp >= :startTime ORDER BY timestamp ASC")
     fun getFromTime(startTime: Long): Flow<List<ScreenState>>
 
+    @Query("SELECT * FROM screen_states ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLatest(): ScreenState?
+
     @Query("SELECT * FROM screen_states WHERE timestamp >= :start AND timestamp <= :end ORDER BY timestamp ASC")
     suspend fun getBetween(start: Long, end: Long): List<ScreenState>
 
