@@ -224,7 +224,7 @@
     <string name="charging_session_plug_type">Plug Type</string>
     <string name="no_charging_sessions">No charging sessions recorded yet.</string>
     <string name="charging_session_ongoing">Ongoing</string>
-    <string name="chart_scroll_hint">Swipe into graphic to see more data</string>
+    <string name="chart_scroll_hint">Swipe on the graph to see all the information</string>
     <string name="no_history_data">No history data yet.\nData will be collected each time to time if the notification service is running.</string>
     <string name="clear_history">Clear History</string>
 

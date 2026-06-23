@@ -48,13 +48,16 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ryosoftware.battery_tile.data.BatteryReading
@@ -291,20 +294,50 @@ fun BatteryHistoryScreen(
     }
 }
 
-private fun findDayChanges(readings: List<BatteryReading>): List<Int> {
-    if (readings.isEmpty()) return emptyList()
-    val cal = Calendar.getInstance()
-    var lastDay = -1
-    val changes = mutableListOf<Int>()
-    readings.forEachIndexed { index, reading ->
-        cal.timeInMillis = reading.timestamp
-        val day = cal.get(Calendar.DAY_OF_YEAR) + cal.get(Calendar.YEAR) * 1000
-        if (day != lastDay && lastDay != -1) {
-            changes.add(index)
-        }
-        lastDay = day
+private fun findDayChanges(readings: List<BatteryReading>): List<Long> {
+    if (readings.size < 2) return emptyList()
+    val start = readings.first().timestamp
+    val end = readings.last().timestamp
+    val firstMidnight = Calendar.getInstance().apply {
+        timeInMillis = start
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+        if (timeInMillis <= start) add(Calendar.DAY_OF_MONTH, 1)
+    }
+    val changes = mutableListOf<Long>()
+    val cal = firstMidnight.clone() as Calendar
+    while (cal.timeInMillis < end) {
+        changes.add(cal.timeInMillis)
+        cal.add(Calendar.DAY_OF_MONTH, 1)
     }
     return changes
+}
+
+private fun findHourChanges(readings: List<BatteryReading>): List<Long> {
+    if (readings.size < 2) return emptyList()
+    val start = readings.first().timestamp
+    val end = readings.last().timestamp
+    val firstHour = Calendar.getInstance().apply {
+        timeInMillis = start
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+        if (timeInMillis <= start) add(Calendar.HOUR_OF_DAY, 1)
+    }
+    val changes = mutableListOf<Long>()
+    val cal = firstHour.clone() as Calendar
+    while (cal.timeInMillis < end) {
+        changes.add(cal.timeInMillis)
+        cal.add(Calendar.HOUR_OF_DAY, 1)
+    }
+    return changes
+}
+
+private fun formatHourLabel(timestamp: Long): String {
+    val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
+    return "${cal.get(Calendar.HOUR_OF_DAY).toString().padStart(2, '0')}:${cal.get(Calendar.MINUTE).toString().padStart(2, '0')}"
 }
 
 private fun formatDateLabel(timestamp: Long): String {
@@ -313,16 +346,17 @@ private fun formatDateLabel(timestamp: Long): String {
 }
 
 @Composable
-fun BatteryLevelChart(
-    context: Context,
+private fun TimeBasedChart(
     readings: List<BatteryReading>,
+    lineColor: Color,
+    labelWidthDp: Dp,
+    yLabels: DrawScope.(textColor: Color) -> Unit,
+    yValue: (BatteryReading) -> Float
 ) {
-    val lineColor = MaterialTheme.colorScheme.primary
     val gridColor = MaterialTheme.colorScheme.outlineVariant
     val textColor = MaterialTheme.colorScheme.onSurface
 
     val chartHeightDp = 300.dp
-    val labelWidthDp = 40.dp
     val minWidthPerPoint = 12.dp
     @SuppressLint("ConfigurationScreenWidthHeight")
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
@@ -330,6 +364,7 @@ fun BatteryLevelChart(
     val horizontalScrollState = rememberScrollState()
 
     val dayChanges = remember(readings) { findDayChanges(readings) }
+    val hourChanges = remember(readings) { findHourChanges(readings) }
 
     Row(
         modifier = Modifier
@@ -343,26 +378,7 @@ fun BatteryLevelChart(
                 .padding(top = 8.dp, bottom = 30.dp)
         ) {
             if (readings.size < 2) return@Canvas
-
-            val height = size.height
-            val paddingLeft = 8.dp.toPx()
-            val paddingRight = 4.dp.toPx()
-            val chartDrawWidth = size.width - paddingLeft - paddingRight
-
-            for (i in 0..4) {
-                val y = height * i / 4
-                val value = 100 - (i * 25)
-                drawContext.canvas.nativeCanvas.drawText(
-                    "$value%",
-                    paddingLeft + chartDrawWidth,
-                    y + 4.dp.toPx(),
-                    Paint().apply {
-                        color = textColor.hashCode()
-                        textSize = 10.sp.toPx()
-                        textAlign = Paint.Align.RIGHT
-                    }
-                )
-            }
+            yLabels(textColor)
         }
 
         Box(
@@ -386,6 +402,11 @@ fun BatteryLevelChart(
                 val chartDrawWidth = width - paddingRight
                 val chartDrawHeight = height - paddingTop - paddingBottom
 
+                val firstTimestamp = readings.first().timestamp
+                val timeRange = readings.last().timestamp - firstTimestamp
+                fun timeToX(timestamp: Long): Float =
+                    chartDrawWidth * (timestamp - firstTimestamp).toFloat() / timeRange.toFloat()
+
                 for (i in 0..4) {
                     val y = paddingTop + (chartDrawHeight * i / 4)
                     drawLine(
@@ -396,8 +417,32 @@ fun BatteryLevelChart(
                     )
                 }
 
-                for (dayIndex in dayChanges) {
-                    val x = chartDrawWidth * dayIndex / (readings.size - 1).coerceAtLeast(1)
+                for (hourTimestamp in hourChanges) {
+                    val x = timeToX(hourTimestamp)
+                    drawLine(
+                        color = gridColor,
+                        start = Offset(x, paddingTop),
+                        end = Offset(x, paddingTop + chartDrawHeight),
+                        strokeWidth = 0.5.dp.toPx(),
+                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()))
+                    )
+                    val cal = Calendar.getInstance().apply { timeInMillis = hourTimestamp }
+                    if (cal.get(Calendar.HOUR_OF_DAY) != 0) {
+                        drawContext.canvas.nativeCanvas.drawText(
+                            formatHourLabel(hourTimestamp),
+                            x,
+                            height - 4.dp.toPx(),
+                            Paint().apply {
+                                color = textColor.hashCode()
+                                textSize = 8.sp.toPx()
+                                textAlign = Paint.Align.CENTER
+                            }
+                        )
+                    }
+                }
+
+                for (dayTimestamp in dayChanges) {
+                    val x = timeToX(dayTimestamp)
                     drawLine(
                         color = gridColor,
                         start = Offset(x, paddingTop),
@@ -405,7 +450,7 @@ fun BatteryLevelChart(
                         strokeWidth = 1.dp.toPx()
                     )
                     drawContext.canvas.nativeCanvas.drawText(
-                        formatDateLabel(readings[dayIndex].timestamp),
+                        formatDateLabel(dayTimestamp),
                         x,
                         height - 4.dp.toPx(),
                         Paint().apply {
@@ -418,8 +463,8 @@ fun BatteryLevelChart(
 
                 val path = Path()
                 readings.forEachIndexed { index, reading ->
-                    val x = chartDrawWidth * index / (readings.size - 1).coerceAtLeast(1)
-                    val y = paddingTop + chartDrawHeight * (1f - reading.batteryLevel / 100f)
+                    val x = timeToX(reading.timestamp)
+                    val y = paddingTop + chartDrawHeight * (1f - yValue(reading))
 
                     if (index == 0) path.moveTo(x, y)
                     else path.lineTo(x, y)
@@ -446,55 +491,56 @@ fun BatteryLevelChart(
 }
 
 @Composable
+fun BatteryLevelChart(
+    context: Context,
+    readings: List<BatteryReading>,
+) {
+    TimeBasedChart(
+        readings = readings,
+        lineColor = MaterialTheme.colorScheme.primary,
+        labelWidthDp = 40.dp,
+        yLabels = { textColor ->
+            for (i in 0..4) {
+                val y = size.height * i / 4
+                val value = 100 - (i * 25)
+                drawContext.canvas.nativeCanvas.drawText(
+                    context.getString(R.string.percent_value_integer, value),
+                    8.dp.toPx() + (size.width - 12.dp.toPx()),
+                    y + 4.dp.toPx(),
+                    Paint().apply {
+                        color = textColor.hashCode()
+                        textSize = 10.sp.toPx()
+                        textAlign = Paint.Align.RIGHT
+                    }
+                )
+            }
+        },
+        yValue = { reading -> reading.batteryLevel / 100f }
+    )
+}
+
+@Composable
 fun TemperatureChart(
     context: Context,
     readings: List<BatteryReading>,
     appPrefs: AppPreferences
 ) {
-    val lineColor = MaterialTheme.colorScheme.error
-    val gridColor = MaterialTheme.colorScheme.outlineVariant
-    val textColor = MaterialTheme.colorScheme.onSurface
-
-    val chartHeightDp = 300.dp
-    val labelWidthDp = 50.dp
-    val minWidthPerPoint = 12.dp
-    @SuppressLint("ConfigurationScreenWidthHeight")
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val chartWidth = (minWidthPerPoint * readings.size).coerceAtLeast(screenWidth - labelWidthDp)
-    val horizontalScrollState = rememberScrollState()
-
-    val dayChanges = remember(readings) { findDayChanges(readings) }
-
     val temps = remember(readings) { readings.map { it.temperatureCelsius } }
     val minTemp = remember(temps) { (temps.min() - 5f).coerceAtLeast(0f) }
     val maxTemp = remember(temps) { (temps.max() + 5f).coerceAtMost(60f) }
     val tempRange = remember(minTemp, maxTemp) { maxTemp - minTemp }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(chartHeightDp)
-    ) {
-        Canvas(
-            modifier = Modifier
-                .width(labelWidthDp)
-                .height(chartHeightDp)
-                .padding(top = 8.dp, bottom = 30.dp)
-        ) {
-            if (readings.size < 2) return@Canvas
-
-            val height = size.height
-            val paddingLeft = 4.dp.toPx()
-            val paddingRight = 4.dp.toPx()
-            val chartDrawWidth = size.width - paddingLeft - paddingRight
-            val chartDrawHeight = height
-
+    TimeBasedChart(
+        readings = readings,
+        lineColor = MaterialTheme.colorScheme.error,
+        labelWidthDp = 50.dp,
+        yLabels = { textColor ->
             for (i in 0..4) {
-                val y = chartDrawHeight * i / 4
+                val y = size.height * i / 4
                 val value = maxTemp - (tempRange * i / 4)
                 drawContext.canvas.nativeCanvas.drawText(
                     appPrefs.temperatureUnit.toString(context, appPrefs.temperatureUnit.fromCelsius(value), false),
-                    paddingLeft + chartDrawWidth,
+                    4.dp.toPx() + (size.width - 8.dp.toPx()),
                     y + 4.dp.toPx(),
                     Paint().apply {
                         color = textColor.hashCode()
@@ -503,86 +549,9 @@ fun TemperatureChart(
                     }
                 )
             }
-        }
-
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .horizontalScroll(horizontalScrollState)
-        ) {
-            Canvas(
-                modifier = Modifier
-                    .width(chartWidth)
-                    .height(chartHeightDp)
-            ) {
-                if (readings.size < 2) return@Canvas
-
-                val width = chartWidth.toPx()
-                val height = size.height
-                val paddingBottom = 30.dp.toPx()
-                val paddingTop = 8.dp.toPx()
-                val paddingRight = 8.dp.toPx()
-
-                val chartDrawWidth = width - paddingRight
-                val chartDrawHeight = height - paddingTop - paddingBottom
-
-                for (i in 0..4) {
-                    val y = paddingTop + (chartDrawHeight * i / 4)
-                    drawLine(
-                        color = gridColor,
-                        start = Offset(0f, y),
-                        end = Offset(width - paddingRight, y),
-                        strokeWidth = 1.dp.toPx()
-                    )
-                }
-
-                for (dayIndex in dayChanges) {
-                    val x = chartDrawWidth * dayIndex / (readings.size - 1).coerceAtLeast(1)
-                    drawLine(
-                        color = gridColor,
-                        start = Offset(x, paddingTop),
-                        end = Offset(x, paddingTop + chartDrawHeight),
-                        strokeWidth = 1.dp.toPx()
-                    )
-                    drawContext.canvas.nativeCanvas.drawText(
-                        formatDateLabel(readings[dayIndex].timestamp),
-                        x,
-                        height - 4.dp.toPx(),
-                        Paint().apply {
-                            color = textColor.hashCode()
-                            textSize = 9.sp.toPx()
-                            textAlign = Paint.Align.CENTER
-                        }
-                    )
-                }
-
-                val path = Path()
-                readings.forEachIndexed { index, reading ->
-                    val x = chartDrawWidth * index / (readings.size - 1).coerceAtLeast(1)
-                    val y = paddingTop + chartDrawHeight * (1f - (reading.temperatureCelsius - minTemp) / tempRange)
-
-                    if (index == 0) path.moveTo(x, y)
-                    else path.lineTo(x, y)
-                }
-
-                drawPath(
-                    path = path,
-                    color = lineColor,
-                    style = Stroke(width = 2.dp.toPx())
-                )
-            }
-        }
-    }
-
-    if (horizontalScrollState.maxValue > 0) {
-        Text(
-            text = stringResource(R.string.chart_scroll_hint),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-            textAlign = TextAlign.Center
-        )
-    }
+        },
+        yValue = { reading -> (reading.temperatureCelsius - minTemp) / tempRange }
+    )
 }
 
 @Composable
