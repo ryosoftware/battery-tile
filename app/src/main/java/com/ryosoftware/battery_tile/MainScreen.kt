@@ -297,7 +297,9 @@ fun SettingsSelector(
                             text = stringResource(R.string.permissions),
                             style = MaterialTheme.typography.titleLarge,
                         )
+
                         Spacer(Modifier.height(8.dp))
+
                         Button(
                             onClick = {
                                 val activity = context.findActivity()
@@ -310,6 +312,9 @@ fun SettingsSelector(
                                 text = stringResource(R.string.request_notification_permission)
                             )
                         }
+
+                        Spacer(Modifier.height(4.dp))
+
                         Button(
                             onClick = {
                                 @SuppressLint("BatteryLife")
@@ -323,6 +328,8 @@ fun SettingsSelector(
                             )
                         }
                         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                            Spacer(Modifier.height(4.dp))
+
                             Button(
                                 onClick = { context.requestPostExactAlarmPermission() },
                                 modifier = Modifier.fillMaxWidth(),
