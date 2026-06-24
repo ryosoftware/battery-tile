@@ -3,17 +3,26 @@ package com.ryosoftware.battery_tile
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.ServiceConnection
 import android.graphics.drawable.Icon
 import android.os.Build
+import android.os.Handler
+import android.os.IBinder
+import android.os.Looper
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.ryosoftware.battery_tile.WhatAppOpens.Companion.getIntent
 
 class BatteryTileService : TileService() {
-    private val REQUEST_CODE = 101
+    companion object {
+        private const val REQUEST_CODE = 101
+
+        private const val UPDATE_TILE_INTERVAL = 15_000L
+    }
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -29,8 +38,31 @@ class BatteryTileService : TileService() {
     }
 
     private val logger by lazy { Main.from(this).logger }
+
+    private val handler = Handler(Looper.getMainLooper())
+
+    private val updateTileTask by lazy {
+        RepeatingTask(handler, "Update Tile Task", logger) {
+            updateTile()
+        }
+    }
+
     private val prefs by lazy { BatteryTilePreferences(this) }
     private val appPrefs by lazy { AppPreferences(this) }
+
+    private var batteryService: IBatteryServiceData? = null
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+            batteryService = (binder as IBatteryServiceData)
+            logger.log("Tile bound to Notification Service")
+        }
+
+        override fun onServiceDisconnected(name: ComponentName) {
+            batteryService = null
+            logger.log("Tile unbound from Notification Service")
+        }
+    }
 
     override fun onStartListening() {
         logger.log("Tile Service start listening")
@@ -45,13 +77,21 @@ class BatteryTileService : TileService() {
             registerReceiver(receiver, filter)
         }
 
-        updateTile()
+        bindService(Intent(this, NotificationService::class.java), serviceConnection, Context.BIND_AUTO_CREATE)
+
+        updateTileTask.startRepeating(0L, UPDATE_TILE_INTERVAL)
+
     }
 
     override fun onStopListening() {
         logger.log("Tile Service stop listening")
 
         unregisterReceiver(receiver)
+
+        updateTileTask.stop()
+
+        unbindService(serviceConnection)
+        batteryService = null
 
         super.onStopListening()
     }
@@ -104,7 +144,13 @@ class BatteryTileService : TileService() {
         }
 
         val tile = qsTile ?: return
-        val batteryTileBatteryIntentHelper = BatteryTileBatteryIntentHelper(batteryIntent)
+
+        val batteryServiceDataSnapshot = batteryService?.getBatteryDataSnapshot()
+        val batteryTileBatteryIntentHelper = BatteryTileBatteryIntentHelper(batteryIntent,
+            batteryServiceDataSnapshot?.lastStatsResetTime ?: -1L,
+            batteryServiceDataSnapshot?.deepSleepTimeAtLastStatsReset ?: -1L,
+            batteryServiceDataSnapshot?.screenOnTimeSinceBoot ?: -1L,
+            batteryServiceDataSnapshot?.screenOnTimeSinceLastStatsReset ?: -1L)
         val (line1, line2) = buildText(batteryTileBatteryIntentHelper)
 
         tile.state = if (batteryTileBatteryIntentHelper.isCharging) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
@@ -112,6 +158,8 @@ class BatteryTileService : TileService() {
         tile.label = line1
         tile.subtitle = line2
         tile.updateTile()
+        logger.log("Tile has been updated")
+
     }
 
     private fun updateTile() {

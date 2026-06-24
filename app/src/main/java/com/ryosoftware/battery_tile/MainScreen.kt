@@ -181,7 +181,7 @@ fun SettingsSelector(
                         )
                         Text(
                             text = if (notificationEnabled) stringResource(R.string.notification_settings_body)
-                                   else stringResource(R.string.notification_settings_body) + "\n" + stringResource(R.string.requires_background_running_that_is_not_allowed),
+                                   else stringResource(R.string.notification_settings_body) + "\n" + stringResource(R.string.requires_background_running),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -199,7 +199,7 @@ fun SettingsSelector(
                         )
                         Text(
                             text = if (notificationEnabled) stringResource(R.string.shows_historical_data)
-                                   else stringResource(R.string.shows_historical_data) + "\n" + stringResource(R.string.requires_background_running_that_is_not_allowed),
+                                   else stringResource(R.string.shows_historical_data) + "\n" + stringResource(R.string.requires_background_running),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

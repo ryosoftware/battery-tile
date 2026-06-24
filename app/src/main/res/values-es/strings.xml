@@ -162,7 +162,7 @@
 
     <string name="label_and_value">%1$s: %2$s</string>
 
-    <string name="requires_background_running_that_is_not_allowed">¡Se requiere monitorización en segundo plano!</string>
+    <string name="requires_background_running">Se requiere monitorización en segundo plano</string>
 
     <string name="notification_settings_title">Ajustes de notificaciones</string>
     <string name="notification_settings_body">Configura las opciones de notificación y los datos que se muestran</string>

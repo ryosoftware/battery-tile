@@ -162,7 +162,7 @@
 
     <string name="label_and_value">%1$s: %2$s</string>
 
-    <string name="requires_background_running_that_is_not_allowed">Requires Background Monitoring!</string>
+    <string name="requires_background_running">Requires Background Monitoring</string>
 
     <string name="notification_settings_title">Notification Settings</string>
     <string name="notification_settings_body">Configure Notification Options and Data Displayed</string>

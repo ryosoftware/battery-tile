@@ -187,6 +187,7 @@ fun TileSettingsScreen(
 
                 FieldRow(
                     label = field.getLabel(context),
+                    requiresBackgroundService = field.requiresBackgroundService,
                     checked = visible,
                     line = line,
                     onCheckedChange = { newVisible ->
@@ -219,6 +220,7 @@ fun TileSettingsScreen(
 @Composable
 private fun FieldRow(
     label: String,
+    requiresBackgroundService: Boolean,
     checked: Boolean,
     line: Int,
     onCheckedChange: (Boolean) -> Unit,
@@ -228,19 +230,35 @@ private fun FieldRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                .clickable { onCheckedChange(!checked) },
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .clickable { onCheckedChange(!checked) }
         ) {
-            Checkbox(checked = checked, onCheckedChange = null)
+            Checkbox(
+                checked = checked,
+                onCheckedChange = null,
+                modifier = Modifier
+                    .align(Alignment.Top)
+                    .padding(top = 2.dp)
+            )
 
-            Text(
-                text = label,
+            Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 8.dp),
-                style = MaterialTheme.typography.bodyLarge
-            )
+                    .padding(start = 8.dp)
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+                if (requiresBackgroundService) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = stringResource(R.string.requires_background_running),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
         }
 
         if (checked) {

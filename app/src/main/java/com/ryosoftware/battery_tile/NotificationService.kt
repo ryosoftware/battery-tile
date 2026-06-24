@@ -56,6 +56,17 @@ data class ScreenOnFields(
     val sinceLastReset: Long
 )
 
+interface IBatteryServiceData {
+    data class BatteryServiceDataSnapshot(
+        val screenOnTimeSinceBoot: Long,
+        val screenOnTimeSinceLastStatsReset: Long,
+        val deepSleepTimeAtLastStatsReset: Long,
+        val lastStatsResetTime: Long
+    )
+
+    fun getBatteryDataSnapshot(): BatteryServiceDataSnapshot
+}
+
 class NotificationService : Service() {
     companion object {
         const val CHANNEL_ID = "background-service"
@@ -291,6 +302,19 @@ class NotificationService : Service() {
 
     private var healthNotificationShown = false
 
+    private val binder = object : android.os.Binder(), IBatteryServiceData {
+        override fun getBatteryDataSnapshot(): IBatteryServiceData.BatteryServiceDataSnapshot {
+            return IBatteryServiceData.BatteryServiceDataSnapshot(
+                screenOnTimeSinceBoot = if (this@NotificationService.screenOnTimeSinceBootIsValid) this@NotificationService.screenOnTimeSinceBoot else -1L,
+                screenOnTimeSinceLastStatsReset = this@NotificationService.screenOnTimeSinceLastStatsReset,
+                deepSleepTimeAtLastStatsReset = this@NotificationService.deepSleepTimeAtLastStatsReset,
+                lastStatsResetTime = this@NotificationService.lastStatsResetTime
+            )
+        }
+    }
+
+    override fun onBind(intent: Intent): IBinder = binder
+
     override fun onCreate() {
         super.onCreate()
 
@@ -341,8 +365,6 @@ class NotificationService : Service() {
 
         super.onDestroy()
     }
-
-    override fun onBind(p0: Intent?): IBinder? = null
 
     private fun loadPersistedDataOrReset() {
         val now = System.currentTimeMillis()

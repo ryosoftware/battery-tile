@@ -19,7 +19,7 @@
 
     <!-- What element shows Tile Icon by default
 
-        You can use: battery-level, battery-level-icon, battery-status, battery-temperature and cpu-deep-sleep-percent-since-boot
+        You can use: battery-level, battery-level-icon, battery-status and battery-temperature
     -->
 
     <string name="tile_icon_default">battery-level</string>
@@ -45,8 +45,8 @@
 
     <string-array name="status_data_for_tile_default">
         <item>2</item>
-        <item>1</item>
-        <item>false</item>
+        <item>2</item>
+        <item>true</item>
     </string-array>
 
     <string-array name="temperature_data_for_tile_default">
@@ -57,7 +57,7 @@
 
     <string-array name="voltage_data_for_tile_default">
         <item>4</item>
-        <item>2</item>
+        <item>1</item>
         <item>false</item>
     </string-array>
 
@@ -70,13 +70,31 @@
     <string-array name="cycles_count_data_for_tile_default">
         <item>6</item>
         <item>2</item>
-        <item>true</item>
+        <item>false</item>
     </string-array>
 
-    <string-array name="deep_sleep_data_for_tile_default">
+    <string-array name="deep_sleep_percent_since_boot_data_for_tile_default">
         <item>7</item>
-        <item>1</item>
-        <item>true</item>
+        <item>2</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="deep_sleep_percent_since_last_stats_reset_data_for_tile_default">
+        <item>8</item>
+        <item>2</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="screen_on_percent_since_boot_data_for_tile_default">
+        <item>9</item>
+        <item>2</item>
+        <item>false</item>
+    </string-array>
+
+    <string-array name="screen_on_percent_since_last_stats_reset_data_for_tile_default">
+        <item>10</item>
+        <item>2</item>
+        <item>false</item>
     </string-array>
 
     <!-- Notifications enabled or disabled -->
