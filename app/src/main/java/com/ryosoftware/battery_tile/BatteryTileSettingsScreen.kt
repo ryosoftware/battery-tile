@@ -79,7 +79,7 @@ fun TileSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.tile_settings)) },
+                title = { Text(stringResource(R.string.tile_settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(

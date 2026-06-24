@@ -15,7 +15,8 @@ import com.ryosoftware.battery_tile.AlarmsReceiver.Tags.Companion.getPendingInte
 class AlarmsReceiver : BroadcastReceiver() {
     enum class Tags(val key: String, val requestCode: Int, val label: String) {
         NOTIFICATION_SERVICE_PERSIST_DATA("NOTIFICATION-SERVICE-PERSIST-DATA", 1001, "persist data at Notification Service"),
-        NOTIFICATION_SERVICE_UPDATE_CHARGED_NOTIFICATION("NOTIFICATION-SERVICE-UPDATE-CHARGED-NOTIFICATION", 1002,"repost Charged Notification at Notification Service");
+        NOTIFICATION_SERVICE_UPDATE_CHARGED_NOTIFICATION("NOTIFICATION-SERVICE-UPDATE-CHARGED-NOTIFICATION", 1002,"repost Charged Notification at Notification Service"),
+        NOTIFICATION_SERVICE_UPDATE_BATTERY_LOW_NOTIFICATION("NOTIFICATION-SERVICE-UPDATE-BATTERY-LOW-NOTIFICATION", 1003,"repost Battery Low Notification at Notification Service");
 
         companion object {
             private val map = entries.associateBy { it.key.uppercase() }
@@ -33,6 +34,11 @@ class AlarmsReceiver : BroadcastReceiver() {
                         NotificationService.runOrStop(
                             context,
                             NotificationService.ACTION_UPDATE_CHARGED_NOTIFICATION_ALARM
+                        )
+                    NOTIFICATION_SERVICE_UPDATE_BATTERY_LOW_NOTIFICATION ->
+                        NotificationService.runOrStop(
+                            context,
+                            NotificationService.ACTION_UPDATE_BATTERY_LOW_NOTIFICATION_ALARM
                         )
                 }
 

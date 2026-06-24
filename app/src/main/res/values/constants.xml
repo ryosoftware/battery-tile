@@ -89,6 +89,11 @@
     <integer name="battery_charged_delay_default">10</integer>
     <integer name="battery_charged_repeat_interval_default">5</integer>
 
+    <!-- Battery Discharged percent and repeat interval -->
+
+    <integer name="battery_low_charge_percent_default">20</integer>
+    <integer name="battery_low_charge_repeat_interval_default">10</integer>
+
     <!-- Block disconnect notification when battery is charged -->
 
     <bool name="block_power_disconnect_notification_when_battery_is_charged_default">true</bool>

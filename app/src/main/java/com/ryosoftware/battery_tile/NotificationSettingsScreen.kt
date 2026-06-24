@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
@@ -44,22 +43,17 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Checkbox
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import java.util.Date
 import kotlin.math.roundToInt
 import android.content.IntentFilter
-import com.ryosoftware.battery_tile.Main.Companion.hasPostNotificationsPermission
 import com.ryosoftware.battery_tile.NotificationBatteryIntentHelper.NotificationField.Companion.getLabel
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
@@ -76,7 +70,7 @@ data class PrintableLastResetStatsData(
 private fun InfoCard(
     title: String,
     body: String,
-    enabled: Boolean
+    enabled: Boolean = true
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -108,10 +102,11 @@ fun NotificationSettingsScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    var notificationEnabled by remember { mutableStateOf(notifPrefs.isNotificationEnabled) }
     var chargedPercent by remember { mutableIntStateOf(notifPrefs.notificationChargedPercent) }
     var chargedInterval by remember { mutableIntStateOf(notifPrefs.notificationChargedInterval) }
-    var repeatInterval by remember { mutableIntStateOf(notifPrefs.notificationChargedRepeatInterval) }
+    var chargedRepeatInterval by remember { mutableIntStateOf(notifPrefs.notificationChargedRepeatInterval) }
+    var lowChargePercent by remember { mutableIntStateOf(notifPrefs.notificationLowChargePercent) }
+    var lowChargeRepeatInterval by remember { mutableIntStateOf(notifPrefs.notificationLowChargeRepeatInterval) }
     var resetThreshold by remember { mutableIntStateOf(notifPrefs.resetStatsBatteryThresholdPercent) }
     var resetChargeTime by remember { mutableIntStateOf(notifPrefs.resetStatsBatteryChargeTime) }
     var autoResetEnabled by remember { mutableStateOf(notifPrefs.isAutoResetStatsEnabled) }
@@ -136,10 +131,6 @@ fun NotificationSettingsScreen(
         fields.sortWith(compareBy<NotificationBatteryIntentHelper.NotificationField> { !notifPrefs.isFieldVisible(it) }.thenBy { notifPrefs.getFieldPosition(it) })
     }
 
-    val hasNotificationPermission = remember { mutableStateOf(context.hasPostNotificationsPermission()) }
-
-    val notifPermissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) { granted -> hasNotificationPermission.value = granted }
-
     @SuppressLint("LocalContextGetResourceValueCall")
     fun readLastResetInfo(): PrintableLastResetStatsData {
         val persistentData = NotificationService.getPersistentDataPreferences(context)
@@ -154,7 +145,7 @@ fun NotificationSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.notification_settings)) },
+                title = { Text(stringResource(R.string.notification_settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -180,8 +171,6 @@ fun NotificationSettingsScreen(
             item {
                 Spacer(Modifier.height(16.dp))
 
-                val serviceRunning by NotificationService.isRunning.collectAsState()
-
                 var lastResetInfo by remember { mutableStateOf(readLastResetInfo()) }
 
                 DisposableEffect(Unit) {
@@ -200,63 +189,9 @@ fun NotificationSettingsScreen(
                     onDispose { context.unregisterReceiver(receiver) }
                 }
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .clickable {
-                            notificationEnabled = !notificationEnabled
-                            notifPrefs.isNotificationEnabled = notificationEnabled
-                            if (notificationEnabled && !hasNotificationPermission.value) {
-                                @SuppressLint("InlinedApi")
-                                notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            }
-                            NotificationService.runOrStop(context)
-                        },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.allow_background_service_execution),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            text = if (notificationEnabled && serviceRunning) stringResource(R.string.service_enabled_and_running)
-                                   else if (notificationEnabled) stringResource(R.string.service_enabled_but_not_running)
-                                   else stringResource(R.string.service_not_allowed),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (notificationEnabled && serviceRunning) MaterialTheme.colorScheme.primary
-                                    else if (notificationEnabled) MaterialTheme.colorScheme.error
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = notificationEnabled,
-                        onCheckedChange = null
-                    )
-                }
-
-                Button(
-                    onClick = {
-                        @SuppressLint("InlinedApi")
-                        notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = notificationEnabled && !hasNotificationPermission.value
-                ) {
-                    Text(
-                        text = stringResource(R.string.request_notification_permission)
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
-
                 InfoCard(
                     title = stringResource(R.string.battery_charged_section_title),
-                    body = stringResource(R.string.battery_charged_section_body),
-                    enabled = notificationEnabled
+                    body = stringResource(R.string.battery_charged_section_body)
                 )
 
                 Spacer(Modifier.height(12.dp))
@@ -264,8 +199,7 @@ fun NotificationSettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .then(if (!notificationEnabled) Modifier.alpha(0.4f) else Modifier),
+                        .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -281,11 +215,11 @@ fun NotificationSettingsScreen(
                     )
                 }
 
-                val chargePercentMin = 70f
-                val chargePercentMax = 100f
-                val chargePercentSteps = (chargePercentMax - chargePercentMin).toInt() - 1
+                val chargedPercentMin = 70f
+                val chargedPercentMax = 100f
+                val chargedPercentSteps = (chargedPercentMax - chargedPercentMin).toInt() - 1
 
-                chargedPercent = chargedPercent.coerceIn(chargePercentMin.toInt(), chargePercentMax.toInt())
+                chargedPercent = chargedPercent.coerceIn(chargedPercentMin.toInt(), chargedPercentMax.toInt())
 
                 Slider(
                     value = chargedPercent.toFloat(),
@@ -293,9 +227,8 @@ fun NotificationSettingsScreen(
                     onValueChangeFinished = {
                         notifPrefs.notificationChargedPercent = chargedPercent
                     },
-                    valueRange = chargePercentMin..chargePercentMax,
-                    steps = chargePercentSteps,
-                    enabled = notificationEnabled
+                    valueRange = chargedPercentMin..chargedPercentMax,
+                    steps = chargedPercentSteps
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -303,8 +236,7 @@ fun NotificationSettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .then(if (!notificationEnabled) Modifier.alpha(0.4f) else Modifier),
+                        .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -334,7 +266,6 @@ fun NotificationSettingsScreen(
                     },
                     valueRange = chargedIntervalMin..chargedIntervalMax,
                     steps = chargedIntervalSteps,
-                    enabled = notificationEnabled
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -342,8 +273,7 @@ fun NotificationSettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .then(if (!notificationEnabled) Modifier.alpha(0.4f) else Modifier),
+                        .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -352,36 +282,115 @@ fun NotificationSettingsScreen(
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
-                        text = if (repeatInterval == 0) stringResource(R.string.off) else stringResource(R.string.minutes, repeatInterval),
+                        text = if (chargedRepeatInterval == 0) stringResource(R.string.off) else stringResource(R.string.minutes, chargedRepeatInterval),
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.End,
                         modifier = Modifier.width(96.dp)
                     )
                 }
 
-                val repeatIntervalMin = 0f
-                val repeatIntervalMax = 10f
-                val repeatIntervalSteps = (repeatIntervalMax - repeatIntervalMin).toInt() - 1
+                val chargedRepeatIntervalMin = 0f
+                val chargedRepeatIntervalMax = 10f
+                val chargedRepeatIntervalSteps = (chargedRepeatIntervalMax - chargedRepeatIntervalMin).toInt() - 1
 
-                repeatInterval = repeatInterval.coerceIn(repeatIntervalMin.toInt(), repeatIntervalMax.toInt())
+                chargedRepeatInterval = chargedRepeatInterval.coerceIn(chargedRepeatIntervalMin.toInt(), chargedRepeatIntervalMax.toInt())
 
                 Slider(
-                    value = repeatInterval.toFloat(),
-                    onValueChange = { repeatInterval = it.roundToInt() },
+                    value = chargedRepeatInterval.toFloat(),
+                    onValueChange = { chargedRepeatInterval = it.roundToInt() },
                     onValueChangeFinished = {
-                        notifPrefs.notificationChargedRepeatInterval = repeatInterval
+                        notifPrefs.notificationChargedRepeatInterval = chargedRepeatInterval
                     },
-                    valueRange = repeatIntervalMin..repeatIntervalMax,
-                    steps = repeatIntervalSteps,
-                    enabled = notificationEnabled
+                    valueRange = chargedRepeatIntervalMin..chargedRepeatIntervalMax,
+                    steps = chargedRepeatIntervalSteps
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                InfoCard(
+                    title = stringResource(R.string.battery_low_section_title),
+                    body = stringResource(R.string.battery_low_section_body)
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.battery_low_threshold),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = stringResource(R.string.percent_value_integer, lowChargePercent),
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.width(96.dp)
+                    )
+                }
+
+                val lowChargePercentMin = 5f
+                val lowChargePercentMax = 35f
+                val lowChargePercentSteps = (lowChargePercentMax - lowChargePercentMin).toInt() - 1
+
+                lowChargePercent = lowChargePercent.coerceIn(lowChargePercentMin.toInt(), lowChargePercentMax.toInt())
+
+                Slider(
+                    value = lowChargePercent.toFloat(),
+                    onValueChange = { lowChargePercent = it.roundToInt() },
+                    onValueChangeFinished = {
+                        notifPrefs.notificationLowChargePercent = lowChargePercent
+                    },
+                    valueRange = lowChargePercentMin..lowChargePercentMax,
+                    steps = lowChargePercentSteps
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.battery_low_repeat_interval),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = if (lowChargeRepeatInterval == 0) stringResource(R.string.off) else stringResource(R.string.minutes, lowChargeRepeatInterval),
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.width(96.dp)
+                    )
+                }
+
+                val lowChargeRepeatIntervalMin = 0f
+                val lowChargeRepeatIntervalMax = 10f
+                val lowChargeRepeatIntervalSteps = (lowChargeRepeatIntervalMax - lowChargeRepeatIntervalMin).toInt() - 1
+
+                lowChargeRepeatInterval = lowChargeRepeatInterval.coerceIn(lowChargeRepeatIntervalMin.toInt(), lowChargeRepeatIntervalMax.toInt())
+
+                Slider(
+                    value = lowChargeRepeatInterval.toFloat(),
+                    onValueChange = { lowChargeRepeatInterval = it.roundToInt() },
+                    onValueChangeFinished = {
+                        notifPrefs.notificationLowChargeRepeatInterval = lowChargeRepeatInterval
+                    },
+                    valueRange = lowChargeRepeatIntervalMin..lowChargeRepeatIntervalMax,
+                    steps = lowChargeRepeatIntervalSteps
                 )
 
                 Spacer(Modifier.height(12.dp))
 
                 InfoCard(
                     title = stringResource(R.string.power_connected_or_disconnected_section_title),
-                    body = stringResource(R.string.power_connected_or_disconnected_section_body),
-                    enabled = notificationEnabled
+                    body = stringResource(R.string.power_connected_or_disconnected_section_body)
                 )
 
                 Spacer(Modifier.height(12.dp))
@@ -390,8 +399,7 @@ fun NotificationSettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 2.dp)
-                        .then(if (!notificationEnabled) Modifier.alpha(0.4f) else Modifier)
-                        .clickable(enabled = notificationEnabled) {
+                        .clickable() {
                             disallowDischargingNotification = !disallowDischargingNotification
                             notifPrefs.isBlockingPowerDisconnectNotificationWhenBatteryIsCharged = disallowDischargingNotification
                         },
@@ -404,8 +412,7 @@ fun NotificationSettingsScreen(
                     )
                     Switch(
                         checked = disallowDischargingNotification,
-                        onCheckedChange = null,
-                        enabled = notificationEnabled
+                        onCheckedChange = null
                     )
                 }
 
@@ -413,8 +420,7 @@ fun NotificationSettingsScreen(
 
                 InfoCard(
                     title = stringResource(R.string.battery_temperature_section_title),
-                    body = stringResource(R.string.battery_temperature_section_body),
-                    enabled = notificationEnabled
+                    body = stringResource(R.string.battery_temperature_section_body)
                 )
 
                 Spacer(Modifier.height(12.dp))
@@ -422,8 +428,7 @@ fun NotificationSettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .then(if (!notificationEnabled) Modifier.alpha(0.4f) else Modifier),
+                        .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -452,8 +457,7 @@ fun NotificationSettingsScreen(
                         notifPrefs.setBatteryTemperatureThreshold(tempThreshold, tempUnit)
                     },
                     valueRange = tempThresholdMin..tempThresholdMax,
-                    steps = tempThresholdSteps,
-                    enabled = notificationEnabled
+                    steps = tempThresholdSteps
                 )
 
                 Spacer(Modifier.height(12.dp))
@@ -461,7 +465,7 @@ fun NotificationSettingsScreen(
                 InfoCard(
                     title = stringResource(R.string.stats_reset_threshold_section_title),
                     body = stringResource(R.string.stats_reset_threshold_section_body),
-                    enabled = notificationEnabled && autoResetEnabled
+                    enabled = autoResetEnabled
                 )
 
                 Spacer(Modifier.height(12.dp))
@@ -470,8 +474,7 @@ fun NotificationSettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 2.dp)
-                        .then(if (!notificationEnabled) Modifier.alpha(0.4f) else Modifier)
-                        .clickable(enabled = notificationEnabled) {
+                        .clickable() {
                             autoResetEnabled = !autoResetEnabled
                             notifPrefs.isAutoResetStatsEnabled = autoResetEnabled
                         },
@@ -485,7 +488,6 @@ fun NotificationSettingsScreen(
                     Switch(
                         checked = autoResetEnabled,
                         onCheckedChange = null,
-                        enabled = notificationEnabled
                     )
                 }
 
@@ -495,7 +497,7 @@ fun NotificationSettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 2.dp)
-                        .then(if ((!notificationEnabled) || (!autoResetEnabled)) Modifier.alpha(0.4f) else Modifier),
+                        .then(if (!autoResetEnabled) Modifier.alpha(0.4f) else Modifier),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -525,7 +527,7 @@ fun NotificationSettingsScreen(
                     },
                     valueRange = resetThresholdMin..resetThresholdMax,
                     steps = resetThresholdSteps,
-                    enabled = notificationEnabled && autoResetEnabled
+                    enabled = autoResetEnabled
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -534,7 +536,7 @@ fun NotificationSettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 2.dp)
-                        .then(if ((!notificationEnabled) || (!autoResetEnabled)) Modifier.alpha(0.4f) else Modifier),
+                        .then(if (!autoResetEnabled) Modifier.alpha(0.4f) else Modifier),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -564,15 +566,14 @@ fun NotificationSettingsScreen(
                     },
                     valueRange = resetChargeTimeMin..resetChargeTimeMax,
                     steps = resetChargeTimeSteps,
-                    enabled = notificationEnabled && autoResetEnabled
+                    enabled = autoResetEnabled
                 )
 
                 Spacer(Modifier.height(8.dp))
 
                 Button(
                     onClick = { showResetDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = notificationEnabled
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(stringResource(R.string.reset_stats_now))
                 }
@@ -626,8 +627,7 @@ fun NotificationSettingsScreen(
 
                 InfoCard(
                     title = stringResource(R.string.notification_fields_section_title),
-                    body = stringResource(R.string.notification_fields_section_body, stringResource(R.string.since_boot), stringResource(R.string.since_last_stats_reset), lastStatsResetString),
-                    enabled = notificationEnabled
+                    body = stringResource(R.string.notification_fields_section_body, stringResource(R.string.since_boot), stringResource(R.string.since_last_stats_reset), lastStatsResetString)
                 )
 
                 Spacer(Modifier.height(12.dp))
@@ -638,7 +638,6 @@ fun NotificationSettingsScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .then(if (!notificationEnabled) Modifier.alpha(0.4f) else Modifier)
                     ) {
                         val batteryLevelIsLastVisible = field == NotificationBatteryIntentHelper.NotificationField.BATTERY_LEVEL &&
                             fields.all { it == field || !(fieldVisibility[it] ?: false) }
@@ -647,7 +646,7 @@ fun NotificationSettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                                .clickable(enabled = notificationEnabled && !batteryLevelIsLastVisible) {
+                                .clickable(enabled = !batteryLevelIsLastVisible) {
                                     val newVisible = !(fieldVisibility[field] ?: false)
                                     if (!newVisible && field != NotificationBatteryIntentHelper.NotificationField.BATTERY_LEVEL) {
                                         val allOthersHidden = fields.all {
@@ -676,7 +675,7 @@ fun NotificationSettingsScreen(
                             Checkbox(
                                 checked = fieldVisibility[field] ?: false,
                                 onCheckedChange = null,
-                                enabled = notificationEnabled && !batteryLevelIsLastVisible
+                                enabled = !batteryLevelIsLastVisible
                             )
 
                             Text(

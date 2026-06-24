@@ -1,13 +1,8 @@
 package com.ryosoftware.battery_tile
 
-import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
-import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -17,7 +12,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -26,16 +20,18 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
-import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.ryosoftware.battery_tile.Main.Companion.hasBatteryOptimizationPermission
+import com.ryosoftware.battery_tile.Main.Companion.hasBatteryOptimizationBypassPermission
 import com.ryosoftware.battery_tile.Main.Companion.hasPostNotificationsPermission
-import com.ryosoftware.battery_tile.Main.Companion.requestBatteryOptimizationPermission
+import com.ryosoftware.battery_tile.Main.Companion.requestBypassBatteryOptimizationPermission
 import com.ryosoftware.battery_tile.Main.Companion.requestPostNotificationsPermission
 
 class MainActivity : ComponentActivity() {
 
     private enum class Screen { Main, Selector, TileSettings, NotificationSettings, DebugLog, BatteryInfo, BatteryHistory }
+
+    private var postNotificationsPermissionRequested = false
+    private var batteryOptimizationsBypassPermissionRequested = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -143,9 +139,15 @@ class MainActivity : ComponentActivity() {
         val willRun = prefs.isNotificationEnabled
 
         if (willRun) {
-            if (!hasPostNotificationsPermission()) requestPostNotificationsPermission( 0)
+            if ((!postNotificationsPermissionRequested) && (!hasPostNotificationsPermission())) {
+                postNotificationsPermissionRequested = true
+                requestPostNotificationsPermission()
+            }
 
-            if (!hasBatteryOptimizationPermission()) requestBatteryOptimizationPermission()
+            if ((!batteryOptimizationsBypassPermissionRequested) && (!hasBatteryOptimizationBypassPermission())) {
+                batteryOptimizationsBypassPermissionRequested = true
+                requestBypassBatteryOptimizationPermission()
+            }
         }
 
         NotificationService.runOrStop(this)

@@ -14,5 +14,6 @@ data class ChargingSession(
     val durationMinutes: Long?,
     val avgTemperatureCelsius: Float?,
     val maxTemperatureCelsius: Float?,
-    val minTemperatureCelsius: Float?
+    val minTemperatureCelsius: Float?,
+    val chargedTimeStamp: Long?
 )

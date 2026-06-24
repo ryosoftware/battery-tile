@@ -62,6 +62,7 @@ class NotificationService : Service() {
         const val POWER_CONNECTED_CHANNEL_ID = "power-connected"
         const val POWER_DISCONNECTED_CHANNEL_ID = "power-disconnected"
         const val BATTERY_CHARGED_CHANNEL_ID = "battery-charged"
+        const val BATTERY_LOW_CHANNEL_ID = "battery-discharged"
         const val BATTERY_TEMPERATURE_WARNING_CHANNEL_ID = "battery-temperature-warning"
 
         const val BATTERY_HEALTH_WARNING_CHANNEL_ID = "battery-health-warning"
@@ -69,15 +70,18 @@ class NotificationService : Service() {
         private const val POWER_CONNECTED_NOTIFICATION_ID = NOTIFICATION_ID + 1
         private const val POWER_DISCONNECTED_NOTIFICATION_ID = POWER_CONNECTED_NOTIFICATION_ID + 1
         private const val CHARGED_NOTIFICATION_ID = POWER_DISCONNECTED_NOTIFICATION_ID + 1
-        private const val TEMPERATURE_WARNING_NOTIFICATION_ID = CHARGED_NOTIFICATION_ID + 1
+        private const val LOW_CHARGE_NOTIFICATION_ID = CHARGED_NOTIFICATION_ID + 1
+        private const val TEMPERATURE_WARNING_NOTIFICATION_ID = LOW_CHARGE_NOTIFICATION_ID + 1
         private const val HEALTH_WARNING_NOTIFICATION_ID = TEMPERATURE_WARNING_NOTIFICATION_ID + 1
 
         private const val NOTIFICATION_CLICK_REQUEST_CODE = 1
         private const val POWER_CONNECTED_NOTIFICATION_CLICK_REQUEST_CODE = NOTIFICATION_CLICK_REQUEST_CODE + 1
         private const val POWER_DISCONNECTED_NOTIFICATION_CLICK_REQUEST_CODE = POWER_CONNECTED_NOTIFICATION_CLICK_REQUEST_CODE + 1
         private const val CHARGED_NOTIFICATION_CLICK_REQUEST_CODE = POWER_DISCONNECTED_NOTIFICATION_CLICK_REQUEST_CODE + 1
-        private const val CHARGED_NOTIFICATION_DELETE_REQUEST_CODE = CHARGED_NOTIFICATION_CLICK_REQUEST_CODE + 1
-        private const val TEMPERATURE_WARNING_NOTIFICATION_CLICK_REQUEST_CODE = CHARGED_NOTIFICATION_DELETE_REQUEST_CODE + 1
+        private const val LOW_CHARGE_NOTIFICATION_CLICK_REQUEST_CODE = CHARGED_NOTIFICATION_CLICK_REQUEST_CODE + 1
+        private const val CHARGED_NOTIFICATION_DELETE_REQUEST_CODE = LOW_CHARGE_NOTIFICATION_CLICK_REQUEST_CODE + 1
+        private const val LOW_CHARGE_NOTIFICATION_DELETE_REQUEST_CODE = CHARGED_NOTIFICATION_DELETE_REQUEST_CODE + 1
+        private const val TEMPERATURE_WARNING_NOTIFICATION_CLICK_REQUEST_CODE = LOW_CHARGE_NOTIFICATION_DELETE_REQUEST_CODE + 1
         private const val TEMPERATURE_WARNING_NOTIFICATION_DELETE_REQUEST_CODE = TEMPERATURE_WARNING_NOTIFICATION_CLICK_REQUEST_CODE + 1
 
         private const val HEALTH_WARNING_NOTIFICATION_CLICK_REQUEST_CODE = TEMPERATURE_WARNING_NOTIFICATION_DELETE_REQUEST_CODE + 1
@@ -98,8 +102,10 @@ class NotificationService : Service() {
         const val ACTION_RESET_STATS = "${BuildConfig.APPLICATION_ID}.RESET_STATS"
         const val EXTRA_REASON = "reason"
         const val ACTION_UPDATE_CHARGED_NOTIFICATION_ALARM = "${BuildConfig.APPLICATION_ID}.UPDATE_CHARGED_NOTIFICATION_ALARM"
+        const val ACTION_UPDATE_BATTERY_LOW_NOTIFICATION_ALARM = "${BuildConfig.APPLICATION_ID}.UPDATE_BATTERY_LOW_NOTIFICATION_ALARM"
         const val ACTION_PERSIST_DATA_ALARM = "${BuildConfig.APPLICATION_ID}.ACTION_PERSIST_DATA_ALARM"
         private const val ACTION_CHARGED_NOTIFICATION_DELETED = "${BuildConfig.APPLICATION_ID}.CHARGED_NOTIFICATION_DELETED"
+        private const val ACTION_LOW_CHARGE_NOTIFICATION_DELETED = "${BuildConfig.APPLICATION_ID}.LOW_CHARGE_NOTIFICATION_DELETED"
         private const val ACTION_TEMPERATURE_NOTIFICATION_DELETED = "${BuildConfig.APPLICATION_ID}.TEMPERATURE_NOTIFICATION_DELETED"
         private const val EXTRA_TEMPERATURE = "temperature"
         private const val SAVE_READINGS_BATTERY_LEVEL_THRESHOLD = 1
@@ -201,6 +207,9 @@ class NotificationService : Service() {
                 ACTION_CHARGED_NOTIFICATION_DELETED -> {
                     onChargedNotificationDeleted()
                 }
+                ACTION_LOW_CHARGE_NOTIFICATION_DELETED -> {
+                    onBatteryLowChargedNotificationDeleted()
+                }
                 ACTION_TEMPERATURE_NOTIFICATION_DELETED -> {
                     onTemperatureNotificationDeleted(intent)
                 }
@@ -269,10 +278,14 @@ class NotificationService : Service() {
 
     private var batteryCharged = false
 
+    private var batteryLow = false
+
     private var batteryTemperatureNotifiedLevel = -1f
     private var batteryTemperatureNotificationDeletionLevel = -1
 
     private var lastSavedBatteryLevel = -1
+
+    private var lastSavedBatteryFullCharged = false
     private var lastSavedTemperature = -1f
     private var lastSavedIsCharging = false
 
@@ -293,6 +306,7 @@ class NotificationService : Service() {
             addAction(Intent.ACTION_BATTERY_CHANGED)
             addAction(ACTION_RESET_STATS)
             addAction(ACTION_CHARGED_NOTIFICATION_DELETED)
+            addAction(ACTION_LOW_CHARGE_NOTIFICATION_DELETED)
             addAction(ACTION_TEMPERATURE_NOTIFICATION_DELETED)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -320,6 +334,8 @@ class NotificationService : Service() {
         onScreenTurnedOff()
 
         hideChargedNotification()
+
+        hideBatteryLowChargedNotification()
 
         hideTemperatureNotification()
 
@@ -423,7 +439,8 @@ class NotificationService : Service() {
             if (!serviceInitialized) initializeService()
             persistData()
 
-            if (action == ACTION_UPDATE_CHARGED_NOTIFICATION_ALARM) onChargedNotificationAlarmWillBePosted()
+            if (action == ACTION_UPDATE_CHARGED_NOTIFICATION_ALARM) showOrHideChargedNotification()
+            else if (action == ACTION_UPDATE_BATTERY_LOW_NOTIFICATION_ALARM) showOrHideBatteryLowChargedNotification()
 
             AlarmsReceiver.start(
                 this,
@@ -484,6 +501,8 @@ class NotificationService : Service() {
         persistData()
 
         showPowerConnectedNotification(batteryIntentHelper)
+
+        hideBatteryLowChargedNotification()
     }
 
     private fun onPowerDisconnected() {
@@ -525,6 +544,13 @@ class NotificationService : Service() {
         return isCharging && (isFullCharged || (level >= prefs.notificationChargedPercent))
     }
 
+    private fun isBatteryLow(batteryIntentHelper: BatteryIntentHelper): Boolean {
+        val isCharging = batteryIntentHelper.isCharging
+        val level = batteryIntentHelper.level
+
+        return (!isCharging) && (level <= prefs.notificationLowChargePercent)
+    }
+
     private fun onBatteryChanged(intent: Intent) {
         val batteryIntentHelper = BatteryIntentHelper(intent)
 
@@ -543,6 +569,14 @@ class NotificationService : Service() {
 
             val batteryChargedNotificationInterval = prefs.notificationChargedInterval * 60_000L
             scheduleChargedNotificationAlarm(batteryChargedNotificationInterval)
+        }
+
+        if ((!batteryLow) && isBatteryLow(batteryIntentHelper)) {
+            logger.log("Battery low notification will be shown")
+
+            batteryLow = true
+
+            showOrHideBatteryLowChargedNotification()
         }
 
         val temperatureThreshold = prefs.getBatteryTemperatureThreshold(TemperatureUnit.CELSIUS)
@@ -583,22 +617,17 @@ class NotificationService : Service() {
         val level = batteryIntentHelper.level
         val temperature = batteryIntentHelper.temperatureCelsius
         val isCharging = batteryIntentHelper.isCharging
+        val isFullCharged = batteryIntentHelper.isFullCharged
 
-        val levelChanged = if (lastSavedBatteryLevel < 0) {
-            level >= 0
-        } else {
-            abs(level - lastSavedBatteryLevel) >= SAVE_READINGS_BATTERY_LEVEL_THRESHOLD
-        }
-        val tempChanged = if (lastSavedTemperature < 0f) {
-            temperature >= 0f
-        } else {
-            abs(temperature - lastSavedTemperature) >= SAVE_READINGS_BATTERY_TEMPERATURE_THRESHOLD
-        }
+        val levelChanged = if (lastSavedBatteryLevel < 0) { level >= 0 } else { abs(level - lastSavedBatteryLevel) >= SAVE_READINGS_BATTERY_LEVEL_THRESHOLD }
+        val fullChargedChanged = lastSavedBatteryFullCharged != isFullCharged
+        val tempChanged = if (lastSavedTemperature < 0f) { temperature >= 0f } else { abs(temperature - lastSavedTemperature) >= SAVE_READINGS_BATTERY_TEMPERATURE_THRESHOLD }
         val chargingChanged = isCharging != lastSavedIsCharging
 
-        if ((!levelChanged) && (!tempChanged) && (!chargingChanged)) return
+        if ((!levelChanged) && (!fullChargedChanged) && (!tempChanged) && (!chargingChanged)) return
 
         lastSavedBatteryLevel = level
+        lastSavedBatteryFullCharged = isFullCharged
         lastSavedTemperature = temperature
         lastSavedIsCharging = isCharging
 
@@ -622,9 +651,19 @@ class NotificationService : Service() {
 
                 logger.log("Battery reading stored at DB")
 
+                var currentChargeSession: ChargingSession? = null
+
+                if (isFullCharged) {
+                    currentChargeSession = repository.getOpenChargingSession()
+                    if (currentChargeSession != null && currentChargeSession.chargedTimeStamp == null) {
+                        repository.updateChargingSession(currentChargeSession.copy(chargedTimeStamp = now))
+                        logger.log("Battery full Charged timestamp recorded at DB")
+                    }
+                }
+
                 if (chargingChanged) {
                     if (isCharging) {
-                        val session = ChargingSession(
+                        val chargeSession = ChargingSession(
                             startTime = now,
                             endTime = null,
                             startLevel = level,
@@ -633,22 +672,24 @@ class NotificationService : Service() {
                             durationMinutes = null,
                             avgTemperatureCelsius = null,
                             maxTemperatureCelsius = null,
-                            minTemperatureCelsius = null
+                            minTemperatureCelsius = null,
+                            chargedTimeStamp = null
                         )
-                        repository.insertChargingSession(session)
+                        repository.insertChargingSession(chargeSession)
                         logger.log("Charging session start stored at DB")
                     } else {
-                        val openSession = repository.getOpenChargingSession()
-                        if (openSession != null) {
-                            val readings = repository.getBatteryReadingsBetween(openSession.startTime, now)
+                        currentChargeSession = currentChargeSession ?: repository.getOpenChargingSession()
+
+                        if (currentChargeSession != null) {
+                            val readings = repository.getBatteryReadingsBetween(currentChargeSession.startTime, now)
                             val temps = readings.map { it.temperatureCelsius }.filter { it >= 0f }
-                            val durationMs = now - openSession.startTime
+                            val durationMs = now - currentChargeSession.startTime
 
                             if (durationMs > batteryReadingsHistoryWindowInMillis) {
-                                repository.deleteChargingSession(openSession.id)
+                                repository.deleteChargingSession(currentChargeSession.id)
                                 logger.log("Charging session discarded from DB due to exceeds readings window")
                             } else {
-                                val updated = openSession.copy(
+                                val updatedChargeSession = currentChargeSession.copy(
                                     endTime = now,
                                     endLevel = level,
                                     durationMinutes = durationMs / 60_000L,
@@ -656,8 +697,8 @@ class NotificationService : Service() {
                                     maxTemperatureCelsius = if (temps.isNotEmpty()) temps.max() else null,
                                     minTemperatureCelsius = if (temps.isNotEmpty()) temps.min() else null
                                 )
-                                repository.updateChargingSession(updated)
-                                logger.log("Charging session end stored at DB (${updated.durationMinutes} min, ${openSession.startLevel}% → ${level}%)")
+                                repository.updateChargingSession(updatedChargeSession)
+                                logger.log("Charging session end stored at DB (${updatedChargeSession.durationMinutes} min, ${currentChargeSession.startLevel}% → ${level}%)")
                             }
                         }
                     }
@@ -926,7 +967,7 @@ class NotificationService : Service() {
         }
     }
 
-    private fun onChargedNotificationAlarmWillBePosted() {
+    private fun showOrHideChargedNotification() {
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
         val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it) }
 
@@ -972,4 +1013,113 @@ class NotificationService : Service() {
     }
 
     private fun onChargedNotificationDeleted() = cancelChargedNotificationAlarm()
+
+    @SuppressLint("MissingPermission")
+    private fun showBatteryLowChargedNotification(batteryIntentHelper: BatteryIntentHelper) {
+        val level = batteryIntentHelper.level
+
+        val text = getString(R.string.battery_low_with_charge_value, level)
+
+        val clickIntent = WhatAppOpens.APP.getIntent(this)
+
+        val deleteIntent = Intent(ACTION_LOW_CHARGE_NOTIFICATION_DELETED).setPackage(packageName)
+        val deletePendingIntent = PendingIntent.getBroadcast(
+            this,
+            LOW_CHARGE_NOTIFICATION_DELETE_REQUEST_CODE,
+            deleteIntent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, BATTERY_LOW_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_statusbar_notification_battery_low)
+            .setContentTitle(text)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(false)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_EVENT)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    LOW_CHARGE_NOTIFICATION_CLICK_REQUEST_CODE,
+                    clickIntent,
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+            )
+            .setDeleteIntent(deletePendingIntent)
+            .build()
+
+        if (hasPostNotificationsPermission()) {
+            NotificationManagerCompat.from(this).notify(LOW_CHARGE_NOTIFICATION_ID, notification)
+            logger.log("Battery low notification has been posted")
+        }
+    }
+
+    private fun hideBatteryLowChargedNotification() {
+        if (batteryLow) {
+            batteryLow = false
+
+            cancelBatteryLowChargedNotificationAlarm()
+
+            NotificationManagerCompat.from(this).cancel(LOW_CHARGE_NOTIFICATION_ID)
+        }
+    }
+
+    private fun showOrHideBatteryLowChargedNotification() {
+        val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
+        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it) }
+
+        logger.log("Received battery low notification redraw alarm")
+
+        val repeatInterval = prefs.notificationLowChargeRepeatInterval
+        val shouldScheduleAlarm = repeatInterval != 0
+        val delay = repeatInterval * 60_000L
+
+        when {
+            batteryIntentHelper == null -> {
+                logger.log("Bypassing battery low notification post due to battery intent isn't available")
+
+                if (shouldScheduleAlarm) scheduleBatteryLowChargedNotificationAlarm(delay)
+            }
+
+            batteryLow && isBatteryLow(batteryIntentHelper) -> {
+                logger.log("Posting battery low notification due to battery charge is still low")
+
+                showBatteryLowChargedNotification(batteryIntentHelper)
+
+                if (shouldScheduleAlarm) scheduleBatteryLowChargedNotificationAlarm(delay)
+            }
+
+            else -> {
+                logger.log("Hiding battery low notification due to battery charge is not low")
+                hideBatteryLowChargedNotification()
+            }
+        }
+    }
+
+    private fun scheduleBatteryLowChargedNotificationAlarm(delay: Long) {
+        val now = System.currentTimeMillis()
+        logger.log("Scheduling battery low alarm notification redraw in ${delay / 1000} seconds, at $TIME_REFERENCE", now + delay)
+
+        AlarmsReceiver.start(this, AlarmsReceiver.Tags.NOTIFICATION_SERVICE_UPDATE_BATTERY_LOW_NOTIFICATION, delay)
+    }
+
+    private fun cancelBatteryLowChargedNotificationAlarm() {
+        logger.log("Cancelling battery low notification redraw alarm")
+
+        AlarmsReceiver.stop(this, AlarmsReceiver.Tags.NOTIFICATION_SERVICE_UPDATE_BATTERY_LOW_NOTIFICATION)
+    }
+
+    private fun onBatteryLowChargedNotificationDeleted() = cancelBatteryLowChargedNotificationAlarm()
+
+
+
+
+
+
+
+
+
+
+
+
 }

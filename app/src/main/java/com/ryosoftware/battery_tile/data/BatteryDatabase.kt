@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [BatteryReading::class, ChargingSession::class, ScreenState::class], version = 3, exportSchema = false)
+@Database(entities = [BatteryReading::class, ChargingSession::class, ScreenState::class], version = 4, exportSchema = false)
 abstract class BatteryDatabase : RoomDatabase() {
     abstract fun batteryReadingDao(): BatteryReadingDao
     abstract fun chargingSessionDao(): ChargingSessionDao
@@ -48,13 +48,19 @@ abstract class BatteryDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE charging_sessions ADD COLUMN chargedTimeStamp INTEGER")
+            }
+        }
+
         fun getDatabase(context: Context): BatteryDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     BatteryDatabase::class.java,
                     "battery_database"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
                 INSTANCE = instance
                 instance
             }

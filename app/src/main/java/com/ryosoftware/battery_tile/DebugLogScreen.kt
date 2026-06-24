@@ -198,7 +198,7 @@ fun DebugLogScreen(onBack: () -> Unit) {
                     val linesCount = logContents?.lines()?.size ?: 0
 
                     Text(
-                        text = context.resources.getQuantityString(R.plurals.log_file_lines_count, linesCount, linesCount),
+                        text = context.resources.getQuantityString(R.plurals.log_file_messages_count, linesCount, linesCount),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

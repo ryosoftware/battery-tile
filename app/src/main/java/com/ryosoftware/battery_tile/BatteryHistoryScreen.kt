@@ -360,6 +360,46 @@ private fun isScreenOnAt(timestamp: Long, screenStates: List<ScreenState>): Bool
     return lastState
 }
 
+private fun enrichReadingsWithScreenStates(
+    readings: List<BatteryReading>,
+    screenStates: List<ScreenState>
+): List<BatteryReading> {
+    if (readings.size < 2 || screenStates.isEmpty()) return readings
+
+    val result = mutableListOf<BatteryReading>()
+
+    for (i in readings.indices) {
+        if (i > 0) {
+            val prev = readings[i - 1]
+            val curr = readings[i]
+            val totalDuration = (curr.timestamp - prev.timestamp).toFloat()
+            if (totalDuration > 0f) {
+                val intermediateStates = screenStates.filter {
+                    it.timestamp > prev.timestamp && it.timestamp < curr.timestamp
+                }
+                for (state in intermediateStates) {
+                    val progress = (state.timestamp - prev.timestamp) / totalDuration
+                    result.add(
+                        BatteryReading(
+                            timestamp = state.timestamp,
+                            batteryLevel = (prev.batteryLevel + (curr.batteryLevel - prev.batteryLevel) * progress).toInt(),
+                            batteryStatus = prev.batteryStatus,
+                            temperatureCelsius = prev.temperatureCelsius + (curr.temperatureCelsius - prev.temperatureCelsius) * progress,
+                            voltage = (prev.voltage + (curr.voltage - prev.voltage) * progress).toInt(),
+                            health = prev.health,
+                            isCharging = prev.isCharging,
+                            plugType = prev.plugType
+                        )
+                    )
+                }
+            }
+        }
+        result.add(readings[i])
+    }
+
+    return result
+}
+
 @Composable
 private fun TimeBasedChart(
     readings: List<BatteryReading>,
@@ -571,8 +611,9 @@ fun BatteryLevelChart(
     readings: List<BatteryReading>,
     screenStates: List<ScreenState>,
 ) {
+    val enrichedReadings = remember(readings, screenStates) { enrichReadingsWithScreenStates(readings, screenStates) }
     TimeBasedChart(
-        readings = readings,
+        readings = enrichedReadings,
         screenStates = screenStates,
         lineColor = MaterialTheme.colorScheme.primary,
         labelWidthDp = 40.dp,
@@ -604,7 +645,8 @@ fun TemperatureChart(
     thresholdTemperatureCelsius: Float?,
     appPrefs: AppPreferences
 ) {
-    val temps = remember(readings) { readings.map { it.temperatureCelsius } }
+    val enrichedReadings = remember(readings, screenStates) { enrichReadingsWithScreenStates(readings, screenStates) }
+    val temps = remember(enrichedReadings) { enrichedReadings.map { it.temperatureCelsius } }
     val minTemp = remember(temps) { (temps.min() - 5f).coerceAtLeast(0f) }
     val maxTemp = remember(temps) { (temps.max() + 5f).coerceAtMost(60f) }
     val tempRange = remember(minTemp, maxTemp) { maxTemp - minTemp }
@@ -621,7 +663,7 @@ fun TemperatureChart(
     }
 
     TimeBasedChart(
-        readings = readings,
+        readings = enrichedReadings,
         screenStates = screenStates,
         lineColor = MaterialTheme.colorScheme.error,
         labelWidthDp = 50.dp,
@@ -695,50 +737,113 @@ fun ChargingPatternsTab(
                         style = MaterialTheme.typography.titleMedium
                     )
 
-                    Spacer(Modifier.height(4.dp))
+                    if (session.durationMinutes != null) {
+                        Spacer(Modifier.height(4.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        if (session.durationMinutes != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
                             Text(
-                                text = stringResource(R.string.label_and_value,
-                                       stringResource(R.string.charging_session_duration),
-                                       getStringTimeFromInterval(context, session.durationMinutes * 60_000L)),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        if (session.endLevel != null) {
-                            val delta = session.endLevel - session.startLevel
-                            val speedPerHour = if (session.durationMinutes != null && session.durationMinutes > 0) {
-                                delta.toFloat() / (session.durationMinutes / 60f)
-                            } else null
-
-                            Text(
-                                text = stringResource(R.string.label_and_value,
-                                       stringResource(R.string.charging_session_speed),
-                                       stringResource(R.string.percent_per_hour, getStringPercent(context, speedPerHour))),
+                                text = stringResource(
+                                    R.string.label_and_value,
+                                    stringResource(R.string.charging_session_duration),
+                                    getStringTimeFromInterval(
+                                        context,
+                                        session.durationMinutes * 60_000L
+                                    )
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
 
+                    if (session.endLevel != null) {
+                        val delta = session.endLevel - session.startLevel
+                        val speedPerHour = if (session.durationMinutes != null && session.durationMinutes > 0) {
+                            delta.toFloat() / (session.durationMinutes / 60f)
+                        } else null
+
+                        if (speedPerHour != null) {
+                            Spacer(Modifier.height(4.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.label_and_value,
+                                        stringResource(R.string.charging_session_speed),
+                                        stringResource(
+                                            R.string.percent_per_hour,
+                                            getStringPercent(context, speedPerHour)
+                                        )
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
                     if (session.avgTemperatureCelsius != null) {
-                        Spacer(Modifier.height(4.dp))
                         val tempUnit = appPrefs.temperatureUnit
-                        Text(
-                            text = stringResource(R.string.label_and_value,
-                                   stringResource(R.string.charging_session_temperature),
-                                   stringResource(R.string.charging_temperature_min_max_avg,
-                                      tempUnit.toString(context, tempUnit.fromCelsius(session.minTemperatureCelsius!!), false),
-                                      tempUnit.toString(context, tempUnit.fromCelsius(session.maxTemperatureCelsius!!), false),
-                                      tempUnit.toString(context, tempUnit.fromCelsius(session.avgTemperatureCelsius), false))),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+
+                        Spacer(Modifier.height(4.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = stringResource(
+                                    R.string.label_and_value,
+                                    stringResource(R.string.charging_session_temperature),
+                                    stringResource(
+                                        R.string.charging_temperature_min_max_avg,
+                                        tempUnit.toString(
+                                            context,
+                                            tempUnit.fromCelsius(session.minTemperatureCelsius!!),
+                                            false
+                                        ),
+                                        tempUnit.toString(
+                                            context,
+                                            tempUnit.fromCelsius(session.maxTemperatureCelsius!!),
+                                            false
+                                        ),
+                                        tempUnit.toString(
+                                            context,
+                                            tempUnit.fromCelsius(session.avgTemperatureCelsius),
+                                            false
+                                        )
+                                    )
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    if (session.chargedTimeStamp != null) {
+                        val endTime = session.endTime ?: System.currentTimeMillis()
+                        val diffMs = endTime - session.chargedTimeStamp
+                        val wastedMin = diffMs / 60_000L
+
+                        if (wastedMin > 0) {
+                            Spacer(Modifier.height(4.dp))
+
+                            Text(
+                                text = stringResource(
+                                    R.string.could_have_unplugged_before,
+                                    dateFormat.format(Date(session.chargedTimeStamp)),
+                                    getStringTimeFromInterval(context, diffMs)
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
                     }
                 }
             }
@@ -783,6 +888,8 @@ private fun buildExcel(
             else -> context.getString(R.string.not_available)
         }
 
+    fun getColumnWidth(text: String) = (text.length + 2) * 256
+
     XSSFWorkbook().use { workbook ->
         val temperatureUnit = appPrefs.temperatureUnit
 
@@ -809,10 +916,12 @@ private fun buildExcel(
         val batteryReadingsHeaderRow = batteryReadingsSheet.createRow(0)
         batteryReadingsHeaders.forEachIndexed { index, header ->
             batteryReadingsHeaderRow.createCell(index).setCellValue(header)
-            batteryReadingsSheet.setColumnWidth(index, (header.length + 2) * 256)
+            batteryReadingsSheet.setColumnWidth(index, getColumnWidth(header))
         }
 
-        for ((rowIndex, reading) in batteryReadings.withIndex()) {
+        val enrichedBatteryReadings = enrichReadingsWithScreenStates(batteryReadings, screenStates)
+
+        for ((rowIndex, reading) in enrichedBatteryReadings.withIndex()) {
             val batteryReadingsBodyRow = batteryReadingsSheet.createRow(rowIndex + 1)
             batteryReadingsBodyRow.createCell(0).apply { setCellValue(Date(reading.timestamp)); cellStyle = dateTimeStyle }
             batteryReadingsBodyRow.createCell(1).setCellValue(reading.batteryLevel.toDouble())
@@ -836,13 +945,14 @@ private fun buildExcel(
             context.getString(R.string.excel_header_min_temperature, temperatureUnit.toString(context)),
             context.getString(R.string.excel_header_max_temperature, temperatureUnit.toString(context)),
             context.getString(R.string.excel_header_avg_temperature, temperatureUnit.toString(context)),
-            context.getString(R.string.charging_session_plug_type)
+            context.getString(R.string.charging_session_plug_type),
+            context.getString(R.string.excel_header_charged_timestamp)
         )
 
         val chargingSessionsHeaderRow = chargingSessionsSheet.createRow(0)
         chargingSessionsHeaders.forEachIndexed { index, header ->
             chargingSessionsHeaderRow.createCell(index).setCellValue(header)
-            chargingSessionsSheet.setColumnWidth(index, (header.length + 2) * 256)
+            chargingSessionsSheet.setColumnWidth(index, getColumnWidth(header))
         }
 
         for ((rowIndex, session) in chargingSessions.withIndex()) {
@@ -872,6 +982,25 @@ private fun buildExcel(
             if (session.avgTemperatureCelsius != null) chargingSessionsBodyRow.createCell(8).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
 
             chargingSessionsBodyRow.createCell(9).setCellValue(formatPlugType(session.plugType))
+            if (session.chargedTimeStamp != null) chargingSessionsBodyRow.createCell(10).apply { setCellValue(Date(session.chargedTimeStamp)); cellStyle = dateTimeStyle }
+        }
+
+        val screenStatesSheet = workbook.createSheet(context.getString(R.string.screen_states_tab))
+        val screenStatesHeaders = listOf(
+            context.getString(R.string.excel_header_timestamp),
+            context.getString(R.string.excel_header_screen_on)
+        )
+
+        val screenStatesHeaderRow = screenStatesSheet.createRow(0)
+        screenStatesHeaders.forEachIndexed { index, header ->
+            screenStatesHeaderRow.createCell(index).setCellValue(header)
+            screenStatesSheet.setColumnWidth(index, getColumnWidth(header))
+        }
+
+        for ((rowIndex, state) in screenStates.withIndex()) {
+            val screenStatesBodyRow = screenStatesSheet.createRow(rowIndex + 1)
+            screenStatesBodyRow.createCell(0).apply { setCellValue(Date(state.timestamp)); cellStyle = dateTimeStyle }
+            screenStatesBodyRow.createCell(1).setCellValue(state.screenOn)
         }
 
         workbook.write(outputStream)

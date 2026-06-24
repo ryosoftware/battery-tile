@@ -5,44 +5,55 @@
     <string name="app_version">Version %1$s</string>
 
     <string name="background_service_notification">Background Service</string>
-    <string name="power_connected_notification">Power connected</string>
-    <string name="power_disconnected_notification">Power disconnected</string>
+    <string name="power_connected_notification">Power Connected</string>
+    <string name="power_disconnected_notification">Power Disconnected</string>
     <string name="battery_charged_notification">Battery Charged</string>
+    <string name="battery_low_notification">Battery Low Warning</string>
     <string name="battery_temperature_notification">Battery Temperature Warning</string>
     <string name="battery_health_notification">Battery Health Warning</string>
 
     <string name="foreground_service_explanation">Persistent battery and device status monitoring with ongoing user-visible notification</string>
 
-    <string name="power_connected_notification_title">Power connected</string>
-    <string name="power_connected_notification_title_with_charge_value">Power connected — %1$d%%</string>
-    <string name="power_disconnected_notification_title">Power disconnected</string>
-    <string name="power_disconnected_notification_title_with_charge_value">Power disconnected — %1$d%%</string>
-    <string name="battery_charged_with_charge_value">Battery charged — %1$d%%</string>
+    <string name="power_connected_notification_title">Power Connected</string>
+    <string name="power_connected_notification_title_with_charge_value">Power Connected — %1$d%%</string>
+    <string name="power_disconnected_notification_title">Power Disconnected</string>
+    <string name="power_disconnected_notification_title_with_charge_value">Power Disconnected — %1$d%%</string>
+    <string name="battery_charged_with_charge_value">Battery Charged — %1$d%%</string>
+    <string name="battery_low_with_charge_value">Battery Low — %1$d%%</string>
     <string name="temperature_alert_with_temperature_value">Temperature Alert — %1$s</string>
     <string name="health_alert_with_value">Health Alert — %1$s</string>
 
     <string name="general_information">Add the battery tile to your Quick Settings panel to check the battery level at a glance, or enable a persistent notification for detailed battery information and customizable alerts.\n\nThis app does not send any data outside your device and does not require Internet access. It also requests no special permissions, so you can use it with confidence.</string>
 
-    <string name="battery_charged_section_title">Battery Charged notification</string>
+    <string name="battery_charged_section_title">Battery Charged Notification</string>
     <string name="battery_charged_section_body">You can configure the level of charge required to consider the device charged, the delay for the first notification, and whether you want recurring notifications.\n\nPlease note that if you select a value lower than 100%, the device will continue to charge until you unplug it.</string>
-    <string name="battery_charged_threshold">Charge threshold</string>
-    <string name="battery_charged_interval">Charged notification delay</string>
-    <string name="battery_charged_repeat_interval">Recurring notification interval</string>
+    <string name="charge_threshold">Charge Threshold</string>
+    <string name="battery_charged_threshold">@string/charge_threshold</string>
+    <string name="battery_charged_interval">Charged Notification Delay</string>
+    <string name="recurring_notification_interval">Recurring Notification Interval</string>
+    <string name="battery_charged_repeat_interval">@string/recurring_notification_interval</string>
 
-    <string name="power_connected_or_disconnected_section_title">Battery Connected or Disconnected notifications</string>
+    <string name="battery_low_section_title">Battery Low Notification</string>
+    <string name="battery_low_section_body">You can configure the level of charge to consider the device battery low and whether you want recurring notifications.</string>
+    <string name="battery_low_threshold">@string/charge_threshold</string>
+    <string name="battery_low_repeat_interval">@string/recurring_notification_interval</string>
+
+    <string name="power_connected_or_disconnected_section_title">Battery Connected or Disconnected Notifications</string>
     <string name="power_connected_or_disconnected_section_body">You will receive a notification when the device is connected or disconnected from a plug source.</string>
     <string name="block_power_disconnect_notification_when_battery_is_charged">Block disconnect notification when battery is charged</string>
 
-    <string name="battery_temperature_section_title">Battery High Temperature notification</string>
+    <string name="battery_temperature_section_title">Battery High Temperature Notification</string>
     <string name="battery_temperature_section_body">You will receive a notification when the battery temperature exceeds the configured threshold.</string>
-    <string name="battery_temperature_threshold">Temperature threshold</string>
+    <string name="battery_temperature_threshold">Temperature Threshold</string>
 
     <string name="settings">Settings</string>
+    <string name="other_settings">Other Settings</string>
 
     <string name="battery_information">Battery Information</string>
-    <string name="shows_realtime_data">Displays realtime data values</string>
+    <string name="shows_realtime_data">Displays Realtime Data Values</string>
 
-    <string name="tile_settings">Tile Settings</string>
+    <string name="tile_settings_title">Quick Settings Tile</string>
+    <string name="tile_settings_body">Customize the Quick Settings Tile options</string>
     <string name="tile_label">Battery Tile</string>
     <string name="tile_general">Since Android 10, tiles can display an icon and up to two lines of information.\n\nOn some manufacturer-customized versions of Android, this functionality may not be available or may behave differently.</string>
     <string name="tile_icon_title">Choose what to display on the tile icon</string>
@@ -62,23 +73,25 @@
     <string name="battery_status_charging_with_plug_wireless_short">Charging (WL)</string>
     <string name="battery_status_discharging">Discharging</string>
     <string name="battery_status_not_charging">Not Charging</string>
-    <string name="battery_status_full">Full</string>
-    <string name="battery_status_unknown">Unknown</string>
+    <string name="battery_status_full">Fully Charged</string>
+    <string name="unknown_value">Unknown</string>
+    <string name="battery_status_unknown">@string/unknown_value</string>
 
-    <string name="battery_plug_type">Charger type</string>
+    <string name="battery_plug_type">Charger Type</string>
     <string name="battery_plug_ac">AC Adapter</string>
     <string name="battery_plug_dock">Dock</string>
     <string name="battery_plug_usb">USB Cable</string>
     <string name="battery_plug_wireless">Wireless Charger</string>
 
-    <string name="battery_health">Health</string>
+    <string name="health_value">Health</string>
+    <string name="battery_health">@string/health_value</string>
     <string name="battery_health_good">Good</string>
     <string name="battery_health_overheat">Overheated</string>
     <string name="battery_health_dead">Dead</string>
     <string name="battery_health_over_voltage">Overvoltage</string>
     <string name="battery_health_failure">Failed</string>
     <string name="battery_health_cold">Cold</string>
-    <string name="battery_health_unknown">Unknown</string>
+    <string name="battery_health_unknown">@string/unknown_value</string>
 
     <string name="battery_voltage">Voltage</string>
     <string name="voltage_value">%1$d mV</string>
@@ -92,14 +105,14 @@
     <string name="battery_capacity_normal">Normal</string>
     <string name="battery_capacity_low">Low</string>
     <string name="battery_capacity_critical">Critical</string>
-    <string name="battery_capacity_unknown">Unknown</string>
+    <string name="battery_capacity_unknown">@string/unknown_value</string>
     <string name="battery_capacity_unsupported">Unsupported</string>
     <string name="battery_capacity_description">Battery capacity, which should not be confused with the current battery level, is a key indicator of battery status and system capabilities that helps both the system and apps make power management decisions.</string>
 
     <string name="battery_technology">Technology</string>
 
     <string name="battery_temperature">Temperature</string>
-    <string name="temperature_unit">Temperature unit</string>
+    <string name="temperature_unit">Temperature Unit</string>
     <string name="celsius_unit">°C</string>
     <string name="celsius_unit_min">°</string>
     <string name="celsius_unit_with_name">Celsius (°C)</string>
@@ -118,24 +131,28 @@
     <string name="since_boot">since boot</string>
     <string name="since_last_stats_reset">since reset</string>
 
-    <string name="cpu_deep_sleep_time">Deep Sleep (%1$s)</string>
-    <string name="cpu_deep_sleep_time_long">CPU Deep Sleep time (%1$s)</string>
-    <string name="cpu_deep_sleep_percent">Deep Sleep (%1$s)</string>
-    <string name="cpu_deep_sleep_percent_long">CPU Deep Sleep percent (%1$s)</string>
+    <string name="deep_sleep_value">Deep Sleep (%1$s)</string>
+    <string name="cpu_deep_sleep_time">@string/deep_sleep_value</string>
+    <string name="cpu_deep_sleep_time_long">CPU Deep Sleep Time (%1$s)</string>
+    <string name="cpu_deep_sleep_percent">@string/deep_sleep_value</string>
+    <string name="cpu_deep_sleep_percent_long">CPU Deep Sleep Percent (%1$s)</string>
 
-    <string name="screen_on_time">Screen On (%1$s)</string>
-    <string name="screen_on_time_long">Screen On time (%1$s)</string>
-    <string name="screen_on_percent">Screen On (%1$s)</string>
-    <string name="screen_on_percent_long">Screen On percent (%1$s)</string>
+    <string name="screen_on_value">Screen On (%1$s)</string>
+    <string name="screen_on_time">@string/screen_on_value</string>
+    <string name="screen_on_time_long">Screen On Time (%1$s)</string>
+    <string name="screen_on_percent">@string/screen_on_value</string>
+    <string name="screen_on_percent_long">Screen On Percent (%1$s)</string>
 
     <string name="percent_value_integer">%1$d%%</string>
     <string name="percent_value_float">%.1f%%</string>
 
-    <string name="uptime">Uptime (%1$s)</string>
-    <string name="uptime_long">Uptime (%1$s)</string>
+    <string name="uptime_value">Uptime (%1$s)</string>
+    <string name="uptime">@string/uptime_value</string>
+    <string name="uptime_long">@string/uptime_value</string>
 
-    <string name="time_charging">Charging time</string>
-    <string name="time_charging_long">Charging time</string>
+    <string name="charging_time_value">Charging Time</string>
+    <string name="time_charging">@string/charging_time_value</string>
+    <string name="time_charging_long">@string/charging_time_value</string>
 
     <string name="days_and_hours_and_minutes">%1$dd %2$dh %3$dm</string>
     <string name="hours_and_minutes">%1$dh %2$dm</string>
@@ -145,60 +162,67 @@
 
     <string name="label_and_value">%1$s: %2$s</string>
 
-    <string name="notification_settings">Notification Settings</string>
-    <string name="allow_background_service_execution">Allow running in the background</string>
-    <string name="service_enabled_and_running">Collecting data in the background</string>
+    <string name="requires_background_running_that_is_not_allowed">Requires Background Monitoring!</string>
+
+    <string name="notification_settings_title">Notification Settings</string>
+    <string name="notification_settings_body">Configure Notification Options and Data Displayed</string>
+    <string name="allow_background_service_execution">Allow Run in the Background</string>
+    <string name="service_enabled_and_running">Collecting Data in the Background</string>
     <string name="service_enabled_but_not_running">No data is being collected.\n(Try turning the switch off and on)</string>
-    <string name="service_not_allowed">Background monitoring not allowed</string>
+    <string name="service_not_allowed">Background Monitoring Not Allowed</string>
 
     <string name="notification_fields_section_title">Service Notification</string>
     <string name="notification_fields_section_body">Select the information you want to see in the Data Collection Service Notification, and the order in which you want it to be displayed.\n\n\"%1$s\" refers to the device start and \"%2$s\" refers to the last stats reset (you can read about the date/time and reason below if available).\n\n%3$s</string>
 
     <string name="stats_reset_threshold_section_title">Auto Reset Stats on Disconnect</string>
     <string name="stats_reset_threshold_section_body">Reset Screen Time and CPU Deep Sleep Statistics when disconnected from a power source after the battery has been charged at least the indicated percentage and time, or is fully charged.</string>
-    <string name="auto_reset_stats">Auto reset on disconnect</string>
-    <string name="minimum_load_required">Minimum load required</string>
-    <string name="minimum_time_required">Minimum time required</string>
+    <string name="auto_reset_stats">Auto Reset on Disconnect</string>
+    <string name="minimum_load_required">Minimum Load Required</string>
+    <string name="minimum_time_required">Minimum Time Required</string>
     <string name="reset_stats_now">Reset Now!</string>
-    <string name="reset_stats_confirm_title">Reset statistics?</string>
+    <string name="reset_stats_confirm_title">Reset Statistics?</string>
     <string name="reset_stats_confirm_body">This will reset Screen Time and CPU Deep Sleep statistics immediately.\n\nThis action cannot be undone.</string>
-    <string name="power_disconnected">Power disconnected (User Settings)</string>
+    <string name="power_disconnected">Power Disconnected (User Settings)</string>
     <string name="device_reboot">Device Reboot</string>
     <string name="user_request">User Request</string>
     <string name="expired_data">Expired Data</string>
     <string name="no_data_found">No Data Found</string>
-    <string name="reset_time_and_reason_and_deep_sleep_and_battery_level">Last Reset: %1$s\nReason: %2$s\nBattery charge level: %4$s\nDeep Sleep percent: %3$s</string>
-    <string name="reset_time_and_reason_and_deep_sleep">Last Reset: %1$s\nReason: %2$s\nDeep Sleep percent: %3$s</string>
+    <string name="reset_time_and_reason_and_deep_sleep_and_battery_level">Last Reset: %1$s\nReason: %2$s\nBattery Charge Level: %4$s\nDeep Sleep Percent: %3$s</string>
+    <string name="reset_time_and_reason_and_deep_sleep">Last Reset: %1$s\nReason: %2$s\nDeep Sleep Percent: %3$s</string>
 
-    <string name="request_notification_permission">Allow posting notifications</string>
-    <string name="request_battery_optimization_permission">Ignore battery optimizations (recommended)</string>
-    <string name="request_exact_alarm_permission">Allow exact alarms (recommended)</string>
+    <string name="permissions">Permissions</string>
+    <string name="request_notification_permission">Allow Posting Notifications</string>
+    <string name="request_battery_optimization_permission">Ignore Battery Optimizations (Recommended)</string>
+    <string name="request_exact_alarm_permission">Allow Exact Alarms (Recommended)</string>
+    <string name="notifications_dialog_title">Notifications</string>
+    <string name="notifications_dialog_body">To receive notifications from the app, you must enable Notifications in Settings.</string>
+    <string name="open_settings">Open Settings</string>
 
-    <string name="what_opens_when_user_clicks_tile_or_notification">Open on Tile or Notification tap</string>
-    <string name="what_opens_app">This app</string>
-    <string name="what_opens_system_power_usage_summary">System power usage summary</string>
+    <string name="what_opens_when_user_clicks_tile_or_notification">Open on Quick Settings Tile or Persistent Notification Tap</string>
+    <string name="what_opens_app">This App</string>
+    <string name="what_opens_system_power_usage_summary">System Power Usage Summary</string>
 
-    <string name="debug_information">Debug information</string>
-    <string name="debug_information_enabled">Logging to file is enabled</string>
-    <string name="debug_information_enabled_but_only_while_charging">Logging to file is enabled while charging</string>
-    <string name="debug_information_disabled">Logging to file is disabled</string>
-    <string name="log_to_file">Log to file</string>
-    <string name="log_only_while_charging">Only while charging</string>
-    <string name="no_log_data">No log data yet</string>
+    <string name="debug_information">Debug Information</string>
+    <string name="debug_information_enabled">Logging to File Is Enabled</string>
+    <string name="debug_information_enabled_but_only_while_charging">Logging to File Is Enabled While Charging</string>
+    <string name="debug_information_disabled">Logging to File Is Disabled</string>
+    <string name="log_to_file">Log to File</string>
+    <string name="log_only_while_charging">Only While Charging</string>
+    <string name="no_log_data">No Log Data Yet</string>
 
-    <plurals name="log_file_lines_count">
-        <item quantity="one">%1$d line</item>
-        <item quantity="other">%1$d lines</item>
+    <plurals name="log_file_messages_count">
+        <item quantity="one">%1$d message</item>
+        <item quantity="other">%1$d messages</item>
     </plurals>
 
     <string name="share_log">Share Log File</string>
     <string name="save_log">Save Log File</string>
-    <string name="cant_read_log_file">Error reading Log File</string>
+    <string name="cant_read_log_file">Error Reading Log File</string>
     <string name="logging_dialog_title">Logging</string>
     <string name="start_logging_dialog_body">Do you want to delete the current log file then start a new one?</string>
     <string name="stop_logging_dialog_body">Do you want to stop saving debug logs and delete the current log file?</string>
 
-    <string name="data_is_not_available">Data is not available</string>
+    <string name="data_is_not_available">Data Is Not Available</string>
     <string name="not_available">-</string>
     <string name="off">Off</string>
     <string name="confirm">Confirm</string>
@@ -211,9 +235,9 @@
     <string name="back">Back</string>
 
     <string name="battery_history">Battery History</string>
-    <string name="shows_historical_data">Displays graphs of temporal evolution, requires background running</string>
+    <string name="shows_historical_data">Displays graphs showing the evolution of your device\'s battery over time.</string>
     <string name="battery_level_chart_title">Battery Level History</string>
-    <string name="temperature_chart_title">Temperature History</string>
+    <string name="temperature_chart_title">Battery Temperature History</string>
     <string name="charging_patterns_tab">Charging Patterns</string>
     <string name="charging_session_duration">Duration</string>
     <string name="charging_session_level_change">Level Change</string>
@@ -222,10 +246,11 @@
     <string name="charging_session_temperature">Temperature</string>
     <string name="charging_temperature_min_max_avg">%1$s - %2$s (avg. %3$s)</string>
     <string name="charging_session_plug_type">Plug Type</string>
-    <string name="no_charging_sessions">No charging sessions recorded yet.</string>
+    <string name="no_charging_sessions">No Charging Sessions Recorded Yet.</string>
     <string name="charging_session_ongoing">Ongoing</string>
-    <string name="chart_scroll_hint">Swipe on the graph to see all the information</string>
-    <string name="no_history_data">No history data yet.\nData will be collected each time to time if the notification service is running.</string>
+    <string name="could_have_unplugged_before">You Could Have Unplugged at %1$s (%2$s Earlier)</string>
+    <string name="chart_scroll_hint">Swipe on the Graph to See All the Information</string>
+    <string name="no_history_data">No History Data Yet.\nData Will Be Collected from Time to Time if the Background Service Is Running.</string>
     <string name="clear_history">Clear History</string>
 
     <plurals name="history_retention_days">
@@ -241,10 +266,11 @@
     <string name="from_date_to_date">%1$s → %2$s</string>
     <string name="share_history">Share History</string>
     <string name="save_history">Save History</string>
-    <string name="error_exporting_history">Error exporting history</string>
+    <string name="error_exporting_history">Error Exporting History</string>
     <string name="excel_header_timestamp">Event Date/Time</string>
     <string name="excel_header_start_timestamp">Start Date/Time</string>
     <string name="excel_header_end_timestamp">End Date/Time</string>
+    <string name="excel_header_charged_timestamp">Fully Charged Date/Time</string>
     <string name="excel_header_battery_level">Battery Level</string>
     <string name="excel_header_battery_start_level">Battery Start Level</string>
     <string name="excel_header_battery_end_level">Battery End Level</string>
@@ -255,13 +281,14 @@
     <string name="excel_header_max_temperature">Max. Temperature (%1$s)</string>
     <string name="excel_header_avg_temperature">Avg. Temperature (%1$s)</string>
     <string name="excel_header_voltage">Voltage (mV)</string>
-    <string name="excel_header_health">Health</string>
+    <string name="excel_header_health">@string/health_value</string>
     <string name="excel_header_is_charging">Is Charging?</string>
     <string name="excel_header_plug_type">Plug Type</string>
     <string name="excel_header_screen_on">Is Screen On?</string>
+    <string name="screen_states_tab">Screen States</string>
     <string name="chart_legend_screen_on">Screen On</string>
     <string name="chart_legend_screen_off">Screen Off</string>
-    <string name="battery_level_from_to">It charges from %1$s to %2$s</string>
+    <string name="battery_level_from_to">Charges from %1$s to %2$s</string>
     <string name="battery_level_unknown">\?</string>
 
 </resources>
