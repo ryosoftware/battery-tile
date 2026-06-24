@@ -211,6 +211,66 @@ fun SettingsSelector(
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
+                            text = stringResource(R.string.permissions_title),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+
+                        Text(
+                            text = stringResource(R.string.permissions_body),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+
+                        Spacer(Modifier.height(8.dp))
+
+                        Button(
+                            onClick = {
+                                val activity = context.findActivity()
+                                activity?.requestPostNotificationsPermission()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !hasNotificationPermission.value
+                        ) {
+                            Text(
+                                text = stringResource(R.string.request_notification_permission)
+                            )
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        Button(
+                            onClick = {
+                                @SuppressLint("BatteryLife")
+                                context.requestBypassBatteryOptimizationPermission()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !hasBatteryOptimizationPermission.value
+                        ) {
+                            Text(
+                                text = stringResource(R.string.request_battery_optimization_permission)
+                            )
+                        }
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                            Spacer(Modifier.height(8.dp))
+
+                            Button(
+                                onClick = { context.requestPostExactAlarmPermission() },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !hasExactAlarmPermission.value
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.request_exact_alarm_permission)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
                             text = stringResource(R.string.other_settings),
                             style = MaterialTheme.typography.titleLarge,
                         )
@@ -283,60 +343,6 @@ fun SettingsSelector(
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier
                                         .padding(start = 8.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Text(
-                            text = stringResource(R.string.permissions),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-
-                        Spacer(Modifier.height(8.dp))
-
-                        Button(
-                            onClick = {
-                                val activity = context.findActivity()
-                                activity?.requestPostNotificationsPermission()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !hasNotificationPermission.value
-                        ) {
-                            Text(
-                                text = stringResource(R.string.request_notification_permission)
-                            )
-                        }
-
-                        Spacer(Modifier.height(4.dp))
-
-                        Button(
-                            onClick = {
-                                @SuppressLint("BatteryLife")
-                                context.requestBypassBatteryOptimizationPermission()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !hasBatteryOptimizationPermission.value
-                        ) {
-                            Text(
-                                text = stringResource(R.string.request_battery_optimization_permission)
-                            )
-                        }
-                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                            Spacer(Modifier.height(4.dp))
-
-                            Button(
-                                onClick = { context.requestPostExactAlarmPermission() },
-                                modifier = Modifier.fillMaxWidth(),
-                                enabled = !hasExactAlarmPermission.value
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.request_exact_alarm_permission)
                                 )
                             }
                         }

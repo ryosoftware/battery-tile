@@ -190,10 +190,11 @@
     <string name="reset_time_and_reason_and_deep_sleep_and_battery_level">Last Reset: %1$s\nReason: %2$s\nBattery Charge Level: %4$s\nDeep Sleep Percent: %3$s</string>
     <string name="reset_time_and_reason_and_deep_sleep">Last Reset: %1$s\nReason: %2$s\nDeep Sleep Percent: %3$s</string>
 
-    <string name="permissions">Permissions</string>
+    <string name="permissions_title">Permissions</string>
+    <string name="permissions_body">Granting these permissions is not mandatory, but it is recommended.</string>
     <string name="request_notification_permission">Allow Posting Notifications</string>
-    <string name="request_battery_optimization_permission">Ignore Battery Optimizations (Recommended)</string>
-    <string name="request_exact_alarm_permission">Allow Exact Alarms (Recommended)</string>
+    <string name="request_battery_optimization_permission">Ignore Battery Optimizations</string>
+    <string name="request_exact_alarm_permission">Allow Exact Alarms</string>
     <string name="notifications_dialog_title">Notifications</string>
     <string name="notifications_dialog_body">To receive notifications from the app, you must enable Notifications in Settings.</string>
     <string name="open_settings">Open Settings</string>

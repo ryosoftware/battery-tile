@@ -190,10 +190,11 @@
     <string name="reset_time_and_reason_and_deep_sleep_and_battery_level">Último borrado de datos: %1$s\nMotivo: %2$s\nCarga de la batería: %4$s\nPorcentaje en reposo profundo: %3$s</string>
     <string name="reset_time_and_reason_and_deep_sleep">Último borrado de datos: %1$s\nMotivo: %2$s\nPorcentaje en reposo profundo: %3$s</string>
 
-    <string name="permissions">Permisos</string>
+    <string name="permissions_title">Permisos</string>
+    <string name="permissions_body">Otorgar estos permisos no es obligatorio, pero se recomienda</string>
     <string name="request_notification_permission">Permitir notificaciones</string>
-    <string name="request_battery_optimization_permission">Ignorar optimizaciones de batería (recomendado)</string>
-    <string name="request_exact_alarm_permission">Permitir alarmas exactas (recomendado)</string>
+    <string name="request_battery_optimization_permission">Ignorar optimizaciones de batería</string>
+    <string name="request_exact_alarm_permission">Permitir alarmas exactas</string>
     <string name="notifications_dialog_title">Notificaciones</string>
     <string name="notifications_dialog_body">Para recibir avisos de la app debes activar las notificaciones en Ajustes.</string>
     <string name="open_settings">Abrir ajustes</string>
