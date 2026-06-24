@@ -774,108 +774,116 @@ class NotificationService : Service() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun showPowerConnectedNotification(batteryIntentHelper: BatteryIntentHelper?) {
-        val level = batteryIntentHelper?.level ?: -1
-
-        val text = if (level < 0) getString(R.string.power_connected_notification_title)
-                   else getString(R.string.power_connected_notification_title_with_charge_value, level)
+    private fun postNotification(
+        channelId: String,
+        notificationId: Int,
+        title: String,
+        icon: Int,
+        clickRequestCode: Int,
+        logMessagePrefix: String,
+        timeoutAfter: Long? = null,
+        onlyAlertOnce: Boolean = true,
+        deleteIntent: Intent? = null,
+        deleteRequestCode: Int = 0
+    ) {
+        if (!hasPostNotificationsPermission()) {
+            logger.log("$logMessagePrefix notification hasn't posted due to lack of permissions")
+            return
+        }
 
         val clickIntent = WhatAppOpens.APP.getIntent(this)
 
-        val notification = NotificationCompat.Builder(this, POWER_CONNECTED_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_statusbar_notification_battery_charging)
-            .setContentTitle(text)
+        val builder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(icon)
+            .setContentTitle(title)
             .setAutoCancel(true)
-            .setTimeoutAfter(POWER_CONNECTED_NOTIFICATION_TIMEOUT)
+            .setOnlyAlertOnce(onlyAlertOnce)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_EVENT)
             .setContentIntent(
                 PendingIntent.getActivity(
                     this,
-                    POWER_CONNECTED_NOTIFICATION_CLICK_REQUEST_CODE,
+                    clickRequestCode,
                     clickIntent,
                     PendingIntent.FLAG_IMMUTABLE
                 )
             )
-            .build()
 
-        if (hasPostNotificationsPermission()) {
-            NotificationManagerCompat.from(this).notify(POWER_CONNECTED_NOTIFICATION_ID, notification)
-            logger.log("Charging notification has been posted")
+        if (timeoutAfter != null) builder.setTimeoutAfter(timeoutAfter)
+
+        if (deleteIntent != null) {
+            builder.setDeleteIntent(
+                PendingIntent.getBroadcast(
+                    this,
+                    deleteRequestCode,
+                    deleteIntent,
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+            )
         }
+
+        val notification = builder.build()
+        NotificationManagerCompat.from(this).notify(notificationId, notification)
+
+        logger.log("$logMessagePrefix notification has been posted")
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun showPowerConnectedNotification(batteryIntentHelper: BatteryIntentHelper?) {
+        val level = batteryIntentHelper?.level ?: -1
+
+        val title = if (level < 0) getString(R.string.power_connected_notification_title)
+                   else getString(R.string.power_connected_notification_title_with_charge_value, level)
+
+        postNotification(
+            channelId = POWER_CONNECTED_CHANNEL_ID,
+            notificationId = POWER_CONNECTED_NOTIFICATION_ID,
+            title = title,
+            icon = R.drawable.ic_statusbar_notification_power_connected,
+            clickRequestCode = POWER_CONNECTED_NOTIFICATION_CLICK_REQUEST_CODE,
+            logMessagePrefix = "Charging",
+            timeoutAfter = POWER_CONNECTED_NOTIFICATION_TIMEOUT
+        )
     }
 
     @SuppressLint("MissingPermission")
     private fun showPowerDisconnectedNotification(batteryIntentHelper: BatteryIntentHelper?) {
         val level = batteryIntentHelper?.level ?: -1
 
-        val text = if (level < 0) getString(R.string.power_disconnected_notification_title)
+        val title = if (level < 0) getString(R.string.power_disconnected_notification_title)
                    else getString(R.string.power_disconnected_notification_title_with_charge_value, level)
 
-        val clickIntent = WhatAppOpens.APP.getIntent(this)
-
-        val notification = NotificationCompat.Builder(this, POWER_DISCONNECTED_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_statusbar_notification_battery_discharging)
-            .setContentTitle(text)
-            .setAutoCancel(true)
-            .setTimeoutAfter(POWER_DISCONNECTED_NOTIFICATION_TIMEOUT)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_EVENT)
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    this,
-                    POWER_DISCONNECTED_NOTIFICATION_CLICK_REQUEST_CODE,
-                    clickIntent,
-                    PendingIntent.FLAG_IMMUTABLE
-                )
-            )
-            .build()
-
-        if (hasPostNotificationsPermission()) {
-            NotificationManagerCompat.from(this).notify(POWER_DISCONNECTED_NOTIFICATION_ID, notification)
-            logger.log("Discharging notification has been posted")
-        }
+        postNotification(
+            channelId = POWER_DISCONNECTED_CHANNEL_ID,
+            notificationId = POWER_DISCONNECTED_NOTIFICATION_ID,
+            title = title,
+            icon = R.drawable.ic_statusbar_notification_power_disconnected,
+            clickRequestCode = POWER_DISCONNECTED_NOTIFICATION_CLICK_REQUEST_CODE,
+            logMessagePrefix = "Discharging",
+            timeoutAfter = POWER_DISCONNECTED_NOTIFICATION_TIMEOUT
+        )
     }
 
     @SuppressLint("MissingPermission")
     private fun showTemperatureNotification(batteryIntentHelper: BatteryIntentHelper) {
-        val text = getString(R.string.temperature_alert_with_temperature_value, batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_TEMPERATURE, appPrefs, false))
-
-        val clickIntent = WhatAppOpens.APP.getIntent(this)
+        val title = getString(R.string.temperature_alert_with_temperature_value, batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_TEMPERATURE, appPrefs, false))
 
         val deleteIntent = Intent(ACTION_TEMPERATURE_NOTIFICATION_DELETED).apply {
             putExtra(EXTRA_TEMPERATURE, batteryIntentHelper.temperatureCelsius)
             setPackage(packageName)
         }
-        val deletePendingIntent = PendingIntent.getBroadcast(
-            this,
-            TEMPERATURE_WARNING_NOTIFICATION_DELETE_REQUEST_CODE,
-            deleteIntent,
-            PendingIntent.FLAG_IMMUTABLE
+
+        postNotification(
+            channelId = BATTERY_TEMPERATURE_WARNING_CHANNEL_ID,
+            notificationId = TEMPERATURE_WARNING_NOTIFICATION_ID,
+            title = title,
+            icon = R.drawable.ic_statusbar_notification_battery_temperature,
+            clickRequestCode = TEMPERATURE_WARNING_NOTIFICATION_CLICK_REQUEST_CODE,
+            logMessagePrefix = "Temperature Warning",
+            onlyAlertOnce = false,
+            deleteIntent = deleteIntent,
+            deleteRequestCode = TEMPERATURE_WARNING_NOTIFICATION_DELETE_REQUEST_CODE
         )
-
-        val notification = NotificationCompat.Builder(this, BATTERY_TEMPERATURE_WARNING_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_statusbar_notification_battery_temperature)
-            .setContentTitle(text)
-            .setAutoCancel(true)
-            .setOnlyAlertOnce(false)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_EVENT)
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    this,
-                    TEMPERATURE_WARNING_NOTIFICATION_CLICK_REQUEST_CODE,
-                    clickIntent,
-                    PendingIntent.FLAG_IMMUTABLE
-                )
-            )
-            .setDeleteIntent(deletePendingIntent)
-            .build()
-
-        if (hasPostNotificationsPermission()) {
-            NotificationManagerCompat.from(this).notify(TEMPERATURE_WARNING_NOTIFICATION_ID, notification)
-            logger.log("Temperature Warning notification has been posted")
-        }
     }
 
     private fun hideTemperatureNotification() =
@@ -887,31 +895,17 @@ class NotificationService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun showHealthNotification(batteryIntentHelper: BatteryIntentHelper) {
-        val text = getString(R.string.health_alert_with_value, batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_HEALTH, appPrefs, false))
+        val title = getString(R.string.health_alert_with_value, batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_HEALTH, appPrefs, false))
 
-        val clickIntent = WhatAppOpens.APP.getIntent(this)
-
-        val notification = NotificationCompat.Builder(this, BATTERY_HEALTH_WARNING_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_statusbar_notification_battery_health)
-            .setContentTitle(text)
-            .setAutoCancel(true)
-            .setOnlyAlertOnce(false)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_EVENT)
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    this,
-                    HEALTH_WARNING_NOTIFICATION_CLICK_REQUEST_CODE,
-                    clickIntent,
-                    PendingIntent.FLAG_IMMUTABLE
-                )
-            )
-            .build()
-
-        if (hasPostNotificationsPermission()) {
-            NotificationManagerCompat.from(this).notify(HEALTH_WARNING_NOTIFICATION_ID, notification)
-            logger.log("Health Warning notification has been posted")
-        }
+        postNotification(
+            channelId = BATTERY_HEALTH_WARNING_CHANNEL_ID,
+            notificationId = HEALTH_WARNING_NOTIFICATION_ID,
+            title = title,
+            icon = R.drawable.ic_statusbar_notification_battery_health,
+            clickRequestCode = HEALTH_WARNING_NOTIFICATION_CLICK_REQUEST_CODE,
+            logMessagePrefix = "Health Warning",
+            onlyAlertOnce = false
+        )
     }
 
     private fun hideHealthNotification() =
@@ -919,42 +913,21 @@ class NotificationService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun showChargedNotification(batteryIntentHelper: BatteryIntentHelper) {
-        val level = batteryIntentHelper.level
-
-        val text = getString(R.string.battery_charged_with_charge_value, level)
-
-        val clickIntent = WhatAppOpens.APP.getIntent(this)
+        val title = getString(R.string.battery_charged_with_charge_value, batteryIntentHelper.level)
 
         val deleteIntent = Intent(ACTION_CHARGED_NOTIFICATION_DELETED).setPackage(packageName)
-        val deletePendingIntent = PendingIntent.getBroadcast(
-            this,
-            CHARGED_NOTIFICATION_DELETE_REQUEST_CODE,
-            deleteIntent,
-            PendingIntent.FLAG_IMMUTABLE
+
+        postNotification(
+            channelId = BATTERY_CHARGED_CHANNEL_ID,
+            notificationId = CHARGED_NOTIFICATION_ID,
+            title = title,
+            icon = R.drawable.ic_statusbar_notification_battery_charged,
+            clickRequestCode = CHARGED_NOTIFICATION_CLICK_REQUEST_CODE,
+            logMessagePrefix = "Charged",
+            onlyAlertOnce = false,
+            deleteIntent = deleteIntent,
+            deleteRequestCode = CHARGED_NOTIFICATION_DELETE_REQUEST_CODE
         )
-
-        val notification = NotificationCompat.Builder(this, BATTERY_CHARGED_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_statusbar_notification_battery_charged)
-            .setContentTitle(text)
-            .setAutoCancel(true)
-            .setOnlyAlertOnce(false)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_EVENT)
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    this,
-                    CHARGED_NOTIFICATION_CLICK_REQUEST_CODE,
-                    clickIntent,
-                    PendingIntent.FLAG_IMMUTABLE
-                )
-            )
-            .setDeleteIntent(deletePendingIntent)
-            .build()
-
-        if (hasPostNotificationsPermission()) {
-            NotificationManagerCompat.from(this).notify(CHARGED_NOTIFICATION_ID, notification)
-            logger.log("Charged notification has been posted")
-        }
     }
 
     private fun hideChargedNotification() {
@@ -1016,42 +989,21 @@ class NotificationService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun showBatteryLowChargedNotification(batteryIntentHelper: BatteryIntentHelper) {
-        val level = batteryIntentHelper.level
-
-        val text = getString(R.string.battery_low_with_charge_value, level)
-
-        val clickIntent = WhatAppOpens.APP.getIntent(this)
+        val title = getString(R.string.battery_low_with_charge_value, batteryIntentHelper.level)
 
         val deleteIntent = Intent(ACTION_LOW_CHARGE_NOTIFICATION_DELETED).setPackage(packageName)
-        val deletePendingIntent = PendingIntent.getBroadcast(
-            this,
-            LOW_CHARGE_NOTIFICATION_DELETE_REQUEST_CODE,
-            deleteIntent,
-            PendingIntent.FLAG_IMMUTABLE
+
+        postNotification(
+            channelId = BATTERY_LOW_CHANNEL_ID,
+            notificationId = LOW_CHARGE_NOTIFICATION_ID,
+            title = title,
+            icon = R.drawable.ic_statusbar_notification_battery_low,
+            clickRequestCode = LOW_CHARGE_NOTIFICATION_CLICK_REQUEST_CODE,
+            logMessagePrefix = "Battery low",
+            onlyAlertOnce = false,
+            deleteIntent = deleteIntent,
+            deleteRequestCode = LOW_CHARGE_NOTIFICATION_DELETE_REQUEST_CODE
         )
-
-        val notification = NotificationCompat.Builder(this, BATTERY_LOW_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_statusbar_notification_battery_low)
-            .setContentTitle(text)
-            .setAutoCancel(true)
-            .setOnlyAlertOnce(false)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_EVENT)
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    this,
-                    LOW_CHARGE_NOTIFICATION_CLICK_REQUEST_CODE,
-                    clickIntent,
-                    PendingIntent.FLAG_IMMUTABLE
-                )
-            )
-            .setDeleteIntent(deletePendingIntent)
-            .build()
-
-        if (hasPostNotificationsPermission()) {
-            NotificationManagerCompat.from(this).notify(LOW_CHARGE_NOTIFICATION_ID, notification)
-            logger.log("Battery low notification has been posted")
-        }
     }
 
     private fun hideBatteryLowChargedNotification() {
