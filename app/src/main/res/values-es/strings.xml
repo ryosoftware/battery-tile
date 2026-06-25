@@ -261,7 +261,7 @@
         <item quantity="many">%1$s a las %2$s</item>
     </plurals>
 
-    <string name="from_date_to_date">From %1$s to %2$s</string>
+    <string name="from_date_to_date">Del %1$s al %2$s</string>
     <string name="share_history">Compartir Historial</string>
     <string name="save_history">Guardar Historial</string>
     <string name="error_exporting_history">Error al exportar el historial</string>
