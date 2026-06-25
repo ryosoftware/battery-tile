@@ -224,18 +224,6 @@
     <string name="start_logging_dialog_body">¿Quieres eliminar el archivo actual y empezar uno nuevo?</string>
     <string name="stop_logging_dialog_body">¿Quieres dejar de guardar registros de depuración y eliminar el archivo actual?</string>
 
-    <string name="data_is_not_available">No hay datos disponibles</string>
-    <string name="not_available">-</string>
-    <string name="off">Desactivado</string>
-    <string name="confirm">Confirmar</string>
-    <string name="cancel">Cancelar</string>
-    <string name="yes">Sí</string>
-    <string name="no">No</string>
-    <string name="no_delay">Inmediato</string>
-    <string name="tile_separator">&#160;|&#160;</string>
-    <string name="back">Atrás</string>
-    <string name="tile_unknown_value">\?</string>
-
     <string name="battery_history">Historial de Batería</string>
     <string name="shows_historical_data">Muestra gráficos con la evolución temporal de la batería de su dispositivo.</string>
     <string name="battery_level_chart_title">Histórico de carga de la batería</string>
@@ -250,7 +238,7 @@
     <string name="charging_session_plug_type">Tipo de conector</string>
     <string name="no_charging_sessions">Aún no hay sesiones de carga registradas.</string>
     <string name="charging_session_ongoing">En curso</string>
-    <string name="could_have_unplugged_before">Podías haberlo desenchufado a las %1$s (%2$s antes)</string>
+    <string name="could_have_unplugged_before">Podías haberlo desenchufado %2$s antes</string>
     <string name="chart_scroll_hint">Desliza en el gráfico para ver toda la información</string>
     <string name="no_history_data">Sin datos históricos.\nLos datos se recopilan periódicamente mientras el proceso en segundo plano está activo.</string>
     <string name="clear_history">Borrar Historial</string>
@@ -294,5 +282,17 @@
     <string name="chart_legend_screen_off">Pantalla apagada</string>
     <string name="battery_level_from_to">Se carga del %1$s al %2$s</string>
     <string name="battery_level_unknown">\?</string>
+
+    <string name="data_is_not_available">No hay datos disponibles</string>
+    <string name="not_available">-</string>
+    <string name="off">Desactivado</string>
+    <string name="confirm">Confirmar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="yes">Sí</string>
+    <string name="no">No</string>
+    <string name="no_delay">Inmediato</string>
+    <string name="tile_separator">&#160;|&#160;</string>
+    <string name="tile_unknown_value">\?</string>
+    <string name="back">Atrás</string>
 
 </resources>
