@@ -252,19 +252,19 @@
     <string name="charging_session_ongoing">En curso</string>
     <string name="could_have_unplugged_before">Podías haberlo desenchufado a las %1$s (%2$s antes)</string>
     <string name="chart_scroll_hint">Desliza en el gráfico para ver toda la información</string>
-    <string name="no_history_data">Sin datos históricos.\nLos datos se recopilan periódicamente si el servicio en segundo plano está activo.</string>
+    <string name="no_history_data">Sin datos históricos.\nLos datos se recopilan periódicamente mientras el proceso en segundo plano está activo.</string>
     <string name="clear_history">Borrar Historial</string>
 
     <plurals name="history_retention_days">
-        <item quantity="one">Se guardan los datos del último día</item>
-        <item quantity="other">Se guardan datos de los últimos %1$d días</item>
-        <item quantity="many">Se guardan datos de los últimos %1$d días</item>
+        <item quantity="one">Se guardan los datos del último día; los datos anteriores se borran automáticamente.</item>
+        <item quantity="other">Se guardan datos de los últimos %1$d días; los datos anteriores se borran automáticamente.</item>
+        <item quantity="many">Se guardan datos de los últimos %1$d días; los datos anteriores se borran automáticamente.</item>
     </plurals>
 
     <plurals name="readings_count">
         <item quantity="one">El gráfico incluye %1$d lectura, obtenida el %2$s</item>
-        <item quantity="other">El gráfico incluye %1$d lecturas, obtenidas del %2$s al %3$s</item>
-        <item quantity="many">El gráfico incluye %1$d lecturas, obtenidas del %2$s al %3$s</item>
+        <item quantity="other">El gráfico incluye %1$d lecturas, obtenidas entre el %2$s y el %3$s</item>
+        <item quantity="many">El gráfico incluye %1$d lecturas, obtenidas entre el %2$s y el %3$s</item>
     </plurals>
 
     <string name="from_date_to_date">%1$s → %2$s</string>

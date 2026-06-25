@@ -251,12 +251,12 @@
     <string name="charging_session_ongoing">Ongoing</string>
     <string name="could_have_unplugged_before">You Could Have Unplugged at %1$s (%2$s Earlier)</string>
     <string name="chart_scroll_hint">Swipe on the Graph to See All the Information</string>
-    <string name="no_history_data">No History Data Yet.\nData Will Be Collected from Time to Time if the Background Service Is Running.</string>
+    <string name="no_history_data">No History Data Yet.\nData Will Be Collected from Time to Time while the Background Process Is Running.</string>
     <string name="clear_history">Clear History</string>
 
     <plurals name="history_retention_days">
-        <item quantity="one">Data kept for the last day</item>
-        <item quantity="other">Data kept for the last %1$d days</item>
+        <item quantity="one">Data kept for the last day; previous data is automatically deleted.</item>
+        <item quantity="other">Data kept for the last %1$d days; previous data is automatically deleted.</item>
     </plurals>
 
     <plurals name="readings_count">
