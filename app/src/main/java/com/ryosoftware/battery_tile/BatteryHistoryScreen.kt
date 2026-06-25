@@ -338,13 +338,13 @@ private fun findHourChanges(readings: List<BatteryReading>): List<Long> {
 }
 
 private fun formatHourLabel(timestamp: Long): String {
-    val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
-    return "${cal.get(Calendar.HOUR_OF_DAY).toString().padStart(2, '0')}:${cal.get(Calendar.MINUTE).toString().padStart(2, '0')}"
+    val formatter = DateFormat.getTimeInstance(DateFormat.SHORT)
+    return formatter.format(Date(timestamp))
 }
 
 private fun formatDateLabel(timestamp: Long): String {
-    val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
-    return "${cal.get(Calendar.DAY_OF_MONTH)}/${cal.get(Calendar.MONTH) + 1}"
+    val formatter = DateFormat.getDateInstance(DateFormat.SHORT)
+    return formatter.format(Date(timestamp))
 }
 
 private fun isScreenOnAt(timestamp: Long, screenStates: List<ScreenState>): Boolean {
@@ -696,7 +696,7 @@ fun ChargingPatternsTab(
     sessions: List<ChargingSession>,
     appPrefs: AppPreferences
 ) {
-    val dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault())
+    val dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, LocalLocale.current.platformLocale)
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         sessions.forEach { session ->
