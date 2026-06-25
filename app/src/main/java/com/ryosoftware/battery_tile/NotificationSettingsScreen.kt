@@ -57,6 +57,8 @@ import android.content.IntentFilter
 import com.ryosoftware.battery_tile.NotificationServiceUIBuilder.NotificationField.Companion.getLabel
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
+import java.text.DateFormat
+import java.util.Calendar
 
 data class PrintableLastResetStatsData(
     val time: Long,
@@ -601,12 +603,7 @@ fun NotificationSettingsScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                val lastStatsResetTimeString = java.text.DateFormat
-                    .getDateTimeInstance(
-                        java.text.DateFormat.MEDIUM,
-                        java.text.DateFormat.MEDIUM
-                    )
-                    .format(Date(lastResetInfo.time))
+                val lastStatsResetTimeString = getStringDateTime(context, lastResetInfo.time)
 
                 val lastStatsResetReasonString = when (lastResetInfo.reason) {
                     LastStatsResetReason.POWER_DISCONNECTED.key -> stringResource(R.string.power_disconnected)
@@ -691,4 +688,15 @@ fun NotificationSettingsScreen(
             }
         }
     }
+}
+
+fun getStringDateTime(context: Context, timeMillis: Long): String {
+    val calendar = Calendar.getInstance().apply { timeInMillis = timeMillis }
+    val dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM)
+    val timeFormat = DateFormat.getTimeInstance(DateFormat.MEDIUM)
+    val date = dateFormat.format(calendar.time)
+    val time = timeFormat.format(calendar.time)
+    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+
+    return context.resources.getQuantityString(R.plurals.date_time, hour, date, time)
 }

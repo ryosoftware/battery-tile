@@ -255,7 +255,13 @@
         <item quantity="many">El gráfico incluye %1$d lecturas, obtenidas entre el %2$s y el %3$s</item>
     </plurals>
 
-    <string name="from_date_to_date">%1$s → %2$s</string>
+    <plurals name="date_time">
+        <item quantity="one">%1$s a la %2$s</item>
+        <item quantity="other">%1$s a las %2$s</item>
+        <item quantity="many">%1$s a las %2$s</item>
+    </plurals>
+
+    <string name="from_date_to_date">From %1$s to %2$s</string>
     <string name="share_history">Compartir Historial</string>
     <string name="save_history">Guardar Historial</string>
     <string name="error_exporting_history">Error al exportar el historial</string>
@@ -280,7 +286,7 @@
     <string name="screen_states_tab">Estados de pantalla</string>
     <string name="chart_legend_screen_on">Pantalla encendida</string>
     <string name="chart_legend_screen_off">Pantalla apagada</string>
-    <string name="battery_level_from_to">Se carga del %1$s al %2$s</string>
+    <string name="battery_level_from_to">%1$s → %2$s</string>
     <string name="battery_level_unknown">\?</string>
 
     <string name="data_is_not_available">No hay datos disponibles</string>

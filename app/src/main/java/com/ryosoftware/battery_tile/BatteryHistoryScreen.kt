@@ -269,13 +269,12 @@ fun BatteryHistoryScreen(
                 Spacer(Modifier.height(16.dp))
 
                 if (selectedTab < 2) {
-                    val dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, LocalLocale.current.platformLocale)
                     val oldest = readings.last()
                     val newest = readings.first()
 
                     @SuppressLint("LocalContextResourcesRead")
                     Text(
-                        text = context.resources.getQuantityString(R.plurals.readings_count, readings.size, readings.size, dateFormat.format(Date(oldest.timestamp)), dateFormat.format(Date(newest.timestamp))),
+                        text = context.resources.getQuantityString(R.plurals.readings_count, readings.size, readings.size, getStringDateTime(context, oldest.timestamp), getStringDateTime(context, newest.timestamp)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -696,8 +695,6 @@ fun ChargingPatternsTab(
     sessions: List<ChargingSession>,
     appPrefs: AppPreferences
 ) {
-    val dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, LocalLocale.current.platformLocale)
-
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         sessions.forEach { session ->
             Card(
@@ -710,11 +707,9 @@ fun ChargingPatternsTab(
                     ) {
                         Text(
                             text = if (session.endTime != null)
-                                stringResource(R.string.from_date_to_date,
-                                    dateFormat.format(Date(session.startTime)),
-                                    dateFormat.format(Date(session.endTime)))
+                                stringResource(R.string.from_date_to_date, getStringDateTime(context, session.startTime), getStringDateTime(context, session.endTime))
                             else
-                                dateFormat.format(Date(session.startTime)),
+                                getStringDateTime(context, session.startTime),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         if (session.endTime == null) {
@@ -837,7 +832,7 @@ fun ChargingPatternsTab(
                             Text(
                                 text = stringResource(
                                     R.string.could_have_unplugged_before,
-                                    dateFormat.format(Date(session.chargedTimeStamp)),
+                                    getStringDateTime(context, session.chargedTimeStamp),
                                     getStringTimeFromInterval(context, diffMs)
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
@@ -1030,3 +1025,4 @@ fun getStringPercent(context: Context, percent: Float?): String {
     return if (hasNoDecimals) context.getString(R.string.percent_value_integer, percent.toInt())
     else context.getString(R.string.percent_value_float, percent)
 }
+

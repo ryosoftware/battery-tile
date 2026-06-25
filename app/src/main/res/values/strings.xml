@@ -248,11 +248,16 @@
     </plurals>
 
     <plurals name="readings_count">
-        <item quantity="one">Graph includes %1$d reading, taken %2$s</item>
+        <item quantity="one">Graph includes %1$d reading, taken on %2$s</item>
         <item quantity="other">Graph includes %1$d readings, taken from %2$s to %3$s</item>
     </plurals>
 
-    <string name="from_date_to_date">%1$s → %2$s</string>
+    <plurals name="date_time">
+        <item quantity="one">%1$s at %2$s</item>
+        <item quantity="other">%1$s at %2$s</item>
+    </plurals>
+
+    <string name="from_date_to_date">Del %1$s al %2$s</string>
     <string name="share_history">Share history</string>
     <string name="save_history">Save history</string>
     <string name="error_exporting_history">Error exporting history</string>
@@ -277,7 +282,7 @@
     <string name="screen_states_tab">Screen states</string>
     <string name="chart_legend_screen_on">Screen on</string>
     <string name="chart_legend_screen_off">Screen off</string>
-    <string name="battery_level_from_to">Charges from %1$s to %2$s</string>
+    <string name="battery_level_from_to">%1$s → %2$s</string>
     <string name="battery_level_unknown">\?</string>
 
     <string name="data_is_not_available">Data is not available</string>
