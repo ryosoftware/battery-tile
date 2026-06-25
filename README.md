@@ -3,7 +3,7 @@
 
   # Battery Monitor
 
-  **A full-featured battery information app for Android**
+  **A full-featured battery monitoring app with history graphs, charging insights, and smart alerts**
 
   <p>
     <img src="https://img.shields.io/badge/minSdk-29-green?style=flat-square"/>
@@ -50,11 +50,36 @@
   </tr>
   <tr>
     <td width="50%">
+      <h4>Battery History</h4>
+      <ul>
+        <li>Interactive graphs for battery level and temperature over time</li>
+        <li>Line segments color-coded by screen on / screen off state</li>
+        <li>Horizontal scrollable timeline with day/hour grid markers</li>
+        <li>Configurable data retention window (default 3 days)</li>
+        <li>Export data to Excel (.xlsx) with readings and sessions</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h4>Charging Sessions</h4>
+      <ul>
+        <li>Automatic tracking of each charging session (start → end)</li>
+        <li>Duration, level change, charging speed (%/h)</li>
+        <li>Min, max, and average temperature per session</li>
+        <li>Plug type detection</li>
+        <li>"Could have unplugged earlier" hint when full charge is reached early</li>
+        <li>Configurable session history window (default 90 days)</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
       <h4>Alerts</h4>
       <ul>
         <li>🔌 Power connected / disconnected notification</li>
         <li>🔋 Battery charged (configurable threshold, delay, <b>repeat interval</b>)</li>
+        <li>🔋 Battery low notification (configurable threshold, repeat interval)</li>
         <li>🌡️ High temperature alert (configurable threshold)</li>
+        <li>⚠️ Battery health warning (overheat, overvoltage, etc.)</li>
         <li>🚫 Optional: block disconnect notification when battery is charged</li>
       </ul>
     </td>
