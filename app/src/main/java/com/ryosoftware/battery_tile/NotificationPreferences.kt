@@ -31,33 +31,33 @@ class NotificationPreferences(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(FILENAME, Context.MODE_PRIVATE)
 
-    private fun getKey(prefix: String, field: NotificationBatteryIntentHelper.NotificationField) = "$prefix${field.key.lowercase()}"
+    private fun getKey(prefix: String, field: NotificationServiceUIBuilder.NotificationField) = "$prefix${field.key.lowercase()}"
 
-    private fun getStringFromNotificationField(field: NotificationBatteryIntentHelper.NotificationField, index: Int): String? =
+    private fun getStringFromNotificationField(field: NotificationServiceUIBuilder.NotificationField, index: Int): String? =
         if (field.defaultsRes == 0) null else resources.getStringArray(field.defaultsRes).getOrNull(index)
 
-    private fun isFieldVisibleDefault(notificationField: NotificationBatteryIntentHelper.NotificationField): Boolean {
+    private fun isFieldVisibleDefault(notificationField: NotificationServiceUIBuilder.NotificationField): Boolean {
         val defaultValue = getStringFromNotificationField(notificationField, 1)
 
         return defaultValue?.toBoolean() ?: false
     }
 
-    fun isFieldVisible(notificationField: NotificationBatteryIntentHelper.NotificationField): Boolean =
+    fun isFieldVisible(notificationField: NotificationServiceUIBuilder.NotificationField): Boolean =
         prefs.getBoolean(getKey(KEY_FIELD_VISIBLE_PREFIX, notificationField), isFieldVisibleDefault(notificationField))
 
-    fun setFieldVisible(notificationField: NotificationBatteryIntentHelper.NotificationField, visible: Boolean) =
+    fun setFieldVisible(notificationField: NotificationServiceUIBuilder.NotificationField, visible: Boolean) =
         prefs.edit { putBoolean(getKey(KEY_FIELD_VISIBLE_PREFIX, notificationField), visible) }
 
-    private fun getFieldPositionDefault(notificationField: NotificationBatteryIntentHelper.NotificationField): Int {
+    private fun getFieldPositionDefault(notificationField: NotificationServiceUIBuilder.NotificationField): Int {
         val defaultValue = getStringFromNotificationField(notificationField, 0)
 
         return defaultValue?.toInt() ?: Int.MAX_VALUE
     }
 
-    fun getFieldPosition(notificationField: NotificationBatteryIntentHelper.NotificationField): Int =
+    fun getFieldPosition(notificationField: NotificationServiceUIBuilder.NotificationField): Int =
         prefs.getInt(getKey(KEY_FIELD_POSITION_PREFIX, notificationField), getFieldPositionDefault(notificationField))
 
-    fun setFieldPosition(notificationField: NotificationBatteryIntentHelper.NotificationField, position: Int) =
+    fun setFieldPosition(notificationField: NotificationServiceUIBuilder.NotificationField, position: Int) =
         prefs.edit { putInt(getKey(KEY_FIELD_POSITION_PREFIX, notificationField), position) }
 
     var isNotificationEnabled: Boolean

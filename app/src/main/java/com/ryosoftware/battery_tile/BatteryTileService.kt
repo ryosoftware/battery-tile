@@ -121,18 +121,18 @@ class BatteryTileService : TileService() {
     }
 
     private fun updateTile(batteryIntent: Intent) {
-        fun buildText(batteryTileBatteryIntentHelper: BatteryTileBatteryIntentHelper): Pair<String, String> {
+        fun buildText(batteryTileUIBuilder: BatteryTileUIBuilder): Pair<String, String> {
             val separator = getString(R.string.tile_separator)
 
-            val (lines1, lines2) = BatteryTileBatteryIntentHelper.BatteryTileField.entries
+            val (lines1, lines2) = BatteryTileUIBuilder.BatteryTileField.entries
                 .asSequence()
                 .filter {
-                    it.textualizable && batteryTileBatteryIntentHelper.isValid(it) && prefs.isFieldVisible(it)
+                    it.textualizable && batteryTileUIBuilder.isValid(it) && prefs.isFieldVisible(it)
                 }
                 .sortedBy { prefs.getFieldPosition(it) }
                 .map { field ->
                     val line = prefs.getFieldLine(field)
-                    val text = batteryTileBatteryIntentHelper.toString(this, field, appPrefs)
+                    val text = batteryTileUIBuilder.toString(this, field, appPrefs)
                     line to text
                 }
                 .partition { (line, _) -> line == 1 }
@@ -146,15 +146,15 @@ class BatteryTileService : TileService() {
         val tile = qsTile ?: return
 
         val batteryServiceDataSnapshot = batteryService?.getBatteryDataSnapshot()
-        val batteryTileBatteryIntentHelper = BatteryTileBatteryIntentHelper(batteryIntent,
+        val batteryTileUIBuilder = BatteryTileUIBuilder(batteryIntent,
             batteryServiceDataSnapshot?.lastStatsResetTime ?: -1L,
             batteryServiceDataSnapshot?.deepSleepTimeAtLastStatsReset ?: -1L,
             batteryServiceDataSnapshot?.screenOnTimeSinceBoot ?: -1L,
             batteryServiceDataSnapshot?.screenOnTimeSinceLastStatsReset ?: -1L)
-        val (line1, line2) = buildText(batteryTileBatteryIntentHelper)
+        val (line1, line2) = buildText(batteryTileUIBuilder)
 
-        tile.state = if (batteryTileBatteryIntentHelper.isCharging) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        tile.icon = batteryTileBatteryIntentHelper.getIcon(this, prefs.iconField, appPrefs)
+        tile.state = if (batteryTileUIBuilder.isCharging) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+        tile.icon = batteryTileUIBuilder.getIcon(this, prefs.iconField, appPrefs)
         tile.label = line1
         tile.subtitle = line2
         tile.updateTile()

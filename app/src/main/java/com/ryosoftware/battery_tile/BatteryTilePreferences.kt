@@ -18,61 +18,61 @@ class BatteryTilePreferences(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(FILENAME, Context.MODE_PRIVATE)
 
-    private fun getKey(prefix: String, field: BatteryTileBatteryIntentHelper.BatteryTileField) = "$prefix${field.key.lowercase()}"
+    private fun getKey(prefix: String, field: BatteryTileUIBuilder.BatteryTileField) = "$prefix${field.key.lowercase()}"
 
-    private fun getDefaultStringFromBatteryTileField(batteryTileField: BatteryTileBatteryIntentHelper.BatteryTileField, index: Int): String? =
+    private fun getDefaultStringFromBatteryTileField(batteryTileField: BatteryTileUIBuilder.BatteryTileField, index: Int): String? =
         if (batteryTileField.defaultsRes == 0) null else resources.getStringArray(batteryTileField.defaultsRes).getOrNull(index)
 
-    private fun getIconFieldDefault(): BatteryTileBatteryIntentHelper.BatteryTileField {
+    private fun getIconFieldDefault(): BatteryTileUIBuilder.BatteryTileField {
         val value = resources.getString(R.string.tile_icon_default)
-        val batteryTileField = BatteryTileBatteryIntentHelper.BatteryTileField.fromKey(value)
+        val batteryTileField = BatteryTileUIBuilder.BatteryTileField.fromKey(value)
 
         return if ((batteryTileField != null) && batteryTileField.iconizable) {
             batteryTileField
         } else {
-            BatteryTileBatteryIntentHelper.BatteryTileField.BATTERY_LEVEL_ICON
+            BatteryTileUIBuilder.BatteryTileField.BATTERY_LEVEL_ICON
         }
     }
 
-    var iconField: BatteryTileBatteryIntentHelper.BatteryTileField
+    var iconField: BatteryTileUIBuilder.BatteryTileField
         get() = prefs.getString(KEY_ICON_FIELD, null)
-            ?.let(BatteryTileBatteryIntentHelper.BatteryTileField::fromKey)
+            ?.let(BatteryTileUIBuilder.BatteryTileField::fromKey)
             ?: getIconFieldDefault()
         set(field) { prefs.edit { putString(KEY_ICON_FIELD, field.key) } }
 
-    private fun getFieldPositionDefault(field: BatteryTileBatteryIntentHelper.BatteryTileField): Int {
+    private fun getFieldPositionDefault(field: BatteryTileUIBuilder.BatteryTileField): Int {
         val defaultValue = getDefaultStringFromBatteryTileField(field, 0)
 
         return defaultValue?.toInt() ?: Int.MAX_VALUE
     }
 
-    fun getFieldPosition(field: BatteryTileBatteryIntentHelper.BatteryTileField): Int =
+    fun getFieldPosition(field: BatteryTileUIBuilder.BatteryTileField): Int =
         prefs.getInt(getKey(KEY_FIELD_POSITION_PREFIX, field), getFieldPositionDefault(field))
 
-    fun setFieldPosition(field: BatteryTileBatteryIntentHelper.BatteryTileField, position: Int) =
+    fun setFieldPosition(field: BatteryTileUIBuilder.BatteryTileField, position: Int) =
         prefs.edit { putInt(getKey(KEY_FIELD_POSITION_PREFIX, field), position) }
 
-    private fun isFieldVisibleDefault(field: BatteryTileBatteryIntentHelper.BatteryTileField): Boolean {
+    private fun isFieldVisibleDefault(field: BatteryTileUIBuilder.BatteryTileField): Boolean {
         val defaultValue = getDefaultStringFromBatteryTileField(field, 2)
 
         return defaultValue?.toBoolean() ?: false
     }
 
-    fun isFieldVisible(field: BatteryTileBatteryIntentHelper.BatteryTileField): Boolean =
+    fun isFieldVisible(field: BatteryTileUIBuilder.BatteryTileField): Boolean =
         prefs.getBoolean(getKey(KEY_FIELD_VISIBLE_PREFIX, field), isFieldVisibleDefault(field))
 
-    fun setFieldVisible(field: BatteryTileBatteryIntentHelper.BatteryTileField, visible: Boolean) =
+    fun setFieldVisible(field: BatteryTileUIBuilder.BatteryTileField, visible: Boolean) =
         prefs.edit { putBoolean(getKey(KEY_FIELD_VISIBLE_PREFIX, field), visible) }
 
-    private fun getFieldLineDefault(field: BatteryTileBatteryIntentHelper.BatteryTileField): Int {
+    private fun getFieldLineDefault(field: BatteryTileUIBuilder.BatteryTileField): Int {
         val defaultValue = getDefaultStringFromBatteryTileField(field, 1)
 
         return defaultValue?.toInt() ?: 0
     }
 
-    fun getFieldLine(field: BatteryTileBatteryIntentHelper.BatteryTileField): Int =
+    fun getFieldLine(field: BatteryTileUIBuilder.BatteryTileField): Int =
         prefs.getInt(getKey(KEY_FIELD_LINE_PREFIX, field), getFieldLineDefault(field))
 
-    fun setFieldLine(field: BatteryTileBatteryIntentHelper.BatteryTileField, line: Int) =
+    fun setFieldLine(field: BatteryTileUIBuilder.BatteryTileField, line: Int) =
         prefs.edit { putInt(getKey(KEY_FIELD_LINE_PREFIX, field), line) }
 }

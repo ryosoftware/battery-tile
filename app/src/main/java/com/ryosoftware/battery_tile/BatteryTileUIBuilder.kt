@@ -10,17 +10,20 @@ import android.graphics.Color
 import android.os.BatteryManager
 import android.os.SystemClock
 import androidx.annotation.ArrayRes
-import com.ryosoftware.battery_tile.NotificationBatteryIntentHelper.NotificationField
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
-import kotlin.math.roundToInt
 
-class BatteryTileBatteryIntentHelper(
+class BatteryTileUIBuilder(
     intent: Intent,
-    private val lastStatsResetTime: Long,
-    private val deepSleepTimeAtLastStatsReset: Long,
-    private val screenOnTimeSinceBoot: Long,
-    private val screenOnTimeSinceLastStatsReset: Long,
-) : BatteryIntentHelper(intent) {
+    lastStatsResetTime: Long,
+    deepSleepTimeAtLastStatsReset: Long,
+    screenOnTimeSinceBoot: Long,
+    screenOnTimeSinceLastStatsReset: Long,
+) : BaseBatteryIntentHelper(
+    intent,
+    lastStatsResetTime,
+    deepSleepTimeAtLastStatsReset,
+    screenOnTimeSinceBoot,
+    screenOnTimeSinceLastStatsReset) {
     enum class BatteryTileField(val key: String, val iconizable: Boolean, val textualizable: Boolean, val isSupported: Boolean, val requiresBackgroundService: Boolean, @param:ArrayRes val defaultsRes: Int) {
         BATTERY_LEVEL(key = BatteryIntentHelper.BATTERY_LEVEL, iconizable = true, textualizable = true, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_LEVEL), requiresBackgroundService = false, defaultsRes = R.array.level_data_for_tile_default),
         BATTERY_LEVEL_ICON(key = "BATTERY-LEVEL-ICON", iconizable = true, textualizable = false, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_LEVEL), requiresBackgroundService = false, defaultsRes = 0),
@@ -50,25 +53,7 @@ class BatteryTileBatteryIntentHelper(
         }
     }
 
-    companion object {
-        private fun getStringPercentFromInterval(context: Context, interval: Long, total: Long): String {
-            val percent = if (total == 0L) 0f else (interval * 100f / total).coerceIn(0f, 100f)
-
-            val hasNoDecimals = percent % 1f == 0f
-
-            return if (hasNoDecimals) context.getString(R.string.percent_value_integer, percent.toInt())
-            else context.getString(R.string.percent_value_float, percent)
-        }
-    }
-
-    val smallIcon = intent.getIntExtra(BatteryManager.EXTRA_ICON_SMALL, 0)
-
-    val timeSinceBoot: Long by lazy { SystemClock.elapsedRealtime() }
-    val deepSleepTimeSinceBoot: Long by lazy { SystemClock.elapsedRealtime() - SystemClock.uptimeMillis() }
-
-    val timeSinceLastStatsReset: Long by lazy { System.currentTimeMillis() - lastStatsResetTime }
-
-    val deepSleepTimeSinceLastStatsReset: Long by lazy { deepSleepTimeSinceBoot - deepSleepTimeAtLastStatsReset }
+    private val smallIcon = intent.getIntExtra(BatteryManager.EXTRA_ICON_SMALL, 0)
 
     fun isValid(batteryTileField: BatteryTileField): Boolean {
         if (! batteryTileField.isSupported) return false

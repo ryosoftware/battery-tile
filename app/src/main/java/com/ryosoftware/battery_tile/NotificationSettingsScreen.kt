@@ -54,7 +54,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import java.util.Date
 import kotlin.math.roundToInt
 import android.content.IntentFilter
-import com.ryosoftware.battery_tile.NotificationBatteryIntentHelper.NotificationField.Companion.getLabel
+import com.ryosoftware.battery_tile.NotificationServiceUIBuilder.NotificationField.Companion.getLabel
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
 
@@ -118,17 +118,17 @@ fun NotificationSettingsScreen(
     var tempThreshold by remember { mutableFloatStateOf(notifPrefs.getBatteryTemperatureThreshold(tempUnit)) }
 
     val fields = remember {
-        NotificationBatteryIntentHelper.NotificationField.entries.sortedWith(compareBy<NotificationBatteryIntentHelper.NotificationField> { !notifPrefs.isFieldVisible(it) }.thenBy { notifPrefs.getFieldPosition(it) }).toMutableStateList()
+        NotificationServiceUIBuilder.NotificationField.entries.sortedWith(compareBy<NotificationServiceUIBuilder.NotificationField> { !notifPrefs.isFieldVisible(it) }.thenBy { notifPrefs.getFieldPosition(it) }).toMutableStateList()
     }
 
     val fieldVisibility = remember {
-        mutableStateMapOf<NotificationBatteryIntentHelper.NotificationField, Boolean>().apply {
-            NotificationBatteryIntentHelper.NotificationField.entries.forEach { put(it, notifPrefs.isFieldVisible(it)) }
+        mutableStateMapOf<NotificationServiceUIBuilder.NotificationField, Boolean>().apply {
+            NotificationServiceUIBuilder.NotificationField.entries.forEach { put(it, notifPrefs.isFieldVisible(it)) }
         }
     }
 
     fun updateOrder() {
-        fields.sortWith(compareBy<NotificationBatteryIntentHelper.NotificationField> { !notifPrefs.isFieldVisible(it) }.thenBy { notifPrefs.getFieldPosition(it) })
+        fields.sortWith(compareBy<NotificationServiceUIBuilder.NotificationField> { !notifPrefs.isFieldVisible(it) }.thenBy { notifPrefs.getFieldPosition(it) })
     }
 
     @SuppressLint("LocalContextGetResourceValueCall")
@@ -639,7 +639,7 @@ fun NotificationSettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                     ) {
-                        val batteryLevelIsLastVisible = field == NotificationBatteryIntentHelper.NotificationField.BATTERY_LEVEL &&
+                        val batteryLevelIsLastVisible = field == NotificationServiceUIBuilder.NotificationField.BATTERY_LEVEL &&
                             fields.all { it == field || !(fieldVisibility[it] ?: false) }
 
                         Row(
@@ -648,13 +648,13 @@ fun NotificationSettingsScreen(
                                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                                 .clickable(enabled = !batteryLevelIsLastVisible) {
                                     val newVisible = !(fieldVisibility[field] ?: false)
-                                    if (!newVisible && field != NotificationBatteryIntentHelper.NotificationField.BATTERY_LEVEL) {
+                                    if (!newVisible && field != NotificationServiceUIBuilder.NotificationField.BATTERY_LEVEL) {
                                         val allOthersHidden = fields.all {
                                             it == field || !(fieldVisibility[it] ?: false)
                                         }
                                         if (allOthersHidden) {
-                                            fieldVisibility[NotificationBatteryIntentHelper.NotificationField.BATTERY_LEVEL] = true
-                                            notifPrefs.setFieldVisible(NotificationBatteryIntentHelper.NotificationField.BATTERY_LEVEL, true)
+                                            fieldVisibility[NotificationServiceUIBuilder.NotificationField.BATTERY_LEVEL] = true
+                                            notifPrefs.setFieldVisible(NotificationServiceUIBuilder.NotificationField.BATTERY_LEVEL, true)
                                         }
                                     }
                                     fieldVisibility[field] = newVisible

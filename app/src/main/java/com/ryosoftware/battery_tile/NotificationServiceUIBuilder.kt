@@ -5,14 +5,19 @@ import android.content.Intent
 import android.os.SystemClock
 import androidx.annotation.ArrayRes
 
-class NotificationBatteryIntentHelper(
+class NotificationServiceUIBuilder(
     intent: Intent,
-    private val lastStatsResetTime: Long,
-    private val deepSleepTimeAtLastStatsReset: Long,
-    private val screenOnTimeSinceBoot: Long,
-    private val screenOnTimeSinceLastStatsReset: Long,
+    lastStatsResetTime: Long,
+    deepSleepTimeAtLastStatsReset: Long,
+    screenOnTimeSinceBoot: Long,
+    screenOnTimeSinceLastStatsReset: Long,
     private val lastBatteryEventTime: Long,
-) : BatteryIntentHelper(intent) {
+) : BaseBatteryIntentHelper(
+    intent,
+    lastStatsResetTime,
+    deepSleepTimeAtLastStatsReset,
+    screenOnTimeSinceBoot,
+    screenOnTimeSinceLastStatsReset) {
     enum class NotificationField(val key: String, val isSupported: Boolean, @param:ArrayRes val defaultsRes: Int) {
         BATTERY_LEVEL(key = BatteryIntentHelper.BATTERY_LEVEL, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_LEVEL), defaultsRes = R.array.level_data_for_notification_default),
         BATTERY_STATUS(key = BatteryIntentHelper.BATTERY_STATUS, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_STATUS), defaultsRes = R.array.status_data_for_notification_default),
@@ -32,6 +37,7 @@ class NotificationBatteryIntentHelper(
         UPTIME_SINCE_BOOT(key = "UPTIME-SINCE-BOOT", isSupported = true, defaultsRes = R.array.uptime_since_boot_data_for_notification_default),
         UPTIME_SINCE_LAST_STATS_RESET(key = "UPTIME-SINCE-LAST-STATS-RESET", isSupported = true, defaultsRes = R.array.uptime_since_last_stats_reset_data_for_notification_default),
         BATTERY_CHARGING_TIME(key = "BATTERY-CHARGING-TIME", isSupported = true, defaultsRes = R.array.charging_time_data_for_notification_default);
+
         companion object {
             private val map = entries.associateBy { it.key.uppercase() }
 
@@ -98,43 +104,6 @@ class NotificationBatteryIntentHelper(
                 }
         }
     }
-    companion object {
-        private fun getStringTimeFromInterval(context: Context, interval: Long): String {
-            val totalMinutes = interval / 60_000
-            val days = totalMinutes / (24 * 60)
-            val hours = (totalMinutes % (24 * 60)) / 60
-            val minutes = totalMinutes % 60
-
-            return if (days > 0) {
-                context.getString(R.string.days_and_hours_and_minutes, days, hours, minutes)
-            } else if (hours > 0) {
-                context.getString(R.string.hours_and_minutes, hours, minutes)
-            } else {
-                context.getString(R.string.minutes, minutes)
-            }
-        }
-
-        private fun getStringPercentFromInterval(context: Context, interval: Long, total: Long): String {
-            val percent = if (total == 0L) 0f else (interval * 100f / total).coerceIn(0f, 100f)
-
-            val hasNoDecimals = percent % 1f == 0f
-
-            return if (hasNoDecimals) context.getString(R.string.percent_value_integer, percent.toInt())
-                   else context.getString(R.string.percent_value_float, percent)
-        }
-        private fun getStringTimeAndPercentFromInterval(context: Context, interval: Long, total: Long): String =
-            context.getString(R.string.time_and_percent,
-                getStringTimeFromInterval(context, interval),
-                getStringPercentFromInterval(context, interval, total))
-    }
-
-    val timeSinceBoot: Long by lazy { SystemClock.elapsedRealtime() }
-
-    val deepSleepTimeSinceBoot: Long by lazy { SystemClock.elapsedRealtime() - SystemClock.uptimeMillis() }
-
-    val timeSinceLastStatsReset: Long by lazy { System.currentTimeMillis() - lastStatsResetTime }
-
-    val deepSleepTimeSinceLastStatsReset: Long by lazy { deepSleepTimeSinceBoot - deepSleepTimeAtLastStatsReset }
 
     fun isValid(notificationField: NotificationField): Boolean {
         if (!notificationField.isSupported) return false

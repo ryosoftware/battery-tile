@@ -1,6 +1,7 @@
 package com.ryosoftware.battery_tile
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +32,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -40,10 +42,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.ryosoftware.battery_tile.BatteryTileBatteryIntentHelper.BatteryTileField.Companion.getLabel
+import com.ryosoftware.battery_tile.BatteryTileUIBuilder.BatteryTileField.Companion.getLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,23 +55,23 @@ fun TileSettingsScreen(
     onBack: () -> Unit
 ) {
     val fields = remember {
-        BatteryTileBatteryIntentHelper.BatteryTileField.entries.sortedWith(compareBy< BatteryTileBatteryIntentHelper.BatteryTileField> { !prefs.isFieldVisible(it) }.thenBy { prefs.getFieldPosition(it) }).toMutableStateList()
+        BatteryTileUIBuilder.BatteryTileField.entries.sortedWith(compareBy< BatteryTileUIBuilder.BatteryTileField> { !prefs.isFieldVisible(it) }.thenBy { prefs.getFieldPosition(it) }).toMutableStateList()
     }
 
     val fieldVisibility = remember {
-        mutableStateMapOf<BatteryTileBatteryIntentHelper.BatteryTileField, Boolean>().apply {
-            BatteryTileBatteryIntentHelper.BatteryTileField.entries.forEach { put(it, prefs.isFieldVisible(it)) }
+        mutableStateMapOf<BatteryTileUIBuilder.BatteryTileField, Boolean>().apply {
+            BatteryTileUIBuilder.BatteryTileField.entries.forEach { put(it, prefs.isFieldVisible(it)) }
         }
     }
 
     val fieldLine = remember {
-        mutableStateMapOf<BatteryTileBatteryIntentHelper.BatteryTileField, Int>().apply {
-            BatteryTileBatteryIntentHelper.BatteryTileField.entries.forEach { put(it, prefs.getFieldLine(it)) }
+        mutableStateMapOf<BatteryTileUIBuilder.BatteryTileField, Int>().apply {
+            BatteryTileUIBuilder.BatteryTileField.entries.forEach { put(it, prefs.getFieldLine(it)) }
         }
     }
 
     fun updateOrder() {
-        fields.sortWith(compareBy<BatteryTileBatteryIntentHelper.BatteryTileField> { !prefs.isFieldVisible(it) }.thenBy { prefs.getFieldPosition(it) })
+        fields.sortWith(compareBy<BatteryTileUIBuilder.BatteryTileField> { !prefs.isFieldVisible(it) }.thenBy { prefs.getFieldPosition(it) })
     }
 
     var iconField by remember { mutableStateOf(prefs.iconField) }
@@ -136,24 +139,68 @@ fun TileSettingsScreen(
                 onExpandedChange = { iconDropdownExpanded = !iconDropdownExpanded }
             ) {
                 OutlinedTextField(
-                    value = iconField.getLabel(context),
+                    value = " ",
                     onValueChange = {},
                     readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = iconDropdownExpanded) },
+                    singleLine = false,
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = iconDropdownExpanded)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(),
-                    colors = OutlinedTextFieldDefaults.colors()
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Transparent,
+                        unfocusedTextColor = Color.Transparent,
+                        disabledTextColor = Color.Transparent,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
                 )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 48.dp, top = 12.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = iconField.getLabel(context),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+
+                    if (iconField.requiresBackgroundService) {
+                        Text(
+                            text = stringResource(R.string.requires_background_running),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
                 ExposedDropdownMenu(
                     expanded = iconDropdownExpanded,
                     onDismissRequest = { iconDropdownExpanded = false }
                 ) {
-                    val iconizableFields = BatteryTileBatteryIntentHelper.BatteryTileField.entries.filter { it.iconizable && it.isSupported }
+                    val iconizableFields = BatteryTileUIBuilder.BatteryTileField.entries.filter { it.iconizable && it.isSupported }
 
                     iconizableFields.forEach { field ->
                         DropdownMenuItem(
-                            text = { Text(field.getLabel(context)) },
+                            text = {
+                                Column {
+                                    Text(
+                                        text = field.getLabel(context),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    if (field.requiresBackgroundService) {
+                                        Text(
+                                            text = stringResource(R.string.requires_background_running),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            },
                             onClick = {
                                 iconField = field
                                 prefs.iconField = field
@@ -179,7 +226,7 @@ fun TileSettingsScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            val textualizableFields = BatteryTileBatteryIntentHelper.BatteryTileField.entries.filter { it.textualizable && it.isSupported }
+            val textualizableFields = BatteryTileUIBuilder.BatteryTileField.entries.filter { it.textualizable && it.isSupported }
 
             textualizableFields.forEach { field ->
                 val visible = fieldVisibility[field] ?: false

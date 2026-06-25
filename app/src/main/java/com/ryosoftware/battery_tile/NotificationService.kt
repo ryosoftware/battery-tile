@@ -24,7 +24,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import com.ryosoftware.battery_tile.Main.Companion.hasPostNotificationsPermission
 import com.ryosoftware.battery_tile.Main.Companion.isScreenOn
-import com.ryosoftware.battery_tile.NotificationBatteryIntentHelper.NotificationField.Companion.getLabel
+import com.ryosoftware.battery_tile.NotificationServiceUIBuilder.NotificationField.Companion.getLabel
 import com.ryosoftware.battery_tile.WhatAppOpens.Companion.getIntent
 import com.ryosoftware.battery_tile.data.BatteryReading
 import com.ryosoftware.battery_tile.data.BatteryRepository
@@ -246,7 +246,7 @@ class NotificationService : Service() {
     }
     private val persistentData by lazy { getPersistentDataPreferences(this) }
 
-    private val notificationFieldFormats = mutableMapOf<NotificationBatteryIntentHelper.NotificationField, String>()
+    private val notificationFieldFormats = mutableMapOf<NotificationServiceUIBuilder.NotificationField, String>()
     private var notificationFieldFormatsLocale: LocaleList? = null
 
     private val configCallbacks = object : ComponentCallbacks {
@@ -261,7 +261,7 @@ class NotificationService : Service() {
         override fun onLowMemory() {}
     }
 
-    private fun getCachedLabel(notificationField: NotificationBatteryIntentHelper.NotificationField): String =
+    private fun getCachedLabel(notificationField: NotificationServiceUIBuilder.NotificationField): String =
         notificationFieldFormats.getOrPut(notificationField) {
             getString(R.string.label_and_value,
             notificationField.getLabel(this, true),
@@ -736,14 +736,14 @@ class NotificationService : Service() {
     }
 
     private fun buildServiceNotification(): Notification {
-        fun buildText(notificationBatteryIntentHelper: NotificationBatteryIntentHelper): String {
-            val values = NotificationBatteryIntentHelper.NotificationField.entries.associateWith { field ->
-                notificationBatteryIntentHelper.toString(this, field, prefs, appPrefs)
+        fun buildText(notificationServiceUIBuilder: NotificationServiceUIBuilder): String {
+            val values = NotificationServiceUIBuilder.NotificationField.entries.associateWith { field ->
+                notificationServiceUIBuilder.toString(this, field, prefs, appPrefs)
             }
 
-            val fields = NotificationBatteryIntentHelper.NotificationField.entries
+            val fields = NotificationServiceUIBuilder.NotificationField.entries
                 .filter {
-                    notificationBatteryIntentHelper.isValid(it) && notificationBatteryIntentHelper.isVisible(it, prefs) && prefs.isFieldVisible(it)
+                    notificationServiceUIBuilder.isValid(it) && notificationServiceUIBuilder.isVisible(it, prefs) && prefs.isFieldVisible(it)
                 }
                 .map { field ->
                     field to getCachedLabel(field).format(values[field])
@@ -762,7 +762,7 @@ class NotificationService : Service() {
         }
         else {
             val screenOnFields = getScreenOnTime()
-            val notificationBatteryIntentHelper = NotificationBatteryIntentHelper(
+            val notificationServiceUIBuilder = NotificationServiceUIBuilder(
                 batteryIntent,
                 lastStatsResetTime,
                 deepSleepTimeAtLastStatsReset,
@@ -770,7 +770,7 @@ class NotificationService : Service() {
                 screenOnFields.sinceLastReset,
                 lastBatteryEventTime)
 
-            buildText(notificationBatteryIntentHelper)
+            buildText(notificationServiceUIBuilder)
         }
 
         val whatAppOpens = appPrefs.whatAppOpensWhenUserClicksTileOrNotification
