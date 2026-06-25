@@ -704,20 +704,38 @@ class NotificationService : Service() {
 
                         if (currentChargeSession != null) {
                             val readings = repository.getBatteryReadingsBetween(currentChargeSession.startTime, now)
-                            val temps = readings.map { it.temperatureCelsius }.filter { it >= 0f }
+                            val validReadings = readings.filter { it.temperatureCelsius >= 0f }
                             val durationMs = now - currentChargeSession.startTime
 
                             if (durationMs > batteryReadingsHistoryWindowInMillis) {
                                 repository.deleteChargingSession(currentChargeSession.id)
                                 logger.log("Charging session discarded from DB due to exceeds readings window")
                             } else {
+                                val avgTemp = if (validReadings.isEmpty()) {
+                                    null
+                                } else if (validReadings.size == 1) {
+                                    validReadings[0].temperatureCelsius
+                                } else {
+                                    var weightedSum = 0.0
+                                    var totalDuration = 0L
+                                    for (i in validReadings.indices) {
+                                        val duration = if (i < validReadings.size - 1) {
+                                            validReadings[i + 1].timestamp - validReadings[i].timestamp
+                                        } else {
+                                            now - validReadings[i].timestamp
+                                        }
+                                        weightedSum += validReadings[i].temperatureCelsius * duration
+                                        totalDuration += duration
+                                    }
+                                    if (totalDuration > 0) (weightedSum / totalDuration).toFloat() else null
+                                }
                                 val updatedChargeSession = currentChargeSession.copy(
                                     endTime = now,
                                     endLevel = level,
                                     durationMinutes = durationMs / 60_000L,
-                                    avgTemperatureCelsius = if (temps.isNotEmpty()) temps.average().toFloat() else null,
-                                    maxTemperatureCelsius = if (temps.isNotEmpty()) temps.max() else null,
-                                    minTemperatureCelsius = if (temps.isNotEmpty()) temps.min() else null
+                                    avgTemperatureCelsius = avgTemp,
+                                    maxTemperatureCelsius = if (validReadings.isNotEmpty()) validReadings.maxOf { it.temperatureCelsius } else null,
+                                    minTemperatureCelsius = if (validReadings.isNotEmpty()) validReadings.minOf { it.temperatureCelsius } else null
                                 )
                                 repository.updateChargingSession(updatedChargeSession)
                                 logger.log("Charging session end stored at DB (${updatedChargeSession.durationMinutes} min, ${currentChargeSession.startLevel}% → ${level}%)")
