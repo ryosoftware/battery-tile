@@ -95,6 +95,7 @@ class AppPreferences(context: Context) {
 
         const val KEY_BATTERY_HISTORY_WINDOW = "battery-history-window"
         const val KEY_CHARGING_HISTORY_WINDOW = "charging-history-window"
+        const val KEY_DISCHARGING_HISTORY_WINDOW = "discharging-history-window"
     }
 
     private val resources = context.resources
@@ -148,4 +149,9 @@ class AppPreferences(context: Context) {
     var chargingHistoryWindow: Int
         get() = prefs.getInt(KEY_CHARGING_HISTORY_WINDOW, resources.getInteger(R.integer.charging_history_window_in_days_default))
         set(value) { prefs.edit { putInt(KEY_CHARGING_HISTORY_WINDOW, value) } }
+
+
+    var dischargingHistoryWindow: Int
+        get() = prefs.getInt(KEY_DISCHARGING_HISTORY_WINDOW, resources.getInteger(R.integer.discharging_history_window_in_days_default))
+        set(value) { prefs.edit { putInt(KEY_DISCHARGING_HISTORY_WINDOW, value) } }
 }

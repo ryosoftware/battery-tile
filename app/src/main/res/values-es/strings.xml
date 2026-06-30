@@ -224,19 +224,25 @@
     <string name="start_logging_dialog_body">¿Quieres eliminar el archivo actual y empezar uno nuevo?</string>
     <string name="stop_logging_dialog_body">¿Quieres dejar de guardar registros de depuración y eliminar el archivo actual?</string>
 
-    <string name="battery_history">Historial de Batería</string>
-    <string name="shows_historical_data">Muestra gráficos con la evolución temporal de la batería de su dispositivo.</string>
-    <string name="battery_level_chart_title">Histórico de carga de la batería</string>
-    <string name="temperature_chart_title">Histórico de temperaturas</string>
-    <string name="charging_patterns_tab">Patrones de carga</string>
+    <string name="battery_history">Gráficos</string>
+    <string name="shows_historical_data">Muestra la evolución temporal de su dispositivo.</string>
+    <string name="charge_discharge_sessions_tab">Sesiones de carga/descarga</string>
+    <string name="combined_graphs_tab">Gráficos</string>
+    <string name="chart_show_level">Nivel</string>
+    <string name="chart_show_temperature">Temperatura</string>
+    <string name="session_charging_label">Carga</string>
+    <string name="session_discharge_label">Descarga</string>
+    <string name="no_sessions">Aún no hay sesiones registradas.</string>
+    <string name="discharge_session_duration">Duración</string>
+    <string name="discharge_session_screen_on_time">Tiempo de pantalla</string>
+    <string name="discharge_session_temperature">Temperatura</string>
+    <string name="discharge_session_ongoing">En curso</string>
     <string name="charging_session_duration">Duración</string>
-    <string name="charging_session_level_change">Cambio de nivel</string>
     <string name="charging_session_speed">Velocidad</string>
     <string name="percent_per_hour">%1$s/h</string>
     <string name="charging_session_temperature">Temperatura</string>
     <string name="charging_temperature_min_max_avg">%1$s - %2$s (%3$s de promedio)</string>
     <string name="charging_session_plug_type">Tipo de conector</string>
-    <string name="no_charging_sessions">Aún no hay sesiones de carga registradas.</string>
     <string name="charging_session_ongoing">En curso</string>
     <string name="could_have_unplugged_before">Podías haberlo desenchufado %2$s antes</string>
     <string name="chart_scroll_hint">Desliza en el gráfico para ver toda la información</string>
@@ -261,14 +267,24 @@
         <item quantity="many">%1$s a las %2$s</item>
     </plurals>
 
+    <plurals name="time">
+        <item quantity="one">la %1$s</item>
+        <item quantity="other">las %1$s</item>
+        <item quantity="many">las %1$s</item>
+    </plurals>
+
     <string name="from_date_to_date">Del %1$s al %2$s</string>
+    <string name="from_time_to_time_on_date">De %1$s a %2$s del %3$s</string>
     <string name="share_history">Compartir Historial</string>
     <string name="save_history">Guardar Historial</string>
     <string name="error_exporting_history">Error al exportar el historial</string>
+    <string name="excel_charging_sessions_tab">Sesiones de carga</string>
+    <string name="excel_discharge_sessions_tab">Sesiones de descarga</string>
     <string name="excel_header_timestamp">Fecha/Hora del evento</string>
     <string name="excel_header_start_timestamp">Fecha/Hora de inicio</string>
     <string name="excel_header_end_timestamp">Fecha/Hora de finalización</string>
     <string name="excel_header_charged_timestamp">Fecha/Hora carga completa</string>
+    <string name="excel_header_screen_on_time">Tiempo de pantalla</string>
     <string name="excel_header_battery_level">Nivel de Batería</string>
     <string name="excel_header_battery_start_level">Nivel de Batería inicial</string>
     <string name="excel_header_battery_end_level">Nivel de Batería final</string>
@@ -298,7 +314,6 @@
     <string name="no">No</string>
     <string name="no_delay">Inmediato</string>
     <string name="tile_separator">&#160;|&#160;</string>
-    <string name="tile_unknown_value">\?</string>
     <string name="back">Atrás</string>
 
 </resources>

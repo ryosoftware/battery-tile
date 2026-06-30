@@ -228,4 +228,8 @@
 
     <integer name="charging_history_window_in_days_default">90</integer>
 
+    <!-- Discharging sessions history window (older sessions will be automatically removed) -->
+
+    <integer name="discharging_history_window_in_days_default">90</integer>
+
 </resources>

@@ -43,10 +43,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -63,19 +65,30 @@ import androidx.compose.ui.unit.sp
 import com.ryosoftware.battery_tile.data.BatteryReading
 import com.ryosoftware.battery_tile.data.BatteryRepository
 import com.ryosoftware.battery_tile.data.ChargingSession
+import com.ryosoftware.battery_tile.data.DischargeSession
 import com.ryosoftware.battery_tile.data.ScreenState
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import androidx.core.content.FileProvider
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
-import androidx.compose.ui.platform.LocalLocale
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
 import java.io.OutputStream
 import java.util.Calendar
-import java.util.Locale
 import androidx.core.content.edit
+import java.time.Instant
+import java.time.ZoneId
+
+private sealed interface SessionItem {
+    val startTime: Long
+    data class Charging(val session: com.ryosoftware.battery_tile.data.ChargingSession) : SessionItem {
+        override val startTime get() = session.startTime
+    }
+    data class Discharge(val session: com.ryosoftware.battery_tile.data.DischargeSession) : SessionItem {
+        override val startTime get() = session.startTime
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,11 +102,20 @@ fun BatteryHistoryScreen(
     val readings by repository.getAllBatteryReadings().collectAsState(initial = emptyList())
     val chargingSessions by repository.getAllChargingSessions().collectAsState(initial = emptyList())
     val screenStates by repository.getAllScreenStates().collectAsState(initial = emptyList())
+    val dischargeSessions by repository.getAllDischargeSessions().collectAsState(initial = emptyList())
     val prefs = remember { context.getSharedPreferences("battery_history_prefs", Context.MODE_PRIVATE) }
     var selectedTab by remember { mutableIntStateOf(prefs.getInt("selected-tab", 0)) }
+    var showLevel by remember { mutableStateOf(prefs.getBoolean("show-level", true)) }
+    var showTemperature by remember { mutableStateOf(prefs.getBoolean("show-temperature", true)) }
 
     LaunchedEffect(selectedTab) {
         prefs.edit { putInt("selected-tab", selectedTab) }
+    }
+    LaunchedEffect(showLevel) {
+        prefs.edit { putBoolean("show-level", showLevel) }
+    }
+    LaunchedEffect(showTemperature) {
+        prefs.edit { putBoolean("show-temperature", showTemperature) }
     }
 
     val saveLauncher = rememberLauncherForActivityResult(
@@ -102,7 +124,7 @@ fun BatteryHistoryScreen(
         if (uri != null) {
             try {
                 context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    buildExcel(context, readings, chargingSessions, screenStates, appPrefs, outputStream)
+                    buildExcel(context, readings, chargingSessions, dischargeSessions, screenStates, appPrefs, outputStream)
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, R.string.error_exporting_history, Toast.LENGTH_LONG).show()
@@ -129,7 +151,7 @@ fun BatteryHistoryScreen(
                                 try {
                                     val tempFile = File(context.cacheDir, "battery_history.xlsx")
                                     tempFile.outputStream().use { os ->
-                                        buildExcel(context, readings, chargingSessions, screenStates, appPrefs, os)
+                                        buildExcel(context, readings, chargingSessions, dischargeSessions, screenStates, appPrefs, os)
                                     }
 
                                     val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.file_provider", tempFile)
@@ -197,96 +219,140 @@ fun BatteryHistoryScreen(
                 FilterChip(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    label = { Text(stringResource(R.string.battery_level)) }
+                    label = { Text(stringResource(R.string.combined_graphs_tab)) }
                 )
                 FilterChip(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    label = { Text(stringResource(R.string.battery_temperature)) }
-                )
-                FilterChip(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    label = { Text(stringResource(R.string.charging_patterns_tab)) }
+                    label = { Text(stringResource(R.string.charge_discharge_sessions_tab)) }
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
+            when (selectedTab) {
+                0 if readings.size < 2 -> {
+                    Spacer(Modifier.height(16.dp))
 
-            if (selectedTab < 2 && readings.size < 2) {
-                Text(
-                    text = stringResource(R.string.no_history_data),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else if (selectedTab == 2 && chargingSessions.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.no_charging_sessions),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                val displayReadings = readings.reversed()
-
-                when (selectedTab) {
-                    0 -> {
-                        Text(
-                            text = stringResource(R.string.battery_level_chart_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-                        Spacer(Modifier.height(16.dp))
-
-                        BatteryLevelChart(context = context, readings = displayReadings, screenStates = screenStates)
-                    }
-                    1 -> {
-                        Text(
-                            text = stringResource(R.string.temperature_chart_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-                        Spacer(Modifier.height(16.dp))
-
-                        TemperatureChart(context = context, readings = displayReadings, screenStates = screenStates, thresholdTemperatureCelsius = remember { NotificationPreferences(context).getBatteryTemperatureThreshold(TemperatureUnit.CELSIUS) }, appPrefs = appPrefs)
-                    }
-                    2 -> {
-                        Text(
-                            text = stringResource(R.string.charging_patterns_tab),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-                        Spacer(Modifier.height(16.dp))
-
-                        ChargingPatternsTab(context = context, sessions = chargingSessions, appPrefs = appPrefs)
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                if (selectedTab < 2) {
-                    val oldest = readings.last()
-                    val newest = readings.first()
-
-                    @SuppressLint("LocalContextResourcesRead")
                     Text(
-                        text = context.resources.getQuantityString(R.plurals.readings_count, readings.size, readings.size, getStringDateTime(context, oldest.timestamp), getStringDateTime(context, newest.timestamp)),
-                        style = MaterialTheme.typography.bodySmall,
+                        text = stringResource(R.string.no_history_data),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+                1 if chargingSessions.isEmpty() && dischargeSessions.isEmpty() -> {
+                    Spacer(Modifier.height(16.dp))
 
-                    Spacer(Modifier.height(4.dp))
-
-                    @SuppressLint("LocalContextResourcesRead")
                     Text(
-                        text = context.resources.getQuantityString(R.plurals.history_retention_days, appPrefs.batteryHistoryWindow, appPrefs.batteryHistoryWindow),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
+                        text = stringResource(R.string.no_sessions),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+                else -> {
+                    Spacer(Modifier.height(8.dp))
+
+                    when (selectedTab) {
+                        0 -> {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                FilterChip(
+                                    selected = showLevel,
+                                    onClick = {
+                                        val newShowLevel = !showLevel
+                                        if (newShowLevel || showTemperature) showLevel = newShowLevel
+                                    },
+                                    label = { Text(stringResource(R.string.chart_show_level)) }
+                                )
+                                FilterChip(
+                                    selected = showTemperature,
+                                    onClick = {
+                                        val newShowTemperature = !showTemperature
+                                        if (newShowTemperature || showLevel) showTemperature =
+                                            newShowTemperature
+                                    },
+                                    label = { Text(stringResource(R.string.chart_show_temperature)) }
+                                )
+                            }
+
+                            Spacer(Modifier.height(16.dp))
+
+                            val displayReadings = readings.reversed()
+                            if (showLevel && showTemperature) {
+                                DualAxisChart(
+                                    context = context,
+                                    readings = displayReadings,
+                                    screenStates = screenStates,
+                                    thresholdTemperatureCelsius = remember {
+                                        NotificationPreferences(context).getBatteryTemperatureThreshold(
+                                            TemperatureUnit.CELSIUS
+                                        )
+                                    },
+                                    appPrefs = appPrefs
+                                )
+                            } else if (showTemperature) {
+                                TemperatureChart(
+                                    context = context,
+                                    readings = displayReadings,
+                                    screenStates = screenStates,
+                                    thresholdTemperatureCelsius = remember {
+                                        NotificationPreferences(context).getBatteryTemperatureThreshold(
+                                            TemperatureUnit.CELSIUS
+                                        )
+                                    },
+                                    appPrefs = appPrefs
+                                )
+                            } else {
+                                BatteryLevelChart(
+                                    context = context,
+                                    readings = displayReadings,
+                                    screenStates = screenStates
+                                )
+                            }
+
+                            Spacer(Modifier.height(16.dp))
+
+                            val oldest = readings.last()
+                            val newest = readings.first()
+
+                            @SuppressLint("LocalContextResourcesRead")
+                            Text(
+                                text = context.resources.getQuantityString(
+                                    R.plurals.readings_count,
+                                    readings.size,
+                                    readings.size,
+                                    getStringDateTime(context, oldest.timestamp),
+                                    getStringDateTime(context, newest.timestamp)
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(Modifier.height(4.dp))
+
+                            @SuppressLint("LocalContextResourcesRead")
+                            Text(
+                                text = context.resources.getQuantityString(
+                                    R.plurals.history_retention_days,
+                                    appPrefs.batteryHistoryWindow,
+                                    appPrefs.batteryHistoryWindow
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+
+                        1 -> {
+                            CombinedSessionsTab(
+                                context = context,
+                                chargingSessions = chargingSessions,
+                                dischargeSessions = dischargeSessions,
+                                appPrefs = appPrefs
+                            )
+                        }
+                    }
                 }
             }
 
@@ -399,29 +465,50 @@ private fun enrichReadingsWithScreenStates(
     return result
 }
 
+private enum class AxisSide { LEFT, RIGHT }
+
+private data class SeriesConfig(
+    val label: String,
+    val yValue: (BatteryReading) -> Float,
+    val yLabels: DrawScope.(textColor: Color) -> Unit,
+    val lineColor: Color,
+    val labelWidthDp: Dp,
+    val side: AxisSide = AxisSide.LEFT,
+    val referenceLineNormalizedY: Float? = null,
+    val referenceLineLabel: String? = null,
+    val referenceLineColor: Color = Color.Unspecified,
+    val segmentColorProvider: ((prev: BatteryReading, screenStates: List<ScreenState>) -> Color)? = null
+)
+
 @Composable
-private fun TimeBasedChart(
+private fun UnifiedChart(
     readings: List<BatteryReading>,
     screenStates: List<ScreenState>,
-    lineColor: Color,
-    labelWidthDp: Dp,
-    yLabels: DrawScope.(textColor: Color) -> Unit,
-    yValue: (BatteryReading) -> Float,
-    referenceLineNormalizedY: Float? = null,
-    referenceLineLabel: String? = null,
-    referenceLineColor: Color = MaterialTheme.colorScheme.error
+    series: List<SeriesConfig>
 ) {
+    if (readings.size < 2) return
+
     val gridColor = MaterialTheme.colorScheme.outlineVariant
     val textColor = MaterialTheme.colorScheme.onSurface
     val screenOnColor = MaterialTheme.colorScheme.primary
     val screenOffColor = MaterialTheme.colorScheme.outline
+    val screenOffShade = screenOffColor.copy(alpha = 0.08f)
 
     val chartHeightDp = 300.dp
-    val minWidthPerPoint = 12.dp
+    val leftLabelWidth = series.filter { it.side == AxisSide.LEFT }.maxOf { it.labelWidthDp }
+    val rightLabelWidth = series.filter { it.side == AxisSide.RIGHT }.maxOfOrNull { it.labelWidthDp } ?: 0.dp
     @SuppressLint("ConfigurationScreenWidthHeight")
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val chartWidth = (minWidthPerPoint * readings.size).coerceAtLeast(screenWidth - labelWidthDp)
+    val timeRangeMs = readings.last().timestamp - readings.first().timestamp
+    val chartWidth = ((timeRangeMs / 3_600_000f) * 40f).dp.coerceAtLeast(screenWidth - leftLabelWidth - rightLabelWidth)
     val horizontalScrollState = rememberScrollState()
+
+    LaunchedEffect(readings) {
+        if (readings.size >= 2) {
+            withFrameNanos { }
+            horizontalScrollState.scrollTo(horizontalScrollState.maxValue)
+        }
+    }
 
     val dayChanges = remember(readings) { findDayChanges(readings) }
     val hourChanges = remember(readings) { findHourChanges(readings) }
@@ -434,22 +521,23 @@ private fun TimeBasedChart(
         ) {
             Canvas(
                 modifier = Modifier
-                    .width(labelWidthDp)
+                    .width(leftLabelWidth)
                     .height(chartHeightDp)
                     .padding(top = 8.dp, bottom = 30.dp)
             ) {
                 if (readings.size < 2) return@Canvas
-                yLabels(textColor)
+                val leftSeries = series.first { it.side == AxisSide.LEFT }
+                leftSeries.yLabels(this, textColor)
 
-                if (referenceLineNormalizedY != null && referenceLineLabel != null) {
-                    val height = size.height
-                    val y = height * (1f - referenceLineNormalizedY)
+                if (leftSeries.referenceLineNormalizedY != null && leftSeries.referenceLineLabel != null) {
+                    val h = size.height
+                    val y = h * (1f - leftSeries.referenceLineNormalizedY)
                     drawContext.canvas.nativeCanvas.drawText(
-                        referenceLineLabel,
+                        leftSeries.referenceLineLabel,
                         size.width - 4.dp.toPx(),
                         y + 4.dp.toPx(),
                         Paint().apply {
-                            color = referenceLineColor.hashCode()
+                            color = leftSeries.referenceLineColor.hashCode()
                             textSize = 9.sp.toPx()
                             textAlign = Paint.Align.RIGHT
                         }
@@ -541,26 +629,75 @@ private fun TimeBasedChart(
                         if (index == 0) return@forEachIndexed
                         val prev = readings[index - 1]
                         val x1 = timeToX(prev.timestamp)
-                        val y1 = paddingTop + chartDrawHeight * (1f - yValue(prev))
-                        val x2 = timeToX(reading.timestamp)
-                        val y2 = paddingTop + chartDrawHeight * (1f - yValue(reading))
-                        val segmentColor = if (isScreenOnAt(prev.timestamp, screenStates)) screenOnColor else screenOffColor
-                        drawLine(
-                            color = segmentColor,
-                            start = Offset(x1, y1),
-                            end = Offset(x2, y2),
-                            strokeWidth = 2.dp.toPx()
-                        )
+                        if (!isScreenOnAt(prev.timestamp, screenStates)) {
+                            drawRect(
+                                color = screenOffShade,
+                                topLeft = Offset(x1, paddingTop),
+                                size = androidx.compose.ui.geometry.Size(
+                                    timeToX(reading.timestamp) - x1,
+                                    chartDrawHeight
+                                )
+                            )
+                        }
                     }
 
-                    if (referenceLineNormalizedY != null) {
-                        val y = paddingTop + chartDrawHeight * (1f - referenceLineNormalizedY)
-                        drawLine(
-                            color = referenceLineColor,
-                            start = Offset(0f, y),
-                            end = Offset(width - paddingRight, y),
-                            strokeWidth = 1.dp.toPx(),
-                            pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))
+                    for (config in series) {
+                        readings.forEachIndexed { index, reading ->
+                            if (index == 0) return@forEachIndexed
+                            val prev = readings[index - 1]
+                            val x1 = timeToX(prev.timestamp)
+                            val y1 = paddingTop + chartDrawHeight * (1f - config.yValue(prev))
+                            val x2 = timeToX(reading.timestamp)
+                            val y2 = paddingTop + chartDrawHeight * (1f - config.yValue(reading))
+                            val color = config.segmentColorProvider?.invoke(prev, screenStates) ?: config.lineColor
+                            drawLine(
+                                color = color,
+                                start = Offset(x1, y1),
+                                end = Offset(x2, y2),
+                                strokeWidth = 2.dp.toPx()
+                            )
+                        }
+                    }
+
+                    for (config in series) {
+                        val refY = config.referenceLineNormalizedY
+                        if (refY != null) {
+                            val y = paddingTop + chartDrawHeight * (1f - refY)
+                            drawLine(
+                                color = config.referenceLineColor,
+                                start = Offset(0f, y),
+                                end = Offset(width - paddingRight, y),
+                                strokeWidth = 1.dp.toPx(),
+                                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (rightLabelWidth > 0.dp) {
+                Canvas(
+                    modifier = Modifier
+                        .width(rightLabelWidth)
+                        .height(chartHeightDp)
+                        .padding(top = 8.dp, bottom = 30.dp)
+                ) {
+                    if (readings.size < 2) return@Canvas
+                    val rightSeries = series.first { it.side == AxisSide.RIGHT }
+                    rightSeries.yLabels(this, textColor)
+
+                    if (rightSeries.referenceLineNormalizedY != null && rightSeries.referenceLineLabel != null) {
+                        val h = size.height
+                        val y = h * (1f - rightSeries.referenceLineNormalizedY)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            rightSeries.referenceLineLabel,
+                            4.dp.toPx(),
+                            y + 4.dp.toPx(),
+                            Paint().apply {
+                                color = rightSeries.referenceLineColor.hashCode()
+                                textSize = 9.sp.toPx()
+                                textAlign = Paint.Align.LEFT
+                            }
                         )
                     }
                 }
@@ -574,22 +711,16 @@ private fun TimeBasedChart(
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Canvas(modifier = Modifier.size(12.dp)) {
-                drawLine(color = screenOnColor, start = Offset(0f, size.height / 2), end = Offset(size.width, size.height / 2), strokeWidth = 3.dp.toPx())
+            for (config in series) {
+                Canvas(modifier = Modifier.size(12.dp)) {
+                    drawLine(color = config.lineColor, start = Offset(0f, size.height / 2), end = Offset(size.width, size.height / 2), strokeWidth = 3.dp.toPx())
+                }
+                Text(
+                    text = config.label,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(start = 4.dp, end = 12.dp)
+                )
             }
-            Text(
-                text = stringResource(R.string.chart_legend_screen_on),
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(start = 4.dp, end = 16.dp)
-            )
-            Canvas(modifier = Modifier.size(12.dp)) {
-                drawLine(color = screenOffColor, start = Offset(0f, size.height / 2), end = Offset(size.width, size.height / 2), strokeWidth = 3.dp.toPx())
-            }
-            Text(
-                text = stringResource(R.string.chart_legend_screen_off),
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(start = 4.dp),
-            )
         }
     }
 
@@ -611,28 +742,39 @@ fun BatteryLevelChart(
     screenStates: List<ScreenState>,
 ) {
     val enrichedReadings = remember(readings, screenStates) { enrichReadingsWithScreenStates(readings, screenStates) }
-    TimeBasedChart(
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val outlineColor = MaterialTheme.colorScheme.outline
+    UnifiedChart(
         readings = enrichedReadings,
         screenStates = screenStates,
-        lineColor = MaterialTheme.colorScheme.primary,
-        labelWidthDp = 40.dp,
-        yLabels = { textColor ->
-            for (i in 0..4) {
-                val y = size.height * i / 4
-                val value = 100 - (i * 25)
-                drawContext.canvas.nativeCanvas.drawText(
-                    context.getString(R.string.percent_value_integer, value),
-                    8.dp.toPx() + (size.width - 12.dp.toPx()),
-                    y + 4.dp.toPx(),
-                    Paint().apply {
-                        color = textColor.hashCode()
-                        textSize = 10.sp.toPx()
-                        textAlign = Paint.Align.RIGHT
+        series = listOf(
+            SeriesConfig(
+                label = stringResource(R.string.chart_show_level),
+                yValue = { reading -> reading.batteryLevel / 100f },
+                yLabels = { textColor ->
+                    for (i in 0..4) {
+                        val y = size.height * i / 4
+                        val value = 100 - (i * 25)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            context.getString(R.string.percent_value_integer, value),
+                            8.dp.toPx() + (size.width - 12.dp.toPx()),
+                            y + 4.dp.toPx(),
+                            Paint().apply {
+                                color = textColor.hashCode()
+                                textSize = 10.sp.toPx()
+                                textAlign = Paint.Align.RIGHT
+                            }
+                        )
                     }
-                )
-            }
-        },
-        yValue = { reading -> reading.batteryLevel / 100f }
+                },
+                lineColor = primaryColor,
+                labelWidthDp = 40.dp,
+                side = AxisSide.LEFT,
+                segmentColorProvider = { prev, states ->
+                    if (isScreenOnAt(prev.timestamp, states)) primaryColor else outlineColor
+                }
+            )
+        )
     )
 }
 
@@ -661,184 +803,150 @@ fun TemperatureChart(
         } else null
     }
 
-    TimeBasedChart(
+    UnifiedChart(
         readings = enrichedReadings,
         screenStates = screenStates,
-        lineColor = MaterialTheme.colorScheme.error,
-        labelWidthDp = 50.dp,
-        yLabels = { textColor ->
-            for (i in 0..4) {
-                val y = size.height * i / 4
-                val value = maxTemp - (tempRange * i / 4)
-                drawContext.canvas.nativeCanvas.drawText(
-                    appPrefs.temperatureUnit.toString(context, appPrefs.temperatureUnit.fromCelsius(value), false),
-                    4.dp.toPx() + (size.width - 8.dp.toPx()),
-                    y + 4.dp.toPx(),
-                    Paint().apply {
-                        color = textColor.hashCode()
-                        textSize = 9.sp.toPx()
-                        textAlign = Paint.Align.RIGHT
+        series = listOf(
+            SeriesConfig(
+                label = stringResource(R.string.chart_show_temperature),
+                yValue = { reading -> (reading.temperatureCelsius - minTemp) / tempRange },
+                yLabels = { textColor ->
+                    for (i in 0..4) {
+                        val y = size.height * i / 4
+                        val value = maxTemp - (tempRange * i / 4)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            appPrefs.temperatureUnit.toString(context, appPrefs.temperatureUnit.fromCelsius(value), false),
+                            4.dp.toPx() + (size.width - 8.dp.toPx()),
+                            y + 4.dp.toPx(),
+                            Paint().apply {
+                                color = textColor.hashCode()
+                                textSize = 9.sp.toPx()
+                                textAlign = Paint.Align.RIGHT
+                            }
+                        )
                     }
-                )
-            }
-        },
-        yValue = { reading -> (reading.temperatureCelsius - minTemp) / tempRange },
-        referenceLineNormalizedY = thresholdNormalizedY,
-        referenceLineLabel = thresholdLabel,
-        referenceLineColor = MaterialTheme.colorScheme.error
+                },
+                lineColor = MaterialTheme.colorScheme.error,
+                labelWidthDp = 50.dp,
+                side = AxisSide.LEFT,
+                referenceLineNormalizedY = thresholdNormalizedY,
+                referenceLineLabel = thresholdLabel,
+                referenceLineColor = MaterialTheme.colorScheme.error
+            )
+        )
     )
 }
 
 @Composable
-fun ChargingPatternsTab(
+private fun DualAxisChart(
     context: Context,
-    sessions: List<ChargingSession>,
+    readings: List<BatteryReading>,
+    screenStates: List<ScreenState>,
+    thresholdTemperatureCelsius: Float?,
     appPrefs: AppPreferences
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        sessions.forEach { session ->
-            Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = if (session.endTime != null)
-                                stringResource(R.string.from_date_to_date, getStringDateTime(context, session.startTime), getStringDateTime(context, session.endTime))
-                            else
-                                getStringDateTime(context, session.startTime),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        if (session.endTime == null) {
-                            Text(
-                                text = stringResource(R.string.charging_session_ongoing),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
+    val enrichedReadings = remember(readings, screenStates) { enrichReadingsWithScreenStates(readings, screenStates) }
+    if (enrichedReadings.size < 2) return
 
-                    Spacer(Modifier.height(4.dp))
+    val temps = remember(enrichedReadings) { enrichedReadings.map { it.temperatureCelsius } }
+    val minTemp = remember(temps) { (temps.min() - 5f).coerceAtLeast(0f) }
+    val maxTemp = remember(temps) { (temps.max() + 5f).coerceAtMost(60f) }
+    val tempRange = remember(minTemp, maxTemp) { maxTemp - minTemp }
 
-                    val endLevel = session.endLevel?.let { stringResource(R.string.percent_value_integer, it) } ?: stringResource(R.string.battery_level_unknown)
+    val thresholdNormalizedY = remember(thresholdTemperatureCelsius, minTemp, tempRange) {
+        if (thresholdTemperatureCelsius != null && tempRange > 0f) {
+            ((thresholdTemperatureCelsius - minTemp) / tempRange).coerceIn(0f, 1f)
+        } else null
+    }
+    val thresholdLabel = remember(thresholdTemperatureCelsius, appPrefs.temperatureUnit) {
+        if (thresholdTemperatureCelsius != null) {
+            appPrefs.temperatureUnit.toString(context, appPrefs.temperatureUnit.fromCelsius(thresholdTemperatureCelsius), false)
+        } else null
+    }
 
-                    Text(
-                        text = stringResource(R.string.battery_level_from_to,
-                               stringResource(R.string.percent_value_integer, session.startLevel),
-                               endLevel),
-                        style = MaterialTheme.typography.titleMedium
-                    )
+    val screenOnColor = MaterialTheme.colorScheme.primary
+    val screenOffColor = MaterialTheme.colorScheme.outline
 
-                    if (session.durationMinutes != null) {
-                        Spacer(Modifier.height(4.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Text(
-                                text = stringResource(
-                                    R.string.label_and_value,
-                                    stringResource(R.string.charging_session_duration),
-                                    getStringTimeFromInterval(
-                                        context,
-                                        session.durationMinutes * 60_000L
-                                    )
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    if (session.endLevel != null) {
-                        val delta = session.endLevel - session.startLevel
-                        val speedPerHour = if (session.durationMinutes != null && session.durationMinutes > 0) {
-                            delta.toFloat() / (session.durationMinutes / 60f)
-                        } else null
-
-                        if (speedPerHour != null) {
-                            Spacer(Modifier.height(4.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(
-                                        R.string.label_and_value,
-                                        stringResource(R.string.charging_session_speed),
-                                        stringResource(
-                                            R.string.percent_per_hour,
-                                            getStringPercent(context, speedPerHour)
-                                        )
-                                    ),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+    UnifiedChart(
+        readings = enrichedReadings,
+        screenStates = screenStates,
+        series = listOf(
+            SeriesConfig(
+                label = stringResource(R.string.chart_show_level),
+                yValue = { reading -> reading.batteryLevel / 100f },
+                yLabels = { textColor ->
+                    for (i in 0..4) {
+                        val y = size.height * i / 4
+                        val value = 100 - (i * 25)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            context.getString(R.string.percent_value_integer, value),
+                            size.width - 4.dp.toPx(),
+                            y + 4.dp.toPx(),
+                            Paint().apply {
+                                color = textColor.hashCode()
+                                textSize = 10.sp.toPx()
+                                textAlign = Paint.Align.RIGHT
                             }
-                        }
+                        )
                     }
-
-                    if (session.avgTemperatureCelsius != null) {
-                        val tempUnit = appPrefs.temperatureUnit
-
-                        Spacer(Modifier.height(4.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Text(
-                                text = stringResource(
-                                    R.string.label_and_value,
-                                    stringResource(R.string.charging_session_temperature),
-                                    stringResource(
-                                        R.string.charging_temperature_min_max_avg,
-                                        tempUnit.toString(
-                                            context,
-                                            tempUnit.fromCelsius(session.minTemperatureCelsius!!),
-                                            false
-                                        ),
-                                        tempUnit.toString(
-                                            context,
-                                            tempUnit.fromCelsius(session.maxTemperatureCelsius!!),
-                                            false
-                                        ),
-                                        tempUnit.toString(
-                                            context,
-                                            tempUnit.fromCelsius(session.avgTemperatureCelsius),
-                                            false
-                                        )
-                                    )
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                },
+                lineColor = MaterialTheme.colorScheme.primary,
+                labelWidthDp = 40.dp,
+                side = AxisSide.LEFT,
+                segmentColorProvider = { prev, _ ->
+                    if (isScreenOnAt(prev.timestamp, screenStates)) screenOnColor else screenOffColor
+                }
+            ),
+            SeriesConfig(
+                label = stringResource(R.string.chart_show_temperature),
+                yValue = { reading -> (reading.temperatureCelsius - minTemp) / tempRange },
+                yLabels = { textColor ->
+                    for (i in 0..4) {
+                        val y = size.height * i / 4
+                        val value = maxTemp - (tempRange * i / 4)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            appPrefs.temperatureUnit.toString(context, appPrefs.temperatureUnit.fromCelsius(value), false),
+                            4.dp.toPx(),
+                            y + 4.dp.toPx(),
+                            Paint().apply {
+                                color = textColor.hashCode()
+                                textSize = 9.sp.toPx()
+                                textAlign = Paint.Align.LEFT
+                            }
+                        )
                     }
+                },
+                lineColor = MaterialTheme.colorScheme.error,
+                labelWidthDp = 50.dp,
+                side = AxisSide.RIGHT,
+                referenceLineNormalizedY = thresholdNormalizedY,
+                referenceLineLabel = thresholdLabel,
+                referenceLineColor = MaterialTheme.colorScheme.error
+            )
+        )
+    )
+}
 
-                    if (session.chargedTimeStamp != null) {
-                        val endTime = session.endTime ?: System.currentTimeMillis()
-                        val diffMs = endTime - session.chargedTimeStamp
-                        val wastedMin = diffMs / 60_000L
+@Composable
+fun CombinedSessionsTab(
+    context: Context,
+    chargingSessions: List<ChargingSession>,
+    dischargeSessions: List<DischargeSession>,
+    appPrefs: AppPreferences
+) {
+    val combined = remember(chargingSessions, dischargeSessions) {
+        (chargingSessions.map { SessionItem.Charging(it) } +
+         dischargeSessions.map { SessionItem.Discharge(it) })
+            .sortedByDescending { it.startTime }
+    }
 
-                        if (wastedMin > 0) {
-                            Spacer(Modifier.height(4.dp))
-
-                            Text(
-                                text = stringResource(
-                                    R.string.could_have_unplugged_before,
-                                    getStringDateTime(context, session.chargedTimeStamp),
-                                    getStringTimeFromInterval(context, diffMs)
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        combined.forEach { item ->
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    when (item) {
+                        is SessionItem.Charging -> ChargingSessionCard(item.session, context, appPrefs)
+                        is SessionItem.Discharge -> DischargeSessionCard(item.session, context, appPrefs)
                     }
                 }
             }
@@ -846,10 +954,252 @@ fun ChargingPatternsTab(
     }
 }
 
+@Composable
+private fun SessionHeaderRow(
+    dotColor: Color,
+    label: String,
+    labelColor: Color,
+    isOngoing: Boolean,
+    ongoingLabel: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Canvas(modifier = Modifier.size(10.dp)) {
+                drawCircle(color = dotColor, radius = size.minDimension / 2f)
+            }
+            Text(text = label, style = MaterialTheme.typography.labelSmall, color = labelColor)
+        }
+        if (isOngoing) {
+            Text(
+                text = ongoingLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+private fun DateTimeRow(context: Context, startTime: Long, endTime: Long?) {
+    fun isSameDay(time1: Long, time2: Long): Boolean {
+        val zone = ZoneId.systemDefault()
+        val date1 = Instant.ofEpochMilli(time1).atZone(zone).toLocalDate()
+        val date2 = Instant.ofEpochMilli(time2).atZone(zone).toLocalDate()
+
+        return date1 == date2
+    }
+
+    fun getIntervalAtSameDayString(context: Context, startTimeInMillis: Long, endTimeInMillis: Long): String {
+        val calendar = Calendar.getInstance().apply { timeInMillis = startTimeInMillis }
+        val dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM)
+        val timeFormat = DateFormat.getTimeInstance(DateFormat.MEDIUM)
+        val date = dateFormat.format(calendar.time)
+        val startTime = timeFormat.format(calendar.time)
+        val startHour = context.resources.getQuantityString(R.plurals.time, calendar.get(Calendar.HOUR_OF_DAY), startTime)
+        calendar.apply { timeInMillis = endTimeInMillis }
+        val endTime = timeFormat.format(calendar.time)
+        val endHour = context.resources.getQuantityString(R.plurals.time, calendar.get(Calendar.HOUR_OF_DAY), endTime)
+
+        return context.getString(R.string.from_time_to_time_on_date, startHour, endHour, date)
+    }
+
+    fun getIntervalAtDifferentDayString(context: Context, startTimeInMillis: Long, endTimeInMillis: Long): String =
+        context.getString(R.string.from_date_to_date, getStringDateTime(context, startTimeInMillis), getStringDateTime(context, endTimeInMillis))
+
+    Spacer(Modifier.height(4.dp))
+
+    Text(
+        text = if ((endTime != null) && (isSameDay(startTime, endTime))) getIntervalAtSameDayString(context, startTime, endTime)
+               else if (endTime != null) getIntervalAtDifferentDayString(context, startTime, endTime)
+               else getStringDateTime(context, startTime),
+        style = MaterialTheme.typography.bodyMedium
+    )
+}
+
+@Composable
+private fun BatteryLevelRow(startLevel: Int, endLevel: Int?) {
+    Spacer(Modifier.height(4.dp))
+    val endLevelText = endLevel?.let { stringResource(R.string.percent_value_integer, it) }
+        ?: stringResource(R.string.battery_level_unknown)
+    Text(
+        text = stringResource(R.string.battery_level_from_to,
+            stringResource(R.string.percent_value_integer, startLevel), endLevelText),
+        style = MaterialTheme.typography.titleMedium
+    )
+}
+
+@Composable
+private fun DurationRow(context: Context, durationMinutes: Long?, labelResId: Int) {
+    if (durationMinutes != null) {
+        Spacer(Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = stringResource(
+                    R.string.label_and_value,
+                    stringResource(labelResId),
+                    getStringTimeFromInterval(context, durationMinutes * 60_000L)
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun TemperatureRow(
+    context: Context,
+    minTemperatureCelsius: Float?,
+    maxTemperatureCelsius: Float?,
+    avgTemperatureCelsius: Float?,
+    tempUnit: TemperatureUnit,
+    labelResId: Int
+) {
+    if (avgTemperatureCelsius != null) {
+        Spacer(Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = stringResource(
+                    R.string.label_and_value,
+                    stringResource(labelResId),
+                    stringResource(
+                        R.string.charging_temperature_min_max_avg,
+                        tempUnit.toString(context, tempUnit.fromCelsius(minTemperatureCelsius!!), false),
+                        tempUnit.toString(context, tempUnit.fromCelsius(maxTemperatureCelsius!!), false),
+                        tempUnit.toString(context, tempUnit.fromCelsius(avgTemperatureCelsius), false)
+                    )
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChargingSessionCard(session: ChargingSession, context: Context, appPrefs: AppPreferences) {
+    SessionHeaderRow(
+        dotColor = Color(0xFF4CAF50),
+        label = stringResource(R.string.session_charging_label),
+        labelColor = Color(0xFF4CAF50),
+        isOngoing = session.endTime == null,
+        ongoingLabel = stringResource(R.string.charging_session_ongoing)
+    )
+    DateTimeRow(context, session.startTime, session.endTime)
+    BatteryLevelRow(session.startLevel, session.endLevel)
+    DurationRow(context, session.durationMinutes, R.string.charging_session_duration)
+
+    if (session.endLevel != null) {
+        val delta = session.endLevel - session.startLevel
+        val speedPerHour = if (session.durationMinutes != null && session.durationMinutes > 0) {
+            delta.toFloat() / (session.durationMinutes / 60f)
+        } else null
+
+        if (speedPerHour != null) {
+            Spacer(Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = stringResource(
+                        R.string.label_and_value,
+                        stringResource(R.string.charging_session_speed),
+                        stringResource(R.string.percent_per_hour, getStringPercent(context, speedPerHour))
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+
+    TemperatureRow(
+        context,
+        session.minTemperatureCelsius,
+        session.maxTemperatureCelsius,
+        session.avgTemperatureCelsius,
+        appPrefs.temperatureUnit,
+        R.string.charging_session_temperature
+    )
+
+    if (session.chargedTimeStamp != null) {
+        val endTime = session.endTime ?: System.currentTimeMillis()
+        val diffMs = endTime - session.chargedTimeStamp
+        val wastedMin = diffMs / 60_000L
+        if (wastedMin > 0) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(
+                    R.string.could_have_unplugged_before,
+                    getStringDateTime(context, session.chargedTimeStamp),
+                    getStringTimeFromInterval(context, diffMs)
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+        }
+    }
+}
+
+@Composable
+private fun DischargeSessionCard(session: DischargeSession, context: Context, appPrefs: AppPreferences) {
+    SessionHeaderRow(
+        dotColor = Color(0xFF2196F3),
+        label = stringResource(R.string.session_discharge_label),
+        labelColor = Color(0xFF2196F3),
+        isOngoing = session.endTime == null,
+        ongoingLabel = stringResource(R.string.discharge_session_ongoing)
+    )
+    DateTimeRow(context, session.startTime, session.endTime)
+    BatteryLevelRow(session.startLevel, session.endLevel)
+    DurationRow(context, session.durationMinutes, R.string.discharge_session_duration)
+
+    if (session.screenOnTimeMinutes != null) {
+        Spacer(Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = stringResource(
+                    R.string.label_and_value,
+                    stringResource(R.string.discharge_session_screen_on_time),
+                    getStringTimeFromInterval(context, session.screenOnTimeMinutes * 60_000L)
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
+    TemperatureRow(
+        context,
+        session.minTemperatureCelsius,
+        session.maxTemperatureCelsius,
+        session.avgTemperatureCelsius,
+        appPrefs.temperatureUnit,
+        R.string.discharge_session_temperature
+    )
+}
+
 private fun buildExcel(
     context: Context,
     batteryReadings: List<BatteryReading>,
     chargingSessions: List<ChargingSession>,
+    dischargeSessions: List<DischargeSession>,
     screenStates: List<ScreenState>,
     appPrefs: AppPreferences,
     outputStream: OutputStream
@@ -929,7 +1279,7 @@ private fun buildExcel(
             batteryReadingsBodyRow.createCell(8).setCellValue(isScreenOnAt(reading.timestamp, screenStates))
         }
 
-        val chargingSessionsSheet = workbook.createSheet(context.getString(R.string.charging_patterns_tab))
+        val chargingSessionsSheet = workbook.createSheet(context.getString(R.string.excel_charging_sessions_tab))
         val chargingSessionsHeaders = listOf(
             context.getString(R.string.excel_header_start_timestamp),
             context.getString(R.string.excel_header_end_timestamp),
@@ -978,6 +1328,52 @@ private fun buildExcel(
 
             chargingSessionsBodyRow.createCell(9).setCellValue(formatPlugType(session.plugType))
             if (session.chargedTimeStamp != null) chargingSessionsBodyRow.createCell(10).apply { setCellValue(Date(session.chargedTimeStamp)); cellStyle = dateTimeStyle }
+        }
+
+        val dischargeSessionsSheet = workbook.createSheet(context.getString(R.string.excel_discharge_sessions_tab))
+        val dischargeSessionsHeaders = listOf(
+            context.getString(R.string.excel_header_start_timestamp),
+            context.getString(R.string.excel_header_end_timestamp),
+            context.getString(R.string.discharge_session_duration),
+            context.getString(R.string.excel_header_battery_start_level),
+            context.getString(R.string.excel_header_battery_end_level),
+            context.getString(R.string.excel_header_screen_on_time),
+            context.getString(R.string.excel_header_min_temperature, temperatureUnit.toString(context)),
+            context.getString(R.string.excel_header_max_temperature, temperatureUnit.toString(context)),
+            context.getString(R.string.excel_header_avg_temperature, temperatureUnit.toString(context))
+        )
+
+        val dischargeSessionsHeaderRow = dischargeSessionsSheet.createRow(0)
+        dischargeSessionsHeaders.forEachIndexed { index, header ->
+            dischargeSessionsHeaderRow.createCell(index).setCellValue(header)
+            dischargeSessionsSheet.setColumnWidth(index, getColumnWidth(header))
+        }
+
+        for ((rowIndex, session) in dischargeSessions.withIndex()) {
+            val dischargeSessionsBodyRow = dischargeSessionsSheet.createRow(rowIndex + 1)
+
+            dischargeSessionsBodyRow.createCell(0).apply { setCellValue(Date(session.startTime)); cellStyle = dateTimeStyle }
+            if (session.endTime != null)
+                dischargeSessionsBodyRow.createCell(1).apply { setCellValue(Date(session.endTime)); cellStyle = dateTimeStyle }
+
+            if (session.durationMinutes != null)
+                dischargeSessionsBodyRow.createCell(2).apply {
+                    setCellValue(session.durationMinutes / 1440.0)
+                    cellStyle = durationTimeStyle
+                }
+
+            dischargeSessionsBodyRow.createCell(3).setCellValue(session.startLevel.toDouble())
+            if (session.endLevel != null) dischargeSessionsBodyRow.createCell(4).setCellValue(session.endLevel.toDouble())
+
+            if (session.screenOnTimeMinutes != null)
+                dischargeSessionsBodyRow.createCell(5).apply {
+                    setCellValue(session.screenOnTimeMinutes / 1440.0)
+                    cellStyle = durationTimeStyle
+                }
+
+            if (session.minTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(6).setCellValue(temperatureUnit.fromCelsius(session.minTemperatureCelsius).toDouble())
+            if (session.maxTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(7).setCellValue(temperatureUnit.fromCelsius(session.maxTemperatureCelsius).toDouble())
+            if (session.avgTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(8).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
         }
 
         val screenStatesSheet = workbook.createSheet(context.getString(R.string.screen_states_tab))

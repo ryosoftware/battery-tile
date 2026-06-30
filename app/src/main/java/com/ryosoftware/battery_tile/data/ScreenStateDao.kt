@@ -19,6 +19,9 @@ interface ScreenStateDao {
     @Query("SELECT * FROM screen_states WHERE timestamp >= :start AND timestamp <= :end ORDER BY timestamp ASC")
     suspend fun getBetween(start: Long, end: Long): List<ScreenState>
 
+    @Query("SELECT * FROM screen_states WHERE timestamp <= :timestamp ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLatestBefore(timestamp: Long): ScreenState?
+
     @Insert
     suspend fun insert(state: ScreenState): Long
 

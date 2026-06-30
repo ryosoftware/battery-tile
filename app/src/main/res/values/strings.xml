@@ -223,19 +223,25 @@
     <string name="start_logging_dialog_body">Do you want to delete the current log file and start a new one?</string>
     <string name="stop_logging_dialog_body">Do you want to stop saving debug logs and delete the current log file?</string>
 
-    <string name="battery_history">Battery history</string>
-    <string name="shows_historical_data">Displays graphs showing the evolution of your device\'s battery over time.</string>
-    <string name="battery_level_chart_title">Battery level history</string>
-    <string name="temperature_chart_title">Battery temperature history</string>
-    <string name="charging_patterns_tab">Charging patterns</string>
+    <string name="battery_history">History</string>
+    <string name="shows_historical_data">Shows the evolution of your device\'s over time.</string>
+    <string name="charge_discharge_sessions_tab">Charge/Discharge sessions</string>
+    <string name="combined_graphs_tab">Graphs</string>
+    <string name="chart_show_level">Level</string>
+    <string name="chart_show_temperature">Temperature</string>
+    <string name="session_charging_label">Charge</string>
+    <string name="session_discharge_label">Discharge</string>
+    <string name="no_sessions">No sessions recorded yet.</string>
+    <string name="discharge_session_duration">Duration</string>
+    <string name="discharge_session_screen_on_time">Screen on time</string>
+    <string name="discharge_session_temperature">Temperature</string>
+    <string name="discharge_session_ongoing">Ongoing</string>
     <string name="charging_session_duration">Duration</string>
-    <string name="charging_session_level_change">Level change</string>
     <string name="charging_session_speed">Speed</string>
     <string name="percent_per_hour">%1$s/h</string>
     <string name="charging_session_temperature">Temperature</string>
     <string name="charging_temperature_min_max_avg">%1$s - %2$s (avg. %3$s)</string>
     <string name="charging_session_plug_type">Plug type</string>
-    <string name="no_charging_sessions">No charging sessions recorded yet.</string>
     <string name="charging_session_ongoing">Ongoing</string>
     <string name="could_have_unplugged_before">You could have unplugged %2$s earlier</string>
     <string name="chart_scroll_hint">Swipe on the graph to see all the information</string>
@@ -257,14 +263,23 @@
         <item quantity="other">%1$s at %2$s</item>
     </plurals>
 
-    <string name="from_date_to_date">Del %1$s al %2$s</string>
+    <plurals name="time">
+        <item quantity="one">%1$s</item>
+        <item quantity="other">%1$s</item>
+    </plurals>
+
+    <string name="from_date_to_date">From %1$s to %2$s</string>
+    <string name="from_time_to_time_on_date">From %1$s to %2$s on %3$s</string>
     <string name="share_history">Share history</string>
     <string name="save_history">Save history</string>
+    <string name="excel_charging_sessions_tab">Charging sessions</string>
+    <string name="excel_discharge_sessions_tab">Discharge sessions</string>
     <string name="error_exporting_history">Error exporting history</string>
     <string name="excel_header_timestamp">Event date/time</string>
     <string name="excel_header_start_timestamp">Start date/time</string>
     <string name="excel_header_end_timestamp">End date/time</string>
     <string name="excel_header_charged_timestamp">Fully charged date/time</string>
+    <string name="excel_header_screen_on_time">Screen on time</string>
     <string name="excel_header_battery_level">Battery level</string>
     <string name="excel_header_battery_start_level">Battery start level</string>
     <string name="excel_header_battery_end_level">Battery end level</string>
@@ -294,7 +309,6 @@
     <string name="no">No</string>
     <string name="no_delay">Immediate</string>
     <string name="tile_separator">&#160;|&#160;</string>
-    <string name="tile_unknown_value">\?</string>
     <string name="back">Back</string>
 
 </resources>
