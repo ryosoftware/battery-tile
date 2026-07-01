@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -64,8 +65,8 @@ fun DebugLogScreen(onBack: () -> Unit) {
     var canShare by remember { mutableStateOf(false) }
     val app = Main.from(context)
     val scope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
-
+    val verticalScroll = rememberScrollState()
+    val horizontalScroll = rememberScrollState()
     val logFileTime by app.logger.logFileTime.collectAsState()
 
     val saveLauncher = rememberLauncherForActivityResult(
@@ -89,13 +90,13 @@ fun DebugLogScreen(onBack: () -> Unit) {
 
     LaunchedEffect(logFileTime, loggingEnabled) {
         if (loggingEnabled) {
-            val isAtBottom = scrollState.value >= scrollState.maxValue
+            val isAtBottom = verticalScroll.value >= verticalScroll.maxValue
             val contents = app.logger.getLogFileContents(null)
             logContents = contents?.joinToString("\n")
             canShare = !contents.isNullOrEmpty()
             if (isAtBottom) {
                 withFrameNanos { }
-                scrollState.animateScrollTo(scrollState.maxValue)
+                verticalScroll.animateScrollTo(verticalScroll.maxValue)
             }
         }
     }
@@ -237,16 +238,23 @@ fun DebugLogScreen(onBack: () -> Unit) {
 
             Spacer(Modifier.height(8.dp))
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                Text(
-                    text = logContents ?: stringResource(R.string.no_log_data),
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(scrollState)
-                        .padding(8.dp),
-                    fontFamily = FontFamily.Monospace,
-                    style = MaterialTheme.typography.bodySmall
-                )
+                        .horizontalScroll(horizontalScroll)
+                        .verticalScroll(verticalScroll)
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = logContents ?: stringResource(R.string.no_log_data),
+                        softWrap = false,
+                        fontFamily = FontFamily.Monospace,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         }
     }
