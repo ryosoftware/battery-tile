@@ -14,8 +14,8 @@ android {
     defaultConfig {
         applicationId = "com.ryosoftware.battery_tile"
 
-        versionCode = 9
-        versionName = "2.7"
+        versionCode = 10
+        versionName = "2.8"
 
         minSdk = 29
         targetSdk = 37
@@ -23,17 +23,7 @@ android {
         buildConfigField(
             "String",
             "TAG",
-            "\"BatteryTile\""
-        )
-        buildConfigField(
-            "String",
-            "versionName",
-            "\"${versionName}\""
-        )
-        buildConfigField(
-            "String",
-            "versionCode",
-            "\"${versionCode}\""
+            "\"battery_tile\""
         )
     }
 

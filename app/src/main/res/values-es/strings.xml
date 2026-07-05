@@ -239,6 +239,8 @@
     <string name="discharge_session_ongoing">En curso</string>
     <string name="charging_session_duration">Duración</string>
     <string name="charging_session_speed">Velocidad</string>
+    <string name="discharge_session_screen_on_speed">Velocidad pantalla encendida</string>
+    <string name="discharge_session_screen_off_speed">Velocidad pantalla apagada</string>
     <string name="percent_per_hour">%1$s/h</string>
     <string name="charging_session_temperature">Temperatura</string>
     <string name="charging_temperature_min_max_avg">%1$s - %2$s (%3$s de promedio)</string>
@@ -285,6 +287,8 @@
     <string name="excel_header_end_timestamp">Fecha/Hora de finalización</string>
     <string name="excel_header_charged_timestamp">Fecha/Hora carga completa</string>
     <string name="excel_header_screen_on_time">Tiempo de pantalla</string>
+    <string name="excel_header_screen_on_speed">Velocidad pantalla encendida (%%/h)</string>
+    <string name="excel_header_screen_off_speed">Velocidad pantalla apagada (%%/h)</string>
     <string name="excel_header_battery_level">Nivel de Batería</string>
     <string name="excel_header_battery_start_level">Nivel de Batería inicial</string>
     <string name="excel_header_battery_end_level">Nivel de Batería final</string>

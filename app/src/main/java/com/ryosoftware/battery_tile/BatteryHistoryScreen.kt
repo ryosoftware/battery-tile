@@ -1185,6 +1185,42 @@ private fun DischargeSessionCard(session: DischargeSession, context: Context, ap
         }
     }
 
+    if (session.screenOnSpeed != null) {
+        Spacer(Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = stringResource(
+                    R.string.label_and_value,
+                    stringResource(R.string.discharge_session_screen_on_speed),
+                    stringResource(R.string.percent_per_hour, getStringPercent(context, session.screenOnSpeed))
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
+    if (session.screenOffSpeed != null) {
+        Spacer(Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = stringResource(
+                    R.string.label_and_value,
+                    stringResource(R.string.discharge_session_screen_off_speed),
+                    stringResource(R.string.percent_per_hour, getStringPercent(context, session.screenOffSpeed))
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
     TemperatureRow(
         context,
         session.minTemperatureCelsius,
@@ -1338,6 +1374,8 @@ private fun buildExcel(
             context.getString(R.string.excel_header_battery_start_level),
             context.getString(R.string.excel_header_battery_end_level),
             context.getString(R.string.excel_header_screen_on_time),
+            context.getString(R.string.excel_header_screen_on_speed),
+            context.getString(R.string.excel_header_screen_off_speed),
             context.getString(R.string.excel_header_min_temperature, temperatureUnit.toString(context)),
             context.getString(R.string.excel_header_max_temperature, temperatureUnit.toString(context)),
             context.getString(R.string.excel_header_avg_temperature, temperatureUnit.toString(context))
@@ -1371,9 +1409,12 @@ private fun buildExcel(
                     cellStyle = durationTimeStyle
                 }
 
-            if (session.minTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(6).setCellValue(temperatureUnit.fromCelsius(session.minTemperatureCelsius).toDouble())
-            if (session.maxTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(7).setCellValue(temperatureUnit.fromCelsius(session.maxTemperatureCelsius).toDouble())
-            if (session.avgTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(8).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
+            if (session.screenOnSpeed != null) dischargeSessionsBodyRow.createCell(6).setCellValue(session.screenOnSpeed.toDouble())
+            if (session.screenOffSpeed != null) dischargeSessionsBodyRow.createCell(7).setCellValue(session.screenOffSpeed.toDouble())
+
+            if (session.minTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(8).setCellValue(temperatureUnit.fromCelsius(session.minTemperatureCelsius).toDouble())
+            if (session.maxTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(9).setCellValue(temperatureUnit.fromCelsius(session.maxTemperatureCelsius).toDouble())
+            if (session.avgTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(10).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
         }
 
         val screenStatesSheet = workbook.createSheet(context.getString(R.string.screen_states_tab))

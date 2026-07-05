@@ -4,15 +4,15 @@ coreSplashscreen = "1.2.0"
 kotlin = "2.4.0"
 coreKtx = "1.19.0"
 activityCompose = "1.13.0"
-composeBom = "2026.06.00"
+composeBom = "2026.06.01"
 kotlinxSerializationJson = "1.11.0"
 kotlinxCoroutinesAndroid = "1.11.0"
-uiText = "1.11.3"
+uiText = "1.11.4"
 material="1.14.0"
 room = "2.8.4"
 ksp = "2.3.9"
 poiOoxml = "5.5.1"
-foundation = "1.11.3"
+foundation = "1.11.4"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -744,6 +744,10 @@ class NotificationService : Service() {
                                 val screenStates = repository.getScreenStatesBetween(currentDischargeSession.startTime, now)
                                 val screenOnTimeMs = calculateScreenOnTime(screenStates, currentDischargeSession.startTime, now)
                                 val averageTemperature = getAverageTemperature(validBatteryReadings, now)
+                                val (screenOnSpeed, screenOffSpeed) = calculateScreenOnOffSpeeds(
+                                    batteryReadings, screenStates,
+                                    currentDischargeSession.startTime, now
+                                )
 
                                 repository.updateDischargeSession(currentDischargeSession.copy(
                                     endTime = now,
@@ -752,7 +756,9 @@ class NotificationService : Service() {
                                     screenOnTimeMinutes = screenOnTimeMs / 60_000L,
                                     avgTemperatureCelsius = averageTemperature,
                                     maxTemperatureCelsius = if (validBatteryReadings.isNotEmpty()) validBatteryReadings.maxOf { it.temperatureCelsius } else null,
-                                    minTemperatureCelsius = if (validBatteryReadings.isNotEmpty()) validBatteryReadings.minOf { it.temperatureCelsius } else null
+                                    minTemperatureCelsius = if (validBatteryReadings.isNotEmpty()) validBatteryReadings.minOf { it.temperatureCelsius } else null,
+                                    screenOnSpeed = screenOnSpeed,
+                                    screenOffSpeed = screenOffSpeed
                                 ))
 
                                 logger.log("Discharge session end stored at DB")
@@ -849,6 +855,62 @@ class NotificationService : Service() {
         }
 
         return total
+    }
+
+    private suspend fun calculateScreenOnOffSpeeds(
+        batteryReadings: List<BatteryReading>,
+        screenStates: List<ScreenState>,
+        startTime: Long,
+        endTime: Long
+    ): Pair<Float?, Float?> {
+        if (batteryReadings.size < 2) return Pair(null, null)
+
+        val sortedReadings = batteryReadings.sortedBy { it.timestamp }
+
+        var screenOnDelta = 0
+        var screenOnDurationMs = 0L
+        var screenOffDelta = 0
+        var screenOffDurationMs = 0L
+
+        val screenStatesBetween = screenStates.filter {
+            it.timestamp >= startTime && it.timestamp <= endTime
+        }.sortedBy { it.timestamp }
+
+        for (i in 0 until sortedReadings.size - 1) {
+            val curr = sortedReadings[i]
+            val next = sortedReadings[i + 1]
+
+            val stateChangesInInterval = screenStatesBetween.filter {
+                it.timestamp > curr.timestamp && it.timestamp < next.timestamp
+            }
+
+            if (stateChangesInInterval.isNotEmpty()) continue
+
+            val stateAtStart = repository.getLatestScreenStateBefore(curr.timestamp + 1)
+            val wasScreenOn = stateAtStart?.screenOn ?: false
+
+            val delta = curr.batteryLevel - next.batteryLevel
+            if (delta <= 0) continue
+            val duration = next.timestamp - curr.timestamp
+
+            if (wasScreenOn) {
+                screenOnDelta += delta
+                screenOnDurationMs += duration
+            } else {
+                screenOffDelta += delta
+                screenOffDurationMs += duration
+            }
+        }
+
+        val screenOnSpeed = if (screenOnDurationMs > 0) {
+            screenOnDelta.toFloat() / (screenOnDurationMs / 3_600_000f)
+        } else null
+
+        val screenOffSpeed = if (screenOffDurationMs > 0) {
+            screenOffDelta.toFloat() / (screenOffDurationMs / 3_600_000f)
+        } else null
+
+        return Pair(screenOnSpeed, screenOffSpeed)
     }
     private fun buildServiceNotification(): Notification {
         fun buildText(notificationServiceUIBuilder: NotificationServiceUIBuilder): String {

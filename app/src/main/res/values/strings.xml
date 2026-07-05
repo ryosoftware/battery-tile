@@ -238,6 +238,8 @@
     <string name="discharge_session_ongoing">Ongoing</string>
     <string name="charging_session_duration">Duration</string>
     <string name="charging_session_speed">Speed</string>
+    <string name="discharge_session_screen_on_speed">Screen on speed</string>
+    <string name="discharge_session_screen_off_speed">Screen off speed</string>
     <string name="percent_per_hour">%1$s/h</string>
     <string name="charging_session_temperature">Temperature</string>
     <string name="charging_temperature_min_max_avg">%1$s - %2$s (avg. %3$s)</string>
@@ -280,6 +282,8 @@
     <string name="excel_header_end_timestamp">End date/time</string>
     <string name="excel_header_charged_timestamp">Fully charged date/time</string>
     <string name="excel_header_screen_on_time">Screen on time</string>
+    <string name="excel_header_screen_on_speed">Screen on speed (%%/h)</string>
+    <string name="excel_header_screen_off_speed">Screen off speed (%%/h)</string>
     <string name="excel_header_battery_level">Battery level</string>
     <string name="excel_header_battery_start_level">Battery start level</string>
     <string name="excel_header_battery_end_level">Battery end level</string>
