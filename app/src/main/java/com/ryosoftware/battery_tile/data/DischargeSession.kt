@@ -16,5 +16,7 @@ data class DischargeSession(
     val maxTemperatureCelsius: Float?,
     val minTemperatureCelsius: Float?,
     val screenOnSpeed: Float? = null,
-    val screenOffSpeed: Float? = null
+    val screenOffSpeed: Float? = null,
+    val screenOnDelta: Int? = null,
+    val screenOffDelta: Int? = null
 )

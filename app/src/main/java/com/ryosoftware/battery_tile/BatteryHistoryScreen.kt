@@ -934,6 +934,71 @@ fun CombinedSessionsTab(
     dischargeSessions: List<DischargeSession>,
     appPrefs: AppPreferences
 ) {
+    val completedCharge = remember(chargingSessions) {
+        chargingSessions.filter { it.endTime != null }
+    }
+    val completedDischarge = remember(dischargeSessions) {
+        dischargeSessions.filter { it.endTime != null }
+    }
+
+    val dischargeWithScreenOnTime = remember(completedDischarge) {
+        completedDischarge.filter { it.screenOnTimeMinutes != null }
+    }
+    val totalDischargeDuration = remember(completedDischarge) {
+        completedDischarge.sumOf { it.durationMinutes ?: 0L }
+    }
+    val totalScreenOnMinutes = remember(dischargeWithScreenOnTime) {
+        dischargeWithScreenOnTime.sumOf { it.screenOnTimeMinutes!! }
+    }
+    val screenOffMinutes = remember(dischargeWithScreenOnTime, totalScreenOnMinutes) {
+        val totalDur = dischargeWithScreenOnTime.sumOf { it.durationMinutes ?: 0L }
+        totalDur - totalScreenOnMinutes
+    }
+
+    val dischargeWithScreenOnDelta = remember(completedDischarge) {
+        completedDischarge.filter { it.screenOnDelta != null }
+    }
+    val totalScreenOnDelta = remember(dischargeWithScreenOnDelta) {
+        dischargeWithScreenOnDelta.sumOf { it.screenOnDelta!! }
+    }
+    val totalScreenOnMinutesForSpeed = remember(dischargeWithScreenOnDelta) {
+        dischargeWithScreenOnDelta.sumOf { it.screenOnTimeMinutes ?: 0L }
+    }
+    val avgScreenOnSpeed = remember(totalScreenOnDelta, totalScreenOnMinutesForSpeed) {
+        if (totalScreenOnDelta > 0 && totalScreenOnMinutesForSpeed > 0L)
+            totalScreenOnDelta.toFloat() / (totalScreenOnMinutesForSpeed / 60f)
+        else null
+    }
+
+    val dischargeWithScreenOffDelta = remember(completedDischarge) {
+        completedDischarge.filter { it.screenOffDelta != null }
+    }
+    val totalScreenOffDelta = remember(dischargeWithScreenOffDelta) {
+        dischargeWithScreenOffDelta.sumOf { it.screenOffDelta!! }
+    }
+    val totalDurationForScreenOff = remember(dischargeWithScreenOffDelta) {
+        dischargeWithScreenOffDelta.sumOf { it.durationMinutes ?: 0L }
+    }
+    val totalScreenOnForScreenOff = remember(dischargeWithScreenOffDelta) {
+        dischargeWithScreenOffDelta.sumOf { it.screenOnTimeMinutes ?: 0L }
+    }
+    val avgScreenOffSpeed = remember(totalScreenOffDelta, totalDurationForScreenOff, totalScreenOnForScreenOff) {
+        val screenOffMin = totalDurationForScreenOff - totalScreenOnForScreenOff
+        if (totalScreenOffDelta > 0 && screenOffMin > 0L)
+            totalScreenOffDelta.toFloat() / (screenOffMin / 60f)
+        else null
+    }
+
+    val avgChargeSpeed = remember(completedCharge) {
+        val valid = completedCharge.filter {
+            it.endLevel != null && it.durationMinutes != null && it.durationMinutes > 0L
+        }
+        if (valid.isEmpty()) return@remember null
+        val totalDelta = valid.sumOf { it.endLevel!! - it.startLevel }
+        val totalHours = valid.map { it.durationMinutes!! / 60f }.sum()
+        if (totalHours > 0f) totalDelta / totalHours else null
+    }
+
     val combined = remember(chargingSessions, dischargeSessions) {
         (chargingSessions.map { SessionItem.Charging(it) } +
          dischargeSessions.map { SessionItem.Discharge(it) })
@@ -941,6 +1006,115 @@ fun CombinedSessionsTab(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (completedCharge.isNotEmpty() || completedDischarge.isNotEmpty()) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = stringResource(R.string.global_stats_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    if (completedCharge.isNotEmpty()) {
+                        Text(
+                            text = stringResource(
+                                R.string.global_stats_sessions_count,
+                                completedCharge.size,
+                                stringResource(R.string.session_charging_label).lowercase()
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (avgChargeSpeed != null) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.label_and_value,
+                                    stringResource(R.string.global_stats_charge_avg_speed),
+                                    stringResource(R.string.percent_per_hour, getStringPercent(context, avgChargeSpeed))
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    if (completedCharge.isNotEmpty() && completedDischarge.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                    }
+
+                    if (completedDischarge.isNotEmpty()) {
+                        Text(
+                            text = stringResource(
+                                R.string.global_stats_sessions_count,
+                                completedDischarge.size,
+                                stringResource(R.string.session_discharge_label).lowercase()
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.label_and_value,
+                                stringResource(R.string.global_stats_discharge_total),
+                                getStringTimeFromInterval(context, totalDischargeDuration * 60_000L)
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.label_and_value,
+                                stringResource(R.string.global_stats_discharge_screen_on),
+                                getStringTimeFromInterval(context, totalScreenOnMinutes * 60_000L)
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (screenOffMinutes > 0L) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.label_and_value,
+                                    stringResource(R.string.global_stats_discharge_screen_off),
+                                    getStringTimeFromInterval(context, screenOffMinutes * 60_000L)
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (avgScreenOnSpeed != null) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.label_and_value,
+                                    stringResource(R.string.global_stats_discharge_screen_on_speed),
+                                    stringResource(R.string.percent_per_hour, getStringPercent(context, avgScreenOnSpeed))
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (avgScreenOffSpeed != null) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.label_and_value,
+                                    stringResource(R.string.global_stats_discharge_screen_off_speed),
+                                    stringResource(R.string.percent_per_hour, getStringPercent(context, avgScreenOffSpeed))
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         combined.forEach { item ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
@@ -1376,6 +1550,8 @@ private fun buildExcel(
             context.getString(R.string.excel_header_screen_on_time),
             context.getString(R.string.excel_header_screen_on_speed),
             context.getString(R.string.excel_header_screen_off_speed),
+            context.getString(R.string.excel_header_screen_on_delta),
+            context.getString(R.string.excel_header_screen_off_delta),
             context.getString(R.string.excel_header_min_temperature, temperatureUnit.toString(context)),
             context.getString(R.string.excel_header_max_temperature, temperatureUnit.toString(context)),
             context.getString(R.string.excel_header_avg_temperature, temperatureUnit.toString(context))
@@ -1411,10 +1587,12 @@ private fun buildExcel(
 
             if (session.screenOnSpeed != null) dischargeSessionsBodyRow.createCell(6).setCellValue(session.screenOnSpeed.toDouble())
             if (session.screenOffSpeed != null) dischargeSessionsBodyRow.createCell(7).setCellValue(session.screenOffSpeed.toDouble())
+            if (session.screenOnDelta != null) dischargeSessionsBodyRow.createCell(8).setCellValue(session.screenOnDelta.toDouble())
+            if (session.screenOffDelta != null) dischargeSessionsBodyRow.createCell(9).setCellValue(session.screenOffDelta.toDouble())
 
-            if (session.minTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(8).setCellValue(temperatureUnit.fromCelsius(session.minTemperatureCelsius).toDouble())
-            if (session.maxTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(9).setCellValue(temperatureUnit.fromCelsius(session.maxTemperatureCelsius).toDouble())
-            if (session.avgTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(10).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
+            if (session.minTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(10).setCellValue(temperatureUnit.fromCelsius(session.minTemperatureCelsius).toDouble())
+            if (session.maxTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(11).setCellValue(temperatureUnit.fromCelsius(session.maxTemperatureCelsius).toDouble())
+            if (session.avgTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(12).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
         }
 
         val screenStatesSheet = workbook.createSheet(context.getString(R.string.screen_states_tab))

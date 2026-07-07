@@ -246,6 +246,14 @@
     <string name="charging_temperature_min_max_avg">%1$s - %2$s (%3$s de promedio)</string>
     <string name="charging_session_plug_type">Tipo de conector</string>
     <string name="charging_session_ongoing">En curso</string>
+    <string name="global_stats_title">Estadísticas globales</string>
+    <string name="global_stats_sessions_count">%1$d sesiones de %2$s</string>
+    <string name="global_stats_discharge_screen_on">Tiempo pantalla encendida</string>
+    <string name="global_stats_discharge_screen_off">Tiempo pantalla apagada</string>
+    <string name="global_stats_charge_avg_speed">Velocidad media de carga</string>
+    <string name="global_stats_discharge_total">Tiempo total de descarga</string>
+    <string name="global_stats_discharge_screen_on_speed">Vel. media pantalla encendida</string>
+    <string name="global_stats_discharge_screen_off_speed">Vel. media pantalla apagada</string>
     <string name="could_have_unplugged_before">Podías haberlo desenchufado %2$s antes</string>
     <string name="chart_scroll_hint">Desliza en el gráfico para ver toda la información</string>
     <string name="no_history_data">Sin datos históricos.\nLos datos se recopilan periódicamente mientras el proceso en segundo plano está activo.</string>
@@ -289,6 +297,8 @@
     <string name="excel_header_screen_on_time">Tiempo de pantalla</string>
     <string name="excel_header_screen_on_speed">Velocidad pantalla encendida (%%/h)</string>
     <string name="excel_header_screen_off_speed">Velocidad pantalla apagada (%%/h)</string>
+    <string name="excel_header_screen_on_delta">Delta pantalla encendida (%)</string>
+    <string name="excel_header_screen_off_delta">Delta pantalla apagada (%)</string>
     <string name="excel_header_battery_level">Nivel de Batería</string>
     <string name="excel_header_battery_start_level">Nivel de Batería inicial</string>
     <string name="excel_header_battery_end_level">Nivel de Batería final</string>

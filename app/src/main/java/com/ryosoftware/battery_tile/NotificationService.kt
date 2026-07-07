@@ -744,7 +744,7 @@ class NotificationService : Service() {
                                 val screenStates = repository.getScreenStatesBetween(currentDischargeSession.startTime, now)
                                 val screenOnTimeMs = calculateScreenOnTime(screenStates, currentDischargeSession.startTime, now)
                                 val averageTemperature = getAverageTemperature(validBatteryReadings, now)
-                                val (screenOnSpeed, screenOffSpeed) = calculateScreenOnOffSpeeds(
+                                val stats = calculateScreenOnOffSpeeds(
                                     batteryReadings, screenStates,
                                     currentDischargeSession.startTime, now
                                 )
@@ -757,8 +757,10 @@ class NotificationService : Service() {
                                     avgTemperatureCelsius = averageTemperature,
                                     maxTemperatureCelsius = if (validBatteryReadings.isNotEmpty()) validBatteryReadings.maxOf { it.temperatureCelsius } else null,
                                     minTemperatureCelsius = if (validBatteryReadings.isNotEmpty()) validBatteryReadings.minOf { it.temperatureCelsius } else null,
-                                    screenOnSpeed = screenOnSpeed,
-                                    screenOffSpeed = screenOffSpeed
+                                    screenOnSpeed = stats.screenOnSpeed,
+                                    screenOffSpeed = stats.screenOffSpeed,
+                                    screenOnDelta = stats.screenOnDelta,
+                                    screenOffDelta = stats.screenOffDelta
                                 ))
 
                                 logger.log("Discharge session end stored at DB")
@@ -862,8 +864,8 @@ class NotificationService : Service() {
         screenStates: List<ScreenState>,
         startTime: Long,
         endTime: Long
-    ): Pair<Float?, Float?> {
-        if (batteryReadings.size < 2) return Pair(null, null)
+    ): ScreenOnOffStats {
+        if (batteryReadings.size < 2) return ScreenOnOffStats(null, null, null, null)
 
         val sortedReadings = batteryReadings.sortedBy { it.timestamp }
 
@@ -910,8 +912,15 @@ class NotificationService : Service() {
             screenOffDelta.toFloat() / (screenOffDurationMs / 3_600_000f)
         } else null
 
-        return Pair(screenOnSpeed, screenOffSpeed)
+        return ScreenOnOffStats(screenOnSpeed, screenOffSpeed, screenOnDelta, screenOffDelta)
     }
+
+    private data class ScreenOnOffStats(
+        val screenOnSpeed: Float?,
+        val screenOffSpeed: Float?,
+        val screenOnDelta: Int?,
+        val screenOffDelta: Int?
+    )
     private fun buildServiceNotification(): Notification {
         fun buildText(notificationServiceUIBuilder: NotificationServiceUIBuilder): String {
             val values = NotificationServiceUIBuilder.NotificationField.entries.associateWith { field ->

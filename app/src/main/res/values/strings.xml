@@ -245,6 +245,14 @@
     <string name="charging_temperature_min_max_avg">%1$s - %2$s (avg. %3$s)</string>
     <string name="charging_session_plug_type">Plug type</string>
     <string name="charging_session_ongoing">Ongoing</string>
+    <string name="global_stats_title">Global statistics</string>
+    <string name="global_stats_sessions_count">%1$d %2$s sessions</string>
+    <string name="global_stats_discharge_screen_on">Screen on time</string>
+    <string name="global_stats_discharge_screen_off">Screen off time</string>
+    <string name="global_stats_charge_avg_speed">Avg charge speed</string>
+    <string name="global_stats_discharge_total">Total discharge time</string>
+    <string name="global_stats_discharge_screen_on_speed">Avg screen on speed</string>
+    <string name="global_stats_discharge_screen_off_speed">Avg screen off speed</string>
     <string name="could_have_unplugged_before">You could have unplugged %2$s earlier</string>
     <string name="chart_scroll_hint">Swipe on the graph to see all the information</string>
     <string name="no_history_data">No history data yet.\nData will be collected from time to time while the background process is running.</string>
@@ -284,6 +292,8 @@
     <string name="excel_header_screen_on_time">Screen on time</string>
     <string name="excel_header_screen_on_speed">Screen on speed (%%/h)</string>
     <string name="excel_header_screen_off_speed">Screen off speed (%%/h)</string>
+    <string name="excel_header_screen_on_delta">Screen on delta (%)</string>
+    <string name="excel_header_screen_off_delta">Screen off delta (%)</string>
     <string name="excel_header_battery_level">Battery level</string>
     <string name="excel_header_battery_start_level">Battery start level</string>
     <string name="excel_header_battery_end_level">Battery end level</string>
