@@ -255,6 +255,9 @@
     <string name="global_stats_discharge_screen_on_speed">Vel. media pantalla encendida</string>
     <string name="global_stats_discharge_screen_off_speed">Vel. media pantalla apagada</string>
     <string name="could_have_unplugged_before">Podías haberlo desenchufado %2$s antes</string>
+    <string name="anomaly_flaky_connection_title">Posible problema con el cable o cargador</string>
+    <string name="anomaly_flaky_connection_body">En varias cargas, el dispositivo se desconectó y reconectó repetidamente en periodos cortos. Esto podría indicar un cable o cargador defectuoso.</string>
+    <string name="anomaly_flaky_connection_body_single">Posible problema de conexión detectado en esta carga</string>
     <string name="chart_scroll_hint">Desliza en el gráfico para ver toda la información</string>
     <string name="no_history_data">Sin datos históricos.\nLos datos se recopilan periódicamente mientras el proceso en segundo plano está activo.</string>
     <string name="clear_history">Borrar Historial</string>

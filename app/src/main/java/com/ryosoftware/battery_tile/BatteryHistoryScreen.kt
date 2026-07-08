@@ -29,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -927,6 +928,81 @@ private fun DualAxisChart(
     )
 }
 
+private const val FLAKY_BATTERY_THRESHOLD = 85
+private const val FLAKY_CHARGING_PERIOD_GAP_MS = 30 * 60 * 1_000L
+private const val FLAKY_EVENT_THRESHOLD = 2
+
+private data class FlakyResult(
+    val affectedPeriodCount: Int,
+    val flakyDischargeIds: Set<Long>
+)
+
+private fun analyzeFlakyConnection(
+    chargeSessions: List<ChargingSession>,
+    dischargeSessions: List<DischargeSession>
+): FlakyResult? {
+    val briefDischarges = dischargeSessions.filter {
+        val dur = it.durationMinutes ?: return@filter false
+        it.endTime != null &&
+        dur < 2 &&
+        (it.startLevel) >= FLAKY_BATTERY_THRESHOLD
+    }
+    if (briefDischarges.size < 2) return null
+
+    val sorted = briefDischarges.sortedBy { it.startTime }
+    val periods = mutableListOf<MutableList<DischargeSession>>()
+
+    for (sd in sorted) {
+        val prevPeriod = periods.lastOrNull()
+        val prevSd = prevPeriod?.lastOrNull()
+        if (prevSd != null && sd.startTime - prevSd.endTime!! < FLAKY_CHARGING_PERIOD_GAP_MS) {
+            prevPeriod.add(sd)
+        } else {
+            periods.add(mutableListOf(sd))
+        }
+    }
+
+    val flakyIds = mutableSetOf<Long>()
+    var affectedCount = 0
+
+    for (period in periods) {
+        if (period.size >= FLAKY_EVENT_THRESHOLD) {
+            affectedCount++
+            period.forEach { flakyIds.add(it.id) }
+        }
+    }
+
+    if (affectedCount == 0) return null
+    return FlakyResult(affectedCount, flakyIds)
+}
+
+@Composable
+private fun FlakyConnectionWarningCard(result: FlakyResult, context: Context) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = stringResource(R.string.anomaly_flaky_connection_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Spacer(Modifier.height(4.dp))
+            val body = if (result.affectedPeriodCount >= 2) {
+                stringResource(R.string.anomaly_flaky_connection_body)
+            } else {
+                stringResource(R.string.anomaly_flaky_connection_body_single)
+            }
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
+    }
+}
+
 @Composable
 fun CombinedSessionsTab(
     context: Context,
@@ -1005,7 +1081,14 @@ fun CombinedSessionsTab(
             .sortedByDescending { it.startTime }
     }
 
+    val flakyResult = remember(completedCharge, completedDischarge) {
+        analyzeFlakyConnection(completedCharge, completedDischarge)
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (flakyResult != null) {
+            FlakyConnectionWarningCard(flakyResult, context)
+        }
         if (completedCharge.isNotEmpty() || completedDischarge.isNotEmpty()) {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
@@ -1115,12 +1198,14 @@ fun CombinedSessionsTab(
             }
         }
 
+        val flakyIds = flakyResult?.flakyDischargeIds ?: emptySet()
+
         combined.forEach { item ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     when (item) {
                         is SessionItem.Charging -> ChargingSessionCard(item.session, context, appPrefs)
-                        is SessionItem.Discharge -> DischargeSessionCard(item.session, context, appPrefs)
+                        is SessionItem.Discharge -> DischargeSessionCard(item.session, context, appPrefs, item.session.id in flakyIds)
                     }
                 }
             }
@@ -1326,10 +1411,11 @@ private fun ChargingSessionCard(session: ChargingSession, context: Context, appP
             )
         }
     }
+
 }
 
 @Composable
-private fun DischargeSessionCard(session: DischargeSession, context: Context, appPrefs: AppPreferences) {
+private fun DischargeSessionCard(session: DischargeSession, context: Context, appPrefs: AppPreferences, isFlaky: Boolean = false) {
     SessionHeaderRow(
         dotColor = Color(0xFF2196F3),
         label = stringResource(R.string.session_discharge_label),
@@ -1403,6 +1489,15 @@ private fun DischargeSessionCard(session: DischargeSession, context: Context, ap
         appPrefs.temperatureUnit,
         R.string.discharge_session_temperature
     )
+
+    if (isFlaky) {
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = stringResource(R.string.anomaly_flaky_connection_body_single),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error
+        )
+    }
 }
 
 private fun buildExcel(
