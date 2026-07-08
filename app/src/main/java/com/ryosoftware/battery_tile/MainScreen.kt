@@ -1,9 +1,9 @@
 package com.ryosoftware.battery_tile
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,6 +22,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -47,6 +49,16 @@ import com.ryosoftware.battery_tile.Main.Companion.requestPostExactAlarmPermissi
 import com.ryosoftware.battery_tile.Main.Companion.requestPostNotificationsPermission
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
 import com.ryosoftware.battery_tile.WhatAppOpens.Companion.toString
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import kotlin.system.exitProcess
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,6 +82,71 @@ fun SettingsSelector(
         hasNotificationPermission.value = context.hasPostNotificationsPermission()
         hasBatteryOptimizationPermission.value = context.hasBatteryOptimizationBypassPermission()
         hasExactAlarmPermission.value = context.hasExactAlarmPermission()
+    }
+
+    val scope = rememberCoroutineScope()
+    var showImportDialog by remember { mutableStateOf(false) }
+    var importDataBytes by remember { mutableStateOf<ByteArray?>(null) }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                importDataBytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                showImportDialog = true
+            } catch (e: Exception) {
+                Toast.makeText(context, R.string.import_error, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                try {
+                    val backupData = BackupManager(context).exportBackup()
+
+                    context.contentResolver.openOutputStream(uri)?.use {
+                        it.write(backupData)
+                    }
+
+                    Toast.makeText(context, R.string.backup_exported, Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(context, R.string.backup_error, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    if (showImportDialog && importDataBytes != null) {
+        ImportOptionsDialog(
+            onDismiss = {
+                showImportDialog = false
+                importDataBytes = null
+            },
+            onConfirm = { importConfig, importData ->
+                showImportDialog = false
+                scope.launch {
+                    try {
+                        BackupManager(context).importBackup(importDataBytes!!, importConfig, importData)
+                        Toast.makeText(context, R.string.backup_imported, Toast.LENGTH_SHORT).show()
+
+                        val intent = Intent(context, MainActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        }
+                        context.startActivity(intent)
+                        exitProcess(0)
+
+                    } catch (e: Exception) {
+                        Toast.makeText(context, R.string.import_error, Toast.LENGTH_LONG).show()
+                    }
+                    importDataBytes = null
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -371,6 +448,44 @@ fun SettingsSelector(
                         )
                     }
                 }
+
+                Spacer(Modifier.height(8.dp))
+
+                HorizontalDivider()
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text = stringResource(R.string.backup_restore),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+
+                Text(
+                    text = stringResource(R.string.backup_restore_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Spacer(Modifier.height(4.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { exportLauncher.launch("battery-tile-settings.json") },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(R.string.export_backup))
+                    }
+
+                    OutlinedButton(
+                        onClick = { importLauncher.launch(arrayOf("application/json")) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(R.string.import_backup))
+                    }
+                }
             }
 
             val uriHandler = LocalUriHandler.current
@@ -388,4 +503,64 @@ fun SettingsSelector(
             )
         }
     }
+}
+
+@Composable
+private fun ImportOptionsDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (importConfig: Boolean, importData: Boolean) -> Unit
+) {
+    var importConfig by remember { mutableStateOf(true) }
+    var importData by remember { mutableStateOf(true) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.import_title)) },
+        text = {
+            Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { importConfig = !importConfig }
+                        .padding(vertical = 4.dp)
+                ) {
+                    Checkbox(
+                        checked = importConfig,
+                        onCheckedChange = { importConfig = it }
+                    )
+                    Text(
+                        text = stringResource(R.string.import_config),
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { importData = !importData }
+                        .padding(vertical = 4.dp)
+                ) {
+                    Checkbox(
+                        checked = importData,
+                        onCheckedChange = { importData = it }
+                    )
+                    Text(
+                        text = stringResource(R.string.import_data),
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(importConfig, importData) }) {
+                Text(stringResource(R.string.import_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }

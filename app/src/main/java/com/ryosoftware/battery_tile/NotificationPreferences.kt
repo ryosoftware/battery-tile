@@ -6,7 +6,7 @@ import androidx.core.content.edit
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toCelsius
 
-class NotificationPreferences(context: Context) {
+class NotificationPreferences(context: Context): Preferences(context, FILENAME) {
     companion object {
         private const val FILENAME = "notification_prefs"
         const val KEY_NOTIFICATION_ENABLED = "notification-enabled"
@@ -27,10 +27,6 @@ class NotificationPreferences(context: Context) {
     }
 
     private val resources = context.resources
-
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences(FILENAME, Context.MODE_PRIVATE)
-
     private fun getKey(prefix: String, field: NotificationServiceUIBuilder.NotificationField) = "$prefix${field.key.lowercase()}"
 
     private fun getStringFromNotificationField(field: NotificationServiceUIBuilder.NotificationField, index: Int): String? =

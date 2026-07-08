@@ -9,7 +9,6 @@ import android.content.ComponentCallbacks
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.os.BatteryManager
@@ -68,6 +67,21 @@ interface IBatteryServiceData {
     fun getBatteryDataSnapshot(): BatteryServiceDataSnapshot
 }
 
+class NotificationServicePreferences(context: Context): Preferences(context, FILENAME) {
+    companion object {
+        private const val FILENAME = "foreground_service_data"
+        const val KEY_LAST_SEEN_EVENT_TIME = "last-event-time"
+        const val KEY_LAST_STATS_RESET_TIME = "last-stats-reset-time"
+        const val KEY_LAST_STATS_RESET_REASON = "last-stats-reset-reason"
+        const val KEY_LAST_STATS_RESET_BATTERY_LEVEL = "last-stats-reset-battery-level"
+        const val KEY_DEEP_SLEEP_TIME_AT_LAST_STATS_RESET = "last-stats-reset-deep-sleep-time"
+        const val KEY_TIME_SINCE_BOOT_AT_LAST_STATS_RESET = "last-stats-reset-time-since-boot"
+        const val KEY_SCREEN_ON_TIME_SINCE_BOOT = "screen-on-time-since-boot"
+        const val KEY_SCREEN_ON_TIME_SINCE_BOOT_IS_VALID = "screen-on-time-since-boot-is-valid"
+        const val KEY_SCREEN_ON_TIME_SINCE_LAST_STATS_RESET = "screen-on-time-since-last-stats-reset"
+    }
+}
+
 class NotificationService : Service() {
     companion object {
         const val CHANNEL_ID = "background-service"
@@ -101,16 +115,6 @@ class NotificationService : Service() {
         private const val POWER_DISCONNECTED_NOTIFICATION_TIMEOUT = POWER_CONNECTED_NOTIFICATION_TIMEOUT
         private const val UPDATE_SERVICE_NOTIFICATION_INTERVAL = 15_000L
         private const val DATA_PERSISTENCE_THRESHOLD_TOLERANCE = 600_000L
-        private const val PERSISTENT_DATA_NAME = "foreground_service_data"
-        const val KEY_LAST_SEEN_EVENT_TIME = "last-event-time"
-        const val KEY_LAST_STATS_RESET_TIME = "last-stats-reset-time"
-        const val KEY_LAST_STATS_RESET_REASON = "last-stats-reset-reason"
-        const val KEY_LAST_STATS_RESET_BATTERY_LEVEL = "last-stats-reset-battery-level"
-        const val KEY_DEEP_SLEEP_TIME_AT_LAST_STATS_RESET = "last-stats-reset-deep-sleep-time"
-        const val KEY_TIME_SINCE_BOOT_AT_LAST_STATS_RESET = "last-stats-reset-time-since-boot"
-        const val KEY_SCREEN_ON_TIME_SINCE_BOOT = "screen-on-time-since-boot"
-        const val KEY_SCREEN_ON_TIME_SINCE_BOOT_IS_VALID = "screen-on-time-since-boot-is-valid"
-        const val KEY_SCREEN_ON_TIME_SINCE_LAST_STATS_RESET = "screen-on-time-since-last-stats-reset"
         const val ACTION_RESET_STATS = "${BuildConfig.APPLICATION_ID}.RESET_STATS"
         const val EXTRA_REASON = "reason"
         const val ACTION_UPDATE_CHARGED_NOTIFICATION_ALARM = "${BuildConfig.APPLICATION_ID}.UPDATE_CHARGED_NOTIFICATION_ALARM"
@@ -136,7 +140,7 @@ class NotificationService : Service() {
         fun resetStats(context: Context, reason: LastStatsResetReason) {
             getLogger(context).log("Resetting stats data request due to ${reason.key}")
 
-            getPersistentDataPreferences(context).edit {
+            NotificationServicePreferences(context).prefs.edit {
                 val millisSinceBoot = SystemClock.elapsedRealtime()
                 val now = System.currentTimeMillis()
                 val interval = if (reason == LastStatsResetReason.DEVICE_REBOOT) millisSinceBoot else 0L
@@ -146,20 +150,20 @@ class NotificationService : Service() {
                     batteryIntent?.let { BatteryIntentHelper(it) }
                 }
 
-                putLong(KEY_LAST_STATS_RESET_TIME, now - interval)
-                putString(KEY_LAST_STATS_RESET_REASON, reason.key)
-                putLong(KEY_TIME_SINCE_BOOT_AT_LAST_STATS_RESET, millisSinceBoot - interval)
-                putLong(KEY_DEEP_SLEEP_TIME_AT_LAST_STATS_RESET, getDeepSleepTime(millisSinceBoot).coerceIn(0L, millisSinceBoot - interval))
-                putInt(KEY_LAST_STATS_RESET_BATTERY_LEVEL, batteryIntentHelper?.level ?: -1)
+                putLong(NotificationServicePreferences.KEY_LAST_STATS_RESET_TIME, now - interval)
+                putString(NotificationServicePreferences.KEY_LAST_STATS_RESET_REASON, reason.key)
+                putLong(NotificationServicePreferences.KEY_TIME_SINCE_BOOT_AT_LAST_STATS_RESET, millisSinceBoot - interval)
+                putLong(NotificationServicePreferences.KEY_DEEP_SLEEP_TIME_AT_LAST_STATS_RESET, getDeepSleepTime(millisSinceBoot).coerceIn(0L, millisSinceBoot - interval))
+                putInt(NotificationServicePreferences.KEY_LAST_STATS_RESET_BATTERY_LEVEL, batteryIntentHelper?.level ?: -1)
 
                 if (reason == LastStatsResetReason.DEVICE_REBOOT || reason == LastStatsResetReason.EXPIRED_DATA) {
-                    putBoolean(KEY_SCREEN_ON_TIME_SINCE_BOOT_IS_VALID, reason == LastStatsResetReason.DEVICE_REBOOT)
-                    remove(KEY_SCREEN_ON_TIME_SINCE_BOOT)
+                    putBoolean(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_BOOT_IS_VALID, reason == LastStatsResetReason.DEVICE_REBOOT)
+                    remove(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_BOOT)
                 }
 
-                remove(KEY_SCREEN_ON_TIME_SINCE_LAST_STATS_RESET)
+                remove(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_LAST_STATS_RESET)
 
-                putLong(KEY_LAST_SEEN_EVENT_TIME, millisSinceBoot - interval)
+                putLong(NotificationServicePreferences.KEY_LAST_SEEN_EVENT_TIME, millisSinceBoot - interval)
             }
             
             context.sendBroadcast(Intent(ACTION_RESET_STATS).apply {
@@ -169,9 +173,6 @@ class NotificationService : Service() {
         }
 
         fun resetStats(context: Context) = resetStats(context, LastStatsResetReason.USER_REQUEST)
-
-        fun getPersistentDataPreferences(context: Context): SharedPreferences =
-            context.getSharedPreferences(PERSISTENT_DATA_NAME, MODE_PRIVATE)
 
         fun runOrStop(context: Context, action: String?) {
             val prefs = NotificationPreferences(context)
@@ -230,8 +231,11 @@ class NotificationService : Service() {
     }
 
     private val logger by lazy { Main.from(this).logger }
+
+    private val servicePersistentData by lazy { NotificationServicePreferences(this).prefs }
     private val prefs by lazy { NotificationPreferences(this) }
     private val appPrefs by lazy { AppPreferences(this) }
+
     private val handler = Handler(Looper.getMainLooper())
     private val repository by lazy { BatteryRepository(this) }
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -245,8 +249,6 @@ class NotificationService : Service() {
                 NotificationManagerCompat.from(applicationContext).notify(NOTIFICATION_ID, notification)
         }
     }
-    private val persistentData by lazy { getPersistentDataPreferences(this) }
-
     private val notificationFieldFormats = mutableMapOf<NotificationServiceUIBuilder.NotificationField, String>()
     private var notificationFieldFormatsLocale: LocaleList? = null
 
@@ -371,7 +373,7 @@ class NotificationService : Service() {
         val now = System.currentTimeMillis()
         val millisSinceBoot = SystemClock.elapsedRealtime()
 
-        val lastSeenEventTime = persistentData.getLong(KEY_LAST_SEEN_EVENT_TIME, 0L)
+        val lastSeenEventTime = servicePersistentData.getLong(NotificationServicePreferences.KEY_LAST_SEEN_EVENT_TIME, 0L)
         val intervalWithoutEvents = millisSinceBoot - lastSeenEventTime
 
         lastStatsResetTime = now
@@ -384,12 +386,12 @@ class NotificationService : Service() {
         if (intervalWithoutEvents in 0..DATA_PERSISTENCE_THRESHOLD_TOLERANCE) {
             logger.log("Loading persisted data")
 
-            lastStatsResetTime = persistentData.getLong(KEY_LAST_STATS_RESET_TIME, lastStatsResetTime)
-            lastStatsResetReason = LastStatsResetReason.fromKey(persistentData.getString(KEY_LAST_STATS_RESET_REASON, null))
-            deepSleepTimeAtLastStatsReset = persistentData.getLong(KEY_DEEP_SLEEP_TIME_AT_LAST_STATS_RESET, deepSleepTimeAtLastStatsReset)
-            screenOnTimeSinceBootIsValid = persistentData.getBoolean(KEY_SCREEN_ON_TIME_SINCE_BOOT_IS_VALID, screenOnTimeSinceBootIsValid)
-            screenOnTimeSinceBoot = persistentData.getLong(KEY_SCREEN_ON_TIME_SINCE_BOOT, screenOnTimeSinceBoot)
-            screenOnTimeSinceLastStatsReset = persistentData.getLong(KEY_SCREEN_ON_TIME_SINCE_LAST_STATS_RESET, screenOnTimeSinceLastStatsReset)
+            lastStatsResetTime = servicePersistentData.getLong(NotificationServicePreferences.KEY_LAST_STATS_RESET_TIME, lastStatsResetTime)
+            lastStatsResetReason = LastStatsResetReason.fromKey(servicePersistentData.getString(NotificationServicePreferences.KEY_LAST_STATS_RESET_REASON, null))
+            deepSleepTimeAtLastStatsReset = servicePersistentData.getLong(NotificationServicePreferences.KEY_DEEP_SLEEP_TIME_AT_LAST_STATS_RESET, deepSleepTimeAtLastStatsReset)
+            screenOnTimeSinceBootIsValid = servicePersistentData.getBoolean(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_BOOT_IS_VALID, screenOnTimeSinceBootIsValid)
+            screenOnTimeSinceBoot = servicePersistentData.getLong(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_BOOT, screenOnTimeSinceBoot)
+            screenOnTimeSinceLastStatsReset = servicePersistentData.getLong(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_LAST_STATS_RESET, screenOnTimeSinceLastStatsReset)
         } else {
             resetStats(LastStatsResetReason.EXPIRED_DATA)
         }
@@ -435,11 +437,11 @@ class NotificationService : Service() {
 
             logger.log("Persisting data")
 
-            persistentData.edit {
-                putLong(KEY_SCREEN_ON_TIME_SINCE_BOOT, screenOnTimeSinceBoot)
-                putLong(KEY_SCREEN_ON_TIME_SINCE_LAST_STATS_RESET, screenOnTimeSinceLastStatsReset)
+            servicePersistentData.edit {
+                putLong(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_BOOT, screenOnTimeSinceBoot)
+                putLong(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_LAST_STATS_RESET, screenOnTimeSinceLastStatsReset)
 
-                putLong(KEY_LAST_SEEN_EVENT_TIME, lastScreenEventTime)
+                putLong(NotificationServicePreferences.KEY_LAST_SEEN_EVENT_TIME, lastScreenEventTime)
             }
         }
     }

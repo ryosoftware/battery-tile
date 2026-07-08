@@ -5,7 +5,6 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-import kotlinx.serialization.descriptors.PrimitiveKind
 
 @Dao
 interface ChargingSessionDao {

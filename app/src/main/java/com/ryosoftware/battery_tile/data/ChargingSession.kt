@@ -2,8 +2,10 @@ package com.ryosoftware.battery_tile.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 @Entity(tableName = "charging_sessions")
+@Serializable
 data class ChargingSession(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val startTime: Long,

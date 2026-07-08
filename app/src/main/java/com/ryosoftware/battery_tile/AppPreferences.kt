@@ -80,7 +80,7 @@ enum class WhatAppOpens(val key: String) {
     }
 }
 
-class AppPreferences(context: Context) {
+class AppPreferences(context: Context): Preferences(context, FILENAME) {
     companion object {
         private const val FILENAME = "app_prefs"
 
@@ -99,9 +99,6 @@ class AppPreferences(context: Context) {
     }
 
     private val resources = context.resources
-
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences(FILENAME, Context.MODE_PRIVATE)
 
     var isFirstRun: Boolean
         get() = prefs.getBoolean(KEY_FIRST_RUN, true)

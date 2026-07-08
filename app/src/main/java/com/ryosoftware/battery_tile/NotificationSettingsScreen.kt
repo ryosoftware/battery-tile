@@ -135,12 +135,12 @@ fun NotificationSettingsScreen(
 
     @SuppressLint("LocalContextGetResourceValueCall")
     fun readLastResetInfo(): PrintableLastResetStatsData {
-        val persistentData = NotificationService.getPersistentDataPreferences(context)
-        val time = persistentData.getLong(NotificationService.KEY_LAST_STATS_RESET_TIME, 0L)
-        val reason = persistentData.getString(NotificationService.KEY_LAST_STATS_RESET_REASON, null)
-        val batteryLevel = persistentData.getInt(NotificationService.KEY_LAST_STATS_RESET_BATTERY_LEVEL, -1)
-        val deepSleepTime = persistentData.getLong(NotificationService.KEY_DEEP_SLEEP_TIME_AT_LAST_STATS_RESET, 0L)
-        val timeSinceBoot = persistentData.getLong(NotificationService.KEY_TIME_SINCE_BOOT_AT_LAST_STATS_RESET, 0L)
+        val persistentData = NotificationServicePreferences(context).prefs
+        val time = persistentData.getLong(NotificationServicePreferences.KEY_LAST_STATS_RESET_TIME, 0L)
+        val reason = persistentData.getString(NotificationServicePreferences.KEY_LAST_STATS_RESET_REASON, null)
+        val batteryLevel = persistentData.getInt(NotificationServicePreferences.KEY_LAST_STATS_RESET_BATTERY_LEVEL, -1)
+        val deepSleepTime = persistentData.getLong(NotificationServicePreferences.KEY_DEEP_SLEEP_TIME_AT_LAST_STATS_RESET, 0L)
+        val timeSinceBoot = persistentData.getLong(NotificationServicePreferences.KEY_TIME_SINCE_BOOT_AT_LAST_STATS_RESET, 0L)
         return PrintableLastResetStatsData(time, reason, batteryLevel, deepSleepTime, timeSinceBoot)
     }
 

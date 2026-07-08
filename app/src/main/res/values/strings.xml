@@ -328,4 +328,18 @@
     <string name="tile_separator">&#160;|&#160;</string>
     <string name="back">Back</string>
 
+    <string name="backup_restore">Backup and restore</string>
+    <string name="backup_restore_body">Export or import all settings and historical data</string>
+    <string name="export_backup">Export</string>
+    <string name="import_backup">Import</string>
+    <string name="backup_exported">Backup created successfully</string>
+    <string name="backup_imported">Backup restored successfully</string>
+    <string name="backup_error">Error creating backup</string>
+    <string name="import_error">Error importing backup</string>
+    <string name="import_title">Import backup</string>
+    <string name="import_config">Import configuration</string>
+    <string name="import_data">Import data</string>
+    <string name="import_confirm">Restore</string>
+    <string name="import_invalid_file">Invalid backup file</string>
+
 </resources>

@@ -333,4 +333,18 @@
     <string name="tile_separator">&#160;|&#160;</string>
     <string name="back">Atrás</string>
 
+    <string name="backup_restore">Copia de seguridad y restauración</string>
+    <string name="backup_restore_body">Exporta o importa todos los ajustes y datos históricos</string>
+    <string name="export_backup">Exportar</string>
+    <string name="import_backup">Importar</string>
+    <string name="backup_exported">Copia de seguridad creada correctamente</string>
+    <string name="backup_imported">Datos restaurados correctamente</string>
+    <string name="backup_error">Error al crear la copia de seguridad</string>
+    <string name="import_error">Error al importar la copia de seguridad</string>
+    <string name="import_title">Importar copia de seguridad</string>
+    <string name="import_config">Importar configuración</string>
+    <string name="import_data">Importar datos</string>
+    <string name="import_confirm">Restaurar</string>
+    <string name="import_invalid_file">Archivo de copia de seguridad no válido</string>
+
 </resources>

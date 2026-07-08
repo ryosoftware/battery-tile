@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 
-class BatteryTilePreferences(context: Context) {
+class BatteryTilePreferences(context: Context): Preferences(context, FILENAME) {
     companion object {
         private const val FILENAME = "battery_tile_prefs"
         const val KEY_ICON_FIELD = "icon"
@@ -14,10 +14,6 @@ class BatteryTilePreferences(context: Context) {
     }
 
     private val resources = context.resources
-
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences(FILENAME, Context.MODE_PRIVATE)
-
     private fun getKey(prefix: String, field: BatteryTileUIBuilder.BatteryTileField) = "$prefix${field.key.lowercase()}"
 
     private fun getDefaultStringFromBatteryTileField(batteryTileField: BatteryTileUIBuilder.BatteryTileField, index: Int): String? =
