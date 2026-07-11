@@ -12,7 +12,7 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.ryosoftware.battery_tile"
+        applicationId = namespace
 
         versionCode = 10
         versionName = "2.8"
