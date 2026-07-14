@@ -92,6 +92,8 @@ class NotificationService : Service() {
         const val BATTERY_TEMPERATURE_WARNING_CHANNEL_ID = "battery-temperature-warning"
 
         const val BATTERY_HEALTH_WARNING_CHANNEL_ID = "battery-health-warning"
+
+        const val LAST_STATS_RESET_CHANNEL_ID = "last-stats-reset"
         const val NOTIFICATION_ID = 1
         private const val POWER_CONNECTED_NOTIFICATION_ID = NOTIFICATION_ID + 1
         private const val POWER_DISCONNECTED_NOTIFICATION_ID = POWER_CONNECTED_NOTIFICATION_ID + 1
@@ -99,6 +101,8 @@ class NotificationService : Service() {
         private const val LOW_CHARGE_NOTIFICATION_ID = CHARGED_NOTIFICATION_ID + 1
         private const val TEMPERATURE_WARNING_NOTIFICATION_ID = LOW_CHARGE_NOTIFICATION_ID + 1
         private const val HEALTH_WARNING_NOTIFICATION_ID = TEMPERATURE_WARNING_NOTIFICATION_ID + 1
+
+        private const val LAST_STATS_RESET_NOTIFICATION_ID = HEALTH_WARNING_NOTIFICATION_ID + 1
 
         private const val NOTIFICATION_CLICK_REQUEST_CODE = 1
         private const val POWER_CONNECTED_NOTIFICATION_CLICK_REQUEST_CODE = NOTIFICATION_CLICK_REQUEST_CODE + 1
@@ -109,8 +113,8 @@ class NotificationService : Service() {
         private const val LOW_CHARGE_NOTIFICATION_DELETE_REQUEST_CODE = CHARGED_NOTIFICATION_DELETE_REQUEST_CODE + 1
         private const val TEMPERATURE_WARNING_NOTIFICATION_CLICK_REQUEST_CODE = LOW_CHARGE_NOTIFICATION_DELETE_REQUEST_CODE + 1
         private const val TEMPERATURE_WARNING_NOTIFICATION_DELETE_REQUEST_CODE = TEMPERATURE_WARNING_NOTIFICATION_CLICK_REQUEST_CODE + 1
-
         private const val HEALTH_WARNING_NOTIFICATION_CLICK_REQUEST_CODE = TEMPERATURE_WARNING_NOTIFICATION_DELETE_REQUEST_CODE + 1
+        private const val LAST_STATS_RESET_NOTIFICATION_CLICK_REQUEST_CODE = HEALTH_WARNING_NOTIFICATION_CLICK_REQUEST_CODE + 1
         private const val POWER_CONNECTED_NOTIFICATION_TIMEOUT = 10_000L
         private const val POWER_DISCONNECTED_NOTIFICATION_TIMEOUT = POWER_CONNECTED_NOTIFICATION_TIMEOUT
         private const val UPDATE_SERVICE_NOTIFICATION_INTERVAL = 15_000L
@@ -136,9 +140,91 @@ class NotificationService : Service() {
 
         private fun getDeepSleepTime(): Long = getDeepSleepTime(SystemClock.elapsedRealtime())
 
+        @SuppressLint("MissingPermission")
+        private fun postNotification(
+            context: Context,
+            logger: Logger,
+            channelId: String,
+            notificationId: Int,
+            title: String,
+            body: String? = "",
+            icon: Int,
+            clickRequestCode: Int,
+            logMessagePrefix: String,
+            timeoutAfter: Long? = null,
+            onlyAlertOnce: Boolean = true,
+            deleteIntent: Intent? = null,
+            deleteRequestCode: Int = 0
+        ) {
+            if (!context.hasPostNotificationsPermission()) {
+                logger?.log("$logMessagePrefix notification hasn't posted due to lack of permissions")
+                return
+            }
+
+            val clickIntent = WhatAppOpens.APP.getIntent(context)
+
+            val builder = NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(icon)
+                .setContentTitle(title)
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(onlyAlertOnce)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_EVENT)
+                .setContentIntent(
+                    PendingIntent.getActivity(
+                        context,
+                        clickRequestCode,
+                        clickIntent,
+                        PendingIntent.FLAG_IMMUTABLE
+                    )
+                )
+
+            if (!body.isNullOrEmpty()) builder.setContentText(body)
+
+            if (timeoutAfter != null) builder.setTimeoutAfter(timeoutAfter)
+
+            if (deleteIntent != null) {
+                builder.setDeleteIntent(
+                    PendingIntent.getBroadcast(
+                        context,
+                        deleteRequestCode,
+                        deleteIntent,
+                        PendingIntent.FLAG_IMMUTABLE
+                    )
+                )
+            }
+
+            val notification = builder.build()
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
+
+            logger?.log("$logMessagePrefix notification has been posted")
+        }
+
+        private fun showLastStatsResetNotification(context: Context, logger: Logger, reason: LastStatsResetReason) {
+            val reasonResId = when(reason) {
+                LastStatsResetReason.POWER_DISCONNECTED -> R.string.power_disconnected
+                LastStatsResetReason.USER_REQUEST -> return
+                LastStatsResetReason.DEVICE_REBOOT -> R.string.device_reboot
+                LastStatsResetReason.EXPIRED_DATA -> R.string.expired_data
+            }
+
+            postNotification(
+                context = context,
+                logger = logger,
+                channelId = LAST_STATS_RESET_CHANNEL_ID,
+                notificationId = LAST_STATS_RESET_NOTIFICATION_ID,
+                title = context.getString(R.string.last_stats_reset_notification_title, context.getString(reasonResId)),
+                icon = R.drawable.ic_statusbar_notification_last_stats_reset,
+                clickRequestCode = LAST_STATS_RESET_NOTIFICATION_CLICK_REQUEST_CODE,
+                logMessagePrefix = "Data reset",
+            )
+        }
+
         @SuppressLint("UnsafeImplicitIntentLaunch")
         fun resetStats(context: Context, reason: LastStatsResetReason) {
-            getLogger(context).log("Resetting stats data request due to ${reason.key}")
+            val logger = getLogger(context)
+
+            logger.log("Resetting stats data request due to ${reason.key}")
 
             NotificationServicePreferences(context).prefs.edit {
                 val millisSinceBoot = SystemClock.elapsedRealtime()
@@ -165,6 +251,8 @@ class NotificationService : Service() {
 
                 putLong(NotificationServicePreferences.KEY_LAST_SEEN_EVENT_TIME, millisSinceBoot - interval)
             }
+
+            showLastStatsResetNotification(context, logger, reason)
             
             context.sendBroadcast(Intent(ACTION_RESET_STATS).apply {
                 setPackage(context.packageName)
@@ -983,62 +1071,6 @@ class NotificationService : Service() {
         .build()
     }
 
-    @SuppressLint("MissingPermission")
-    private fun postNotification(
-        channelId: String,
-        notificationId: Int,
-        title: String,
-        icon: Int,
-        clickRequestCode: Int,
-        logMessagePrefix: String,
-        timeoutAfter: Long? = null,
-        onlyAlertOnce: Boolean = true,
-        deleteIntent: Intent? = null,
-        deleteRequestCode: Int = 0
-    ) {
-        if (!hasPostNotificationsPermission()) {
-            logger.log("$logMessagePrefix notification hasn't posted due to lack of permissions")
-            return
-        }
-
-        val clickIntent = WhatAppOpens.APP.getIntent(this)
-
-        val builder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(icon)
-            .setContentTitle(title)
-            .setAutoCancel(true)
-            .setOnlyAlertOnce(onlyAlertOnce)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_EVENT)
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    this,
-                    clickRequestCode,
-                    clickIntent,
-                    PendingIntent.FLAG_IMMUTABLE
-                )
-            )
-
-        if (timeoutAfter != null) builder.setTimeoutAfter(timeoutAfter)
-
-        if (deleteIntent != null) {
-            builder.setDeleteIntent(
-                PendingIntent.getBroadcast(
-                    this,
-                    deleteRequestCode,
-                    deleteIntent,
-                    PendingIntent.FLAG_IMMUTABLE
-                )
-            )
-        }
-
-        val notification = builder.build()
-        NotificationManagerCompat.from(this).notify(notificationId, notification)
-
-        logger.log("$logMessagePrefix notification has been posted")
-    }
-
-    @SuppressLint("MissingPermission")
     private fun showPowerConnectedNotification(batteryIntentHelper: BatteryIntentHelper?) {
         val level = batteryIntentHelper?.level ?: -1
 
@@ -1046,6 +1078,8 @@ class NotificationService : Service() {
                    else getString(R.string.power_connected_notification_title_with_charge_value, level)
 
         postNotification(
+            context = this,
+            logger = logger,
             channelId = POWER_CONNECTED_CHANNEL_ID,
             notificationId = POWER_CONNECTED_NOTIFICATION_ID,
             title = title,
@@ -1056,7 +1090,6 @@ class NotificationService : Service() {
         )
     }
 
-    @SuppressLint("MissingPermission")
     private fun showPowerDisconnectedNotification(batteryIntentHelper: BatteryIntentHelper?) {
         val level = batteryIntentHelper?.level ?: -1
 
@@ -1064,6 +1097,8 @@ class NotificationService : Service() {
                    else getString(R.string.power_disconnected_notification_title_with_charge_value, level)
 
         postNotification(
+            context = this,
+            logger = logger,
             channelId = POWER_DISCONNECTED_CHANNEL_ID,
             notificationId = POWER_DISCONNECTED_NOTIFICATION_ID,
             title = title,
@@ -1074,7 +1109,6 @@ class NotificationService : Service() {
         )
     }
 
-    @SuppressLint("MissingPermission")
     private fun showTemperatureNotification(batteryIntentHelper: BatteryIntentHelper) {
         val title = getString(R.string.temperature_alert_with_temperature_value, batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_TEMPERATURE, appPrefs, false))
 
@@ -1084,6 +1118,8 @@ class NotificationService : Service() {
         }
 
         postNotification(
+            context = this,
+            logger = logger,
             channelId = BATTERY_TEMPERATURE_WARNING_CHANNEL_ID,
             notificationId = TEMPERATURE_WARNING_NOTIFICATION_ID,
             title = title,
@@ -1103,11 +1139,12 @@ class NotificationService : Service() {
         batteryTemperatureNotificationDeletionLevel = intent.getIntExtra(EXTRA_TEMPERATURE, -1)
     }
 
-    @SuppressLint("MissingPermission")
     private fun showHealthNotification(batteryIntentHelper: BatteryIntentHelper) {
         val title = getString(R.string.health_alert_with_value, batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_HEALTH, appPrefs, false))
 
         postNotification(
+            context = this,
+            logger = logger,
             channelId = BATTERY_HEALTH_WARNING_CHANNEL_ID,
             notificationId = HEALTH_WARNING_NOTIFICATION_ID,
             title = title,
@@ -1121,13 +1158,14 @@ class NotificationService : Service() {
     private fun hideHealthNotification() =
         NotificationManagerCompat.from(this).cancel(HEALTH_WARNING_NOTIFICATION_ID)
 
-    @SuppressLint("MissingPermission")
     private fun showChargedNotification(batteryIntentHelper: BatteryIntentHelper) {
         val title = getString(R.string.battery_charged_with_charge_value, batteryIntentHelper.level)
 
         val deleteIntent = Intent(ACTION_CHARGED_NOTIFICATION_DELETED).setPackage(packageName)
 
         postNotification(
+            context = this,
+            logger = logger,
             channelId = BATTERY_CHARGED_CHANNEL_ID,
             notificationId = CHARGED_NOTIFICATION_ID,
             title = title,
@@ -1197,13 +1235,14 @@ class NotificationService : Service() {
 
     private fun onChargedNotificationDeleted() = cancelChargedNotificationAlarm()
 
-    @SuppressLint("MissingPermission")
     private fun showBatteryLowChargedNotification(batteryIntentHelper: BatteryIntentHelper) {
         val title = getString(R.string.battery_low_with_charge_value, batteryIntentHelper.level)
 
         val deleteIntent = Intent(ACTION_LOW_CHARGE_NOTIFICATION_DELETED).setPackage(packageName)
 
         postNotification(
+            context = this,
+            logger = logger,
             channelId = BATTERY_LOW_CHANNEL_ID,
             notificationId = LOW_CHARGE_NOTIFICATION_ID,
             title = title,
@@ -1272,16 +1311,4 @@ class NotificationService : Service() {
     }
 
     private fun onBatteryLowChargedNotificationDeleted() = cancelBatteryLowChargedNotificationAlarm()
-
-
-
-
-
-
-
-
-
-
-
-
-}
+ }

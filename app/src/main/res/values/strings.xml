@@ -11,6 +11,7 @@
     <string name="battery_low_notification">Battery low warning</string>
     <string name="battery_temperature_notification">Battery temperature warning</string>
     <string name="battery_health_notification">Battery health warning</string>
+    <string name="battery_last_stats_reset">Battery Data reset</string>
 
     <string name="foreground_service_explanation">Persistent battery and device status monitoring with an ongoing user-visible notification</string>
 
@@ -22,6 +23,7 @@
     <string name="battery_low_with_charge_value">Battery Low — %1$d%%</string>
     <string name="temperature_alert_with_temperature_value">Temperature Alert — %1$s</string>
     <string name="health_alert_with_value">Health Alert — %1$s</string>
+    <string name="last_stats_reset_notification_title">Data reset — %1$s</string>
 
     <string name="general_information">Add the battery tile to your Quick Settings panel to check the battery level at a glance, or enable a persistent notification for detailed battery information and customizable alerts.\n\nThis app does not send any data outside your device and does not require internet access. It also requests no special permissions, so you can use it with confidence.</string>
 
