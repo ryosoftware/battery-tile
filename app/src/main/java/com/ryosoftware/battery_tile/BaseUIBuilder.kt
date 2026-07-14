@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
 
-abstract class BaseBatteryIntentHelper(
+abstract class BaseUIBuilder(
     intent: Intent,
     protected val lastStatsResetTime: Long,
     protected val deepSleepTimeAtLastStatsReset: Long,
@@ -18,12 +18,16 @@ abstract class BaseBatteryIntentHelper(
 
     companion object {
         @JvmStatic
-        protected fun getStringPercentFromInterval(context: Context, interval: Long, total: Long): String {
-            val percent = if (total == 0L) 0f else (interval * 100f / total).coerceIn(0f, 100f)
+        protected fun getStringPercentFromInterval(context: Context, interval: Long, total: Long, resFloat: Int, resInt: Int): String {
+            val percent = if (total == 0L) 0f else (interval * 100f / total).coerceAtLeast(0f)
             val hasNoDecimals = percent % 1f == 0f
-            return if (hasNoDecimals) context.getString(R.string.percent_value_integer, percent.toInt())
-            else context.getString(R.string.percent_value_float, percent)
+            return if (hasNoDecimals) context.getString(resInt, percent.toInt())
+            else context.getString(resFloat, percent)
         }
+
+        @JvmStatic
+        protected fun getStringPercentFromInterval(context: Context, interval: Long, total: Long): String =
+            getStringPercentFromInterval(context, interval, total, R.string.percent_value_float, R.string.percent_value_integer)
 
         @JvmStatic
         protected fun getStringTimeFromInterval(context: Context, interval: Long): String {
