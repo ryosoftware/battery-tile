@@ -104,10 +104,12 @@ class BackupManager(private val context: Context) {
                 (importData && (pref is NotificationServicePreferences))
             )
             if (willBeImported) {
+                val batteryCapacityDesign = if (pref is AppPreferences) pref.batteryCapacityDesign else null
                 val settings = data.prefs[pref.filename]
                 if (settings != null) {
                     pref.import(settings.mapValues { it.value.toAny() })
                 }
+                if ((pref is AppPreferences) && (batteryCapacityDesign != null)) pref.batteryCapacityDesign = batteryCapacityDesign
             }
         }
     }

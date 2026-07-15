@@ -1,6 +1,7 @@
 package com.ryosoftware.battery_tile
 
 import android.content.Context
+import android.os.BatteryManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +40,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
+
+const val BATTERY_CAPACITY_DESIGN = "battery-capacity-design"
+const val BATTERY_PROPERTY_CHARGE_COUNTER = "battery-charge-counter"
+const val BATTERY_PROPERTY_ENERGY_COUNTER = "battery-energy-counter"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,11 +132,14 @@ fun BatteryInfoContent(
                     BatteryIntentHelper.BATTERY_VOLTAGE,
                     BatteryIntentHelper.BATTERY_TECHNOLOGY,
                     BatteryIntentHelper.BATTERY_HEALTH,
-                    BatteryIntentHelper.BATTERY_CYCLES_COUNT
+                    BatteryIntentHelper.BATTERY_CYCLES_COUNT,
+                    BATTERY_CAPACITY_DESIGN,
+                    BATTERY_PROPERTY_CHARGE_COUNTER,
+                    BATTERY_PROPERTY_ENERGY_COUNTER,
                 )
 
                 fields.forEachIndexed { index, field ->
-                    val isAvailable = isBatteryFieldAvailable(currentBatteryIntentHelper, field)
+                    val isAvailable = isBatteryFieldAvailable(context,currentBatteryIntentHelper, field, appPrefs)
 
                     if (isAvailable) {
                         Row(
@@ -139,18 +147,19 @@ fun BatteryInfoContent(
                                 .fillMaxWidth()
                                 .padding(vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.Top
                         ) {
                             Text(
                                 text = getBatteryFieldLabel(context, field),
                                 style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1.2f)
                             )
+
                             Text(
                                 text = getBatteryFieldValue(context, currentBatteryIntentHelper, field, appPrefs),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(0.8f),
                                 textAlign = TextAlign.End
                             )
                         }
@@ -192,17 +201,61 @@ fun BatteryInfoContent(
     }
 }
 
-private fun getBatteryHelper(context: Context): BatteryIntentHelper? {
-    val batteryIntent = Main.from(context).batteryIntentProvider.get()
-
-    return batteryIntent?.let { BatteryIntentHelper(it) }
-}
+private fun getBatteryHelper(context: Context): BatteryIntentHelper? =
+    Main.from(context).batteryIntentProvider.get()?.let { BatteryIntentHelper(it) }
 
 private fun getBatteryFieldLabel(context: Context, field: String): String =
-    BatteryIntentHelper.getLabel(context, field)
+    when (field) {
+        BATTERY_CAPACITY_DESIGN -> context.getString(R.string.battery_capacity_design)
+
+        BATTERY_PROPERTY_CHARGE_COUNTER -> context.getString(R.string.remaining_charge)
+
+        BATTERY_PROPERTY_ENERGY_COUNTER -> context.getString(R.string.remaining_energy)
+
+        else -> BatteryIntentHelper.getLabel(context, field)
+    }
 
 private fun getBatteryFieldValue(context: Context, batteryIntentHelper: BatteryIntentHelper, field: String, appPrefs: AppPreferences): String =
-    batteryIntentHelper.toString(context, field, appPrefs, false)
+    when (field) {
+        BATTERY_CAPACITY_DESIGN -> {
+            val capacity = appPrefs.batteryCapacityDesign
+            if (capacity > 0) {
+                return context.getString(R.string.mah_value, capacity)
+            }
+            return context.getString(R.string.not_available)
+        }
 
-private fun isBatteryFieldAvailable(batteryIntentHelper: BatteryIntentHelper, field: String): Boolean =
-    batteryIntentHelper.isValid(field)
+        BATTERY_PROPERTY_CHARGE_COUNTER -> {
+            val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+            val value = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
+            return context.getString(R.string.mah_value, (value / 1000f).toInt())
+        }
+
+        BATTERY_PROPERTY_ENERGY_COUNTER -> {
+            val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+            val energy = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER)
+            val voltage = batteryIntentHelper.voltage
+            if ((energy != Long.MIN_VALUE) && (voltage > 0)) {
+                return context.getString(R.string.mah_value, ((energy / 1000f) / voltage).toInt())
+            }
+            return context.getString(R.string.not_available)
+        }
+
+        else -> return batteryIntentHelper.toString(context, field, appPrefs, false)
+    }
+
+
+private fun isBatteryFieldAvailable(context: Context, batteryIntentHelper: BatteryIntentHelper, field: String, appPrefs: AppPreferences): Boolean =
+    when (field) {
+        BATTERY_CAPACITY_DESIGN -> appPrefs.batteryCapacityDesign > 0
+
+        BATTERY_PROPERTY_CHARGE_COUNTER -> true
+
+        BATTERY_PROPERTY_ENERGY_COUNTER -> {
+            val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+            val energy = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER)
+
+            energy != Long.MIN_VALUE
+        }
+        else -> batteryIntentHelper.isValid(field)
+    }

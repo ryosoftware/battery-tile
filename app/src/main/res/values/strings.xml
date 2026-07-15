@@ -97,6 +97,7 @@
 
     <string name="battery_voltage">Voltage</string>
     <string name="voltage_value">%1$d mV</string>
+    <string name="mah_value">%1$d mAh</string>
 
     <string name="battery_level">Level</string>
     <string name="battery_level_icon">Level (icon)</string>
@@ -112,6 +113,10 @@
     <string name="battery_capacity_description">Battery capacity, which should not be confused with the current battery level, is a key indicator of battery status and system capabilities that helps both the system and apps make power management decisions.</string>
 
     <string name="battery_technology">Technology</string>
+
+    <string name="battery_capacity_design">Nominal capacity (according to the manufacturer)</string>
+    <string name="remaining_charge">Remaining electrical charge</string>
+    <string name="remaining_energy">Remaining energy</string>
 
     <string name="battery_temperature">Temperature</string>
     <string name="temperature_unit">Temperature unit</string>
@@ -240,22 +245,28 @@
     <string name="discharge_session_temperature">Temperature</string>
     <string name="discharge_session_ongoing">Ongoing</string>
     <string name="charging_session_duration">Duration</string>
-    <string name="charging_session_speed">Speed</string>
-    <string name="discharge_session_screen_on_speed">Screen on speed</string>
-    <string name="discharge_session_screen_off_speed">Screen off speed</string>
+    <string name="charging_session_speed">Charge speed</string>
+    <string name="discharge_session_speed">Discharge speed</string>
+    <string name="discharge_session_screen_on_speed">Discharge speed (screen on)</string>
+    <string name="discharge_session_screen_off_speed">Discharge speed (screen off)</string>
     <string name="percent_per_hour">%1$s/h</string>
     <string name="charging_session_temperature">Temperature</string>
     <string name="charging_temperature_min_max_avg">%1$s - %2$s (avg. %3$s)</string>
     <string name="charging_session_plug_type">Plug type</string>
     <string name="charging_session_ongoing">Ongoing</string>
     <string name="global_stats_title">Global statistics</string>
-    <string name="global_stats_sessions_count">%1$d %2$s sessions</string>
+    <string name="global_stats_charge_sessions_count">%1$d charge sessions</string>
+    <string name="global_stats_discharge_sessions_count">%1$d discharge sessions</string>
     <string name="global_stats_discharge_screen_on">Screen on time</string>
     <string name="global_stats_discharge_screen_off">Screen off time</string>
-    <string name="global_stats_charge_avg_speed">Avg charge speed</string>
+    <string name="global_stats_charge_avg_speed">Battery charge speed</string>
+    <string name="global_stats_charge_total_time">Total charge time</string>
+    <string name="global_stats_charge_total_percent">Total charged</string>
     <string name="global_stats_discharge_total">Total discharge time</string>
-    <string name="global_stats_discharge_screen_on_speed">Avg screen on speed</string>
-    <string name="global_stats_discharge_screen_off_speed">Avg screen off speed</string>
+    <string name="global_stats_discharge_total_percent">Total discharged</string>
+    <string name="global_stats_discharge_speed">Battery discharge speed</string>
+    <string name="global_stats_discharge_screen_on_speed">Battery discharge speed (screen on)</string>
+    <string name="global_stats_discharge_screen_off_speed">Battery discharge speed (screen off)</string>
     <string name="could_have_unplugged_before">You could have unplugged %2$s earlier</string>
     <string name="anomaly_flaky_connection_title">Possible cable or charger issue detected</string>
     <string name="anomaly_flaky_connection_body">During multiple charges, the device repeatedly disconnected and reconnected in a short period. This may indicate a faulty cable or charger.</string>
@@ -296,14 +307,15 @@
     <string name="excel_header_end_timestamp">End date/time</string>
     <string name="excel_header_charged_timestamp">Fully charged date/time</string>
     <string name="excel_header_screen_on_time">Screen on time</string>
-    <string name="excel_header_screen_on_speed">Screen on speed (%%/h)</string>
-    <string name="excel_header_screen_off_speed">Screen off speed (%%/h)</string>
+    <string name="excel_header_session_speed">Speed (%/h)</string>
+    <string name="excel_header_discharge_speed">Discharge speed (%/h)</string>
+    <string name="excel_header_screen_on_speed">Discharge speed (screen on) (%/h)</string>
+    <string name="excel_header_screen_off_speed">Discharge speed (screen off) (%/h)</string>
     <string name="excel_header_screen_on_delta">Screen on delta (%)</string>
     <string name="excel_header_screen_off_delta">Screen off delta (%)</string>
     <string name="excel_header_battery_level">Battery level</string>
     <string name="excel_header_battery_start_level">Battery start level</string>
     <string name="excel_header_battery_end_level">Battery end level</string>
-    <string name="excel_header_session_speed">Speed (%%/h)</string>
     <string name="excel_header_battery_status">Battery status</string>
     <string name="excel_header_temperature">Temperature (%1$s)</string>
     <string name="excel_header_min_temperature">Min. temperature (%1$s)</string>
