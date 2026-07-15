@@ -140,6 +140,67 @@ class NotificationService : Service() {
 
         private fun getDeepSleepTime(): Long = getDeepSleepTime(SystemClock.elapsedRealtime())
 
+        private fun getNotification(
+            context: Context,
+            channelId: String,
+            title: String? = "",
+            text: String? = "",
+            icon: Int,
+            clickRequestCode: Int,
+            timeoutAfter: Long? = null,
+            onlyAlertOnce: Boolean = true,
+            ongoing: Boolean = false,
+            priority: Int = NotificationCompat.PRIORITY_HIGH,
+            category: String = NotificationCompat.CATEGORY_EVENT,
+            postTime: Long = 0,
+            deleteIntent: Intent? = null,
+            deleteRequestCode: Int = 0,
+            appPrefs: AppPreferences? = null
+        ): Notification {
+            val builder = NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(icon)
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(onlyAlertOnce)
+                .setOngoing(ongoing)
+                .setPriority(priority)
+                .setCategory(category)
+                .setContentIntent(
+                    PendingIntent.getActivity(
+                        context,
+                        clickRequestCode,
+                        appPrefs?.whatAppOpensWhenUserClicksTileOrNotification?.getIntent(context) ?: WhatAppOpens.APP.getIntent(context),
+                        PendingIntent.FLAG_IMMUTABLE
+                    )
+                )
+
+            if (!title.isNullOrEmpty()) {
+                builder.setContentTitle(title)
+            }
+
+            if (!text.isNullOrEmpty()) {
+                builder
+                    .setContentText(text)
+                    .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            }
+
+            if (timeoutAfter != null) builder.setTimeoutAfter(timeoutAfter)
+
+            if (postTime != 0L) builder.setWhen(postTime)
+
+            if (deleteIntent != null) {
+                builder.setDeleteIntent(
+                    PendingIntent.getBroadcast(
+                        context,
+                        deleteRequestCode,
+                        deleteIntent,
+                        PendingIntent.FLAG_IMMUTABLE
+                    )
+                )
+            }
+
+            return builder.build()
+        }
+
         @SuppressLint("MissingPermission")
         private fun postNotification(
             context: Context,
@@ -154,50 +215,30 @@ class NotificationService : Service() {
             timeoutAfter: Long? = null,
             onlyAlertOnce: Boolean = true,
             deleteIntent: Intent? = null,
-            deleteRequestCode: Int = 0
+            deleteRequestCode: Int = 0,
+            appPrefs: AppPreferences? = null
         ) {
             if (!context.hasPostNotificationsPermission()) {
-                logger?.log("$logMessagePrefix notification hasn't posted due to lack of permissions")
+                logger.log("$logMessagePrefix notification hasn't posted due to lack of permissions")
                 return
             }
 
-            val clickIntent = WhatAppOpens.APP.getIntent(context)
-
-            val builder = NotificationCompat.Builder(context, channelId)
-                .setSmallIcon(icon)
-                .setContentTitle(title)
-                .setAutoCancel(true)
-                .setOnlyAlertOnce(onlyAlertOnce)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_EVENT)
-                .setContentIntent(
-                    PendingIntent.getActivity(
-                        context,
-                        clickRequestCode,
-                        clickIntent,
-                        PendingIntent.FLAG_IMMUTABLE
-                    )
-                )
-
-            if (!body.isNullOrEmpty()) builder.setContentText(body)
-
-            if (timeoutAfter != null) builder.setTimeoutAfter(timeoutAfter)
-
-            if (deleteIntent != null) {
-                builder.setDeleteIntent(
-                    PendingIntent.getBroadcast(
-                        context,
-                        deleteRequestCode,
-                        deleteIntent,
-                        PendingIntent.FLAG_IMMUTABLE
-                    )
-                )
-            }
-
-            val notification = builder.build()
+            val notification = getNotification(
+                context =context,
+                channelId = channelId,
+                title = title,
+                text = body,
+                icon = icon,
+                clickRequestCode = clickRequestCode,
+                timeoutAfter = timeoutAfter,
+                onlyAlertOnce = onlyAlertOnce,
+                deleteIntent = deleteIntent,
+                deleteRequestCode = deleteRequestCode,
+                appPrefs = appPrefs
+            )
             NotificationManagerCompat.from(context).notify(notificationId, notification)
 
-            logger?.log("$logMessagePrefix notification has been posted")
+            logger.log("$logMessagePrefix notification has been posted")
         }
 
         private fun showLastStatsResetNotification(context: Context, logger: Logger, reason: LastStatsResetReason) {
@@ -1049,26 +1090,18 @@ class NotificationService : Service() {
             buildText(notificationServiceUIBuilder)
         }
 
-        val whatAppOpens = appPrefs.whatAppOpensWhenUserClicksTileOrNotification
-        val clickIntent = whatAppOpens.getIntent(this)
-
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-        .setContentText(text)
-        .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-        .setSmallIcon(R.drawable.ic_statusbar_notification)
-        .setOngoing(true)
-        .setPriority(NotificationCompat.PRIORITY_LOW)
-        .setCategory(NotificationCompat.CATEGORY_SERVICE)
-        .setWhen(serviceStartTime)
-        .setContentIntent(
-            PendingIntent.getActivity(
-                this,
-                NOTIFICATION_CLICK_REQUEST_CODE,
-                clickIntent,
-                PendingIntent.FLAG_IMMUTABLE
-            )
+        return getNotification(
+            context = this,
+            channelId = CHANNEL_ID,
+            text = text,
+            icon = R.drawable.ic_statusbar_notification,
+            clickRequestCode = NOTIFICATION_CLICK_REQUEST_CODE,
+            ongoing = true,
+            priority = NotificationCompat.PRIORITY_LOW,
+            category = NotificationCompat.CATEGORY_SERVICE,
+            postTime = serviceStartTime,
+            appPrefs = appPrefs
         )
-        .build()
     }
 
     private fun showPowerConnectedNotification(batteryIntentHelper: BatteryIntentHelper?) {

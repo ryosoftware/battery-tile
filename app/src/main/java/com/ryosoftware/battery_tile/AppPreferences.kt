@@ -2,14 +2,12 @@ package com.ryosoftware.battery_tile
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
-import androidx.annotation.IntegerRes
 import androidx.core.content.edit
 
-enum class TemperatureUnit(val key: String) {
-    CELSIUS("CELSIUS"),
-    FAHRENHEIT("FAHRENHEIT"),
-    KELVIN("KELVIN");
+enum class TemperatureUnit(val key: String, val resIdName: Int, val resIdSymbol: Int, val resIdSymbolMin: Int) {
+    CELSIUS("CELSIUS", R.string.celsius_unit_with_name, R.string.celsius_unit, R.string.celsius_unit_min),
+    FAHRENHEIT("FAHRENHEIT", R.string.fahrenheit_unit_with_name, R.string.fahrenheit_unit, R.string.fahrenheit_unit_min),
+    KELVIN("KELVIN", R.string.kelvin_unit_with_name, R.string.kelvin_unit, R.string.kelvin_unit_min);
 
     companion object {
         private val map = entries.associateBy { it.key.uppercase() }
@@ -31,18 +29,11 @@ enum class TemperatureUnit(val key: String) {
             }
 
         fun TemperatureUnit.toString(context: Context): String =
-            when (this) {
-                CELSIUS -> context.getString(R.string.celsius_unit_with_name)
-                FAHRENHEIT -> context.getString(R.string.fahrenheit_unit_with_name)
-                KELVIN -> context.getString(R.string.kelvin_unit_with_name)
-            }
+            context.getString(resIdName)
 
         fun TemperatureUnit.toString(context: Context, temperature: Float, small: Boolean): String {
-            val symbol = when (this) {
-                CELSIUS -> if (small) context.getString(R.string.celsius_unit_min) else context.getString(R.string.celsius_unit)
-                FAHRENHEIT -> if (small) context.getString(R.string.fahrenheit_unit_min) else context.getString(R.string.fahrenheit_unit)
-                KELVIN -> if (small) context.getString(R.string.kelvin_unit_min) else context.getString(R.string.kelvin_unit)
-            }
+            val symbol = context.getString(if (small) resIdSymbolMin else resIdSymbol)
+
             val hasNoDecimals = temperature % 1f == 0f
 
             return if (hasNoDecimals) context.getString(R.string.temperature_value_integer, temperature.toInt(), symbol)
@@ -53,30 +44,30 @@ enum class TemperatureUnit(val key: String) {
     }
 }
 
-enum class WhatAppOpens(val key: String) {
-    APP("APP"),
-    SYSTEM_POWER_USAGE_SUMMARY("SYSTEM-POWER-USAGE-SUMMARY");
+enum class WhatAppOpens(val key: String, val resId: Int) {
+    APP("APP", R.string.what_opens_app),
+    APP_BATTERY_INFO("APP-BATTERY-INFO", R.string.what_opens_app_battery_info),
+    SYSTEM_POWER_USAGE_SUMMARY("SYSTEM-POWER-USAGE-SUMMARY", R.string.what_opens_system_power_usage_summary);
 
     companion object {
         object AppIntentFactory {
             fun create(context: Context, type: WhatAppOpens): Intent =
                 when (type) {
                     APP -> Intent(context, MainActivity::class.java)
+                    APP_BATTERY_INFO -> Intent(context, BatteryInfoActivity::class.java)
                     SYSTEM_POWER_USAGE_SUMMARY -> Intent(Intent.ACTION_POWER_USAGE_SUMMARY)
                 }
         }
         private val map = entries.associateBy { it.key.uppercase() }
 
-        fun fromKey(key: String?): WhatAppOpens? = map[key?.uppercase()]
+        fun fromKey(key: String?): WhatAppOpens? =
+            map[key?.uppercase()]
 
-        fun WhatAppOpens.getIntent(context: Context): Intent = AppIntentFactory.create(context, this)
+        fun WhatAppOpens.getIntent(context: Context): Intent =
+            AppIntentFactory.create(context, this)
 
-        fun WhatAppOpens.toString(context: Context): String {
-            return when (this) {
-                APP -> context.getString(R.string.what_opens_app)
-                SYSTEM_POWER_USAGE_SUMMARY -> context.getString(R.string.what_opens_system_power_usage_summary)
-            }
-        }
+        fun WhatAppOpens.toString(context: Context): String =
+            context.getString(resId)
     }
 }
 
@@ -146,7 +137,6 @@ class AppPreferences(context: Context): Preferences(context, FILENAME) {
     var chargingHistoryWindow: Int
         get() = prefs.getInt(KEY_CHARGING_HISTORY_WINDOW, resources.getInteger(R.integer.charging_history_window_in_days_default))
         set(value) { prefs.edit { putInt(KEY_CHARGING_HISTORY_WINDOW, value) } }
-
 
     var dischargingHistoryWindow: Int
         get() = prefs.getInt(KEY_DISCHARGING_HISTORY_WINDOW, resources.getInteger(R.integer.discharging_history_window_in_days_default))

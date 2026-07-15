@@ -12,7 +12,7 @@ class NotificationServiceUIBuilder(
     screenOnTimeSinceBoot: Long,
     screenOnTimeSinceLastStatsReset: Long,
     private val lastBatteryEventTime: Long,
-) : BaseBatteryIntentHelper(
+) : BaseUIBuilder(
     intent,
     lastStatsResetTime,
     deepSleepTimeAtLastStatsReset,

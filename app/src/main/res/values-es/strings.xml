@@ -203,6 +203,7 @@
 
     <string name="what_opens_when_user_clicks_tile_or_notification">Abrir al tocar el mosaico o la notificación persistente</string>
     <string name="what_opens_app">Esta app</string>
+    <string name="what_opens_app_battery_info">Info de batería (en esta app)</string>
     <string name="what_opens_system_power_usage_summary">Resumen de uso de energía del sistema</string>
 
     <string name="debug_information">Información de depuración</string>

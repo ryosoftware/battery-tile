@@ -18,7 +18,7 @@ class BatteryTileUIBuilder(
     deepSleepTimeAtLastStatsReset: Long,
     screenOnTimeSinceBoot: Long,
     screenOnTimeSinceLastStatsReset: Long,
-) : BaseBatteryIntentHelper(
+) : BaseUIBuilder(
     intent,
     lastStatsResetTime,
     deepSleepTimeAtLastStatsReset,

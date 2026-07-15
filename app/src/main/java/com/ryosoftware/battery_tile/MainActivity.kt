@@ -30,6 +30,8 @@ class MainActivity : ComponentActivity() {
 
     private enum class Screen { Main, Selector, TileSettings, NotificationSettings, DebugLog, BatteryInfo, BatteryHistory }
 
+    private var screen by mutableStateOf(Screen.Main)
+
     private var postNotificationsPermissionRequested = false
     private var batteryOptimizationsBypassPermissionRequested = false
 
@@ -37,6 +39,9 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
+
+        val appPrefs = AppPreferences(this)
+        screen = if (!appPrefs.isFirstRun) Screen.Selector else Screen.Main
 
         setContent {
             val colorScheme = when {
@@ -53,8 +58,6 @@ class MainActivity : ComponentActivity() {
                     val prefs = remember { BatteryTilePreferences(context) }
                     val notifPrefs = remember { NotificationPreferences(context) }
                     val appPrefs = remember { AppPreferences(context) }
-                    val startInSelector = remember { !appPrefs.isFirstRun }
-                    var screen by remember { mutableStateOf<Screen>(if (startInSelector) Screen.Selector else Screen.Main) }
 
                     when (screen) {
                         Screen.Main -> {

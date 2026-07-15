@@ -203,6 +203,7 @@
 
     <string name="what_opens_when_user_clicks_tile_or_notification">Open from quick settings tile or notification tap</string>
     <string name="what_opens_app">This app</string>
+    <string name="what_opens_app_battery_info">Battery Info (in this app)</string>
     <string name="what_opens_system_power_usage_summary">System power usage summary</string>
 
     <string name="debug_information">Debug information</string>
