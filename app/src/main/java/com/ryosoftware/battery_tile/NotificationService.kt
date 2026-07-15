@@ -1014,7 +1014,7 @@ class NotificationService : Service() {
             val next = sortedReadings[i + 1]
 
             val stateChangesInInterval = screenStatesBetween.filter {
-                it.timestamp > curr.timestamp && it.timestamp < next.timestamp
+                it.timestamp >= curr.timestamp && it.timestamp < next.timestamp
             }
 
             if (stateChangesInInterval.isNotEmpty()) continue
