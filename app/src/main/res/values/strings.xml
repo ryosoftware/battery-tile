@@ -98,6 +98,7 @@
     <string name="battery_voltage">Voltage</string>
     <string name="voltage_value">%1$d mV</string>
     <string name="mah_value">%1$d mAh</string>
+    <string name="mah_value_with_percent">%1$d mAh (%2$d%%)</string>
 
     <string name="battery_level">Level</string>
     <string name="battery_level_icon">Level (icon)</string>
@@ -115,6 +116,7 @@
     <string name="battery_technology">Technology</string>
 
     <string name="battery_capacity_design">Nominal capacity (according to the manufacturer)</string>
+    <string name="battery_capacity_current">Current capacity (calculated)</string>
     <string name="remaining_charge">Remaining electrical charge</string>
     <string name="remaining_energy">Remaining energy</string>
 

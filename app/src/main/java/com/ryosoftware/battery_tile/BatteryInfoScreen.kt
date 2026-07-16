@@ -42,6 +42,7 @@ import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
 const val BATTERY_CAPACITY_DESIGN = "battery-capacity-design"
+const val BATTERY_CAPACITY_CURRENT = "battery-capacity-current"
 const val BATTERY_PROPERTY_CHARGE_COUNTER = "battery-charge-counter"
 const val BATTERY_PROPERTY_ENERGY_COUNTER = "battery-energy-counter"
 
@@ -134,6 +135,7 @@ fun BatteryInfoContent(
                     BatteryIntentHelper.BATTERY_HEALTH,
                     BatteryIntentHelper.BATTERY_CYCLES_COUNT,
                     BATTERY_CAPACITY_DESIGN,
+                    BATTERY_CAPACITY_CURRENT,
                     BATTERY_PROPERTY_CHARGE_COUNTER,
                     BATTERY_PROPERTY_ENERGY_COUNTER,
                 )
@@ -208,6 +210,8 @@ private fun getBatteryFieldLabel(context: Context, field: String): String =
     when (field) {
         BATTERY_CAPACITY_DESIGN -> context.getString(R.string.battery_capacity_design)
 
+        BATTERY_CAPACITY_CURRENT -> context.getString(R.string.battery_capacity_current)
+
         BATTERY_PROPERTY_CHARGE_COUNTER -> context.getString(R.string.remaining_charge)
 
         BATTERY_PROPERTY_ENERGY_COUNTER -> context.getString(R.string.remaining_energy)
@@ -219,26 +223,30 @@ private fun getBatteryFieldValue(context: Context, batteryIntentHelper: BatteryI
     when (field) {
         BATTERY_CAPACITY_DESIGN -> {
             val capacity = appPrefs.batteryCapacityDesign
-            if (capacity > 0) {
-                return context.getString(R.string.mah_value, capacity)
-            }
-            return context.getString(R.string.not_available)
+
+            return if (capacity > 0) { context.getString(R.string.mah_value, capacity) } else context.getString(R.string.not_available)
+        }
+
+        BATTERY_CAPACITY_CURRENT -> {
+            val capacity = appPrefs.batteryCapacityDesign
+            val currentCapacity = appPrefs.batteryCapacityCurrent
+
+            return if (capacity > 0) { context.getString(R.string.mah_value_with_percent, currentCapacity, (currentCapacity / capacity) * 100) } else  context.getString(R.string.not_available)
         }
 
         BATTERY_PROPERTY_CHARGE_COUNTER -> {
             val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-            val value = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
-            return context.getString(R.string.mah_value, (value / 1000f).toInt())
+            val charge = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
+
+            return context.getString(R.string.mah_value, (charge / 1000f).toInt())
         }
 
         BATTERY_PROPERTY_ENERGY_COUNTER -> {
             val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
             val energy = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER)
             val voltage = batteryIntentHelper.voltage
-            if ((energy != Long.MIN_VALUE) && (voltage > 0)) {
-                return context.getString(R.string.mah_value, ((energy / 1000f) / voltage).toInt())
-            }
-            return context.getString(R.string.not_available)
+
+            return if ((energy != Long.MIN_VALUE) && (voltage > 0)) { return context.getString(R.string.mah_value, ((energy / 1000f) / voltage).toInt()) } else  context.getString(R.string.not_available)
         }
 
         else -> return batteryIntentHelper.toString(context, field, appPrefs, false)
@@ -248,6 +256,8 @@ private fun getBatteryFieldValue(context: Context, batteryIntentHelper: BatteryI
 private fun isBatteryFieldAvailable(context: Context, batteryIntentHelper: BatteryIntentHelper, field: String, appPrefs: AppPreferences): Boolean =
     when (field) {
         BATTERY_CAPACITY_DESIGN -> appPrefs.batteryCapacityDesign > 0
+
+        BATTERY_CAPACITY_CURRENT -> (appPrefs.batteryCapacityDesign > 0) && (appPrefs.batteryCapacityCurrent > 0)
 
         BATTERY_PROPERTY_CHARGE_COUNTER -> true
 

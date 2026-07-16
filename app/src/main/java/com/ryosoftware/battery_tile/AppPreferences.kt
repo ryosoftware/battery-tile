@@ -78,6 +78,7 @@ class AppPreferences(context: Context): Preferences(context, FILENAME) {
         const val KEY_FIRST_RUN = "first-run"
 
         const val KEY_BATTERY_CAPACITY_DESIGN = "battery-capacity-design"
+        const val KEY_BATTERY_CAPACITY_CURRENT = "battery-capacity-current"
         const val KEY_TEMPERATURE_UNIT = "temperature-unit"
 
         const val KEY_WHAT_APP_OPENS = "what-app-opens"
@@ -100,6 +101,10 @@ class AppPreferences(context: Context): Preferences(context, FILENAME) {
     var batteryCapacityDesign: Int
         get() = prefs.getInt(KEY_BATTERY_CAPACITY_DESIGN, -1)
         set(value) { prefs.edit { putInt(KEY_BATTERY_CAPACITY_DESIGN, value) }}
+
+    var batteryCapacityCurrent: Int
+        get() = prefs.getInt(KEY_BATTERY_CAPACITY_CURRENT, 0)
+        set(value) { prefs.edit { putInt(KEY_BATTERY_CAPACITY_CURRENT, value) }}
 
     private fun getTemperatureUnitDefault(): TemperatureUnit {
         val value = resources.getString(R.string.temperature_unit_default)

@@ -725,6 +725,13 @@ class NotificationService : Service() {
             scheduleChargedNotificationAlarm(batteryChargedNotificationInterval)
         }
 
+        if (batteryIntentHelper.isCharging && batteryIntentHelper.isFullCharged) {
+            val batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+            val capacity = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
+
+            appPrefs.batteryCapacityCurrent = (capacity / 1000f).toInt()
+        }
+
         if ((!batteryLow) && isBatteryLow(batteryIntentHelper)) {
             logger.log("Battery low notification will be shown")
 
