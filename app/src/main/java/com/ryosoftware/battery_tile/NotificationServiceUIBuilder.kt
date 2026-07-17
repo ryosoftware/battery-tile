@@ -2,6 +2,7 @@ package com.ryosoftware.battery_tile
 
 import android.content.Context
 import android.content.Intent
+import android.os.BatteryManager
 import android.os.SystemClock
 import androidx.annotation.ArrayRes
 
@@ -12,14 +13,17 @@ class NotificationServiceUIBuilder(
     screenOnTimeSinceBoot: Long,
     screenOnTimeSinceLastStatsReset: Long,
     private val lastBatteryEventTime: Long,
+    batteryManager: BatteryManager
 ) : BaseUIBuilder(
     intent,
     lastStatsResetTime,
     deepSleepTimeAtLastStatsReset,
     screenOnTimeSinceBoot,
-    screenOnTimeSinceLastStatsReset) {
+    screenOnTimeSinceLastStatsReset,
+    batteryManager) {
     enum class NotificationField(val key: String, val isSupported: Boolean, @param:ArrayRes val defaultsRes: Int) {
         BATTERY_LEVEL(key = BatteryIntentHelper.BATTERY_LEVEL, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_LEVEL), defaultsRes = R.array.level_data_for_notification_default),
+        BATTERY_CHARGE(key = BatteryIntentHelper.BATTERY_CHARGE, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_CHARGE), defaultsRes = R.array.charge_data_for_notification_default),
         BATTERY_STATUS(key = BatteryIntentHelper.BATTERY_STATUS, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_STATUS), defaultsRes = R.array.status_data_for_notification_default),
         BATTERY_TEMPERATURE(key = BatteryIntentHelper.BATTERY_TEMPERATURE, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_TEMPERATURE), defaultsRes = R.array.temperature_data_for_notification_default),
         BATTERY_VOLTAGE(key = BatteryIntentHelper.BATTERY_VOLTAGE, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_VOLTAGE), defaultsRes = R.array.voltage_data_for_notification_default),

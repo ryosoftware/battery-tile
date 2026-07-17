@@ -328,6 +328,7 @@
     <string name="excel_header_is_charging">Is charging?</string>
     <string name="excel_header_plug_type">Plug type</string>
     <string name="excel_header_screen_on">Is screen on?</string>
+    <string name="excel_header_charge_counter">Charge (µAh)</string>
     <string name="screen_states_tab">Screen states</string>
     <string name="chart_legend_screen_on">Screen on</string>
     <string name="chart_legend_screen_off">Screen off</string>

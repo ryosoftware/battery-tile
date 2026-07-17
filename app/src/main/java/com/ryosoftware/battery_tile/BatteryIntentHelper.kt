@@ -8,8 +8,9 @@ import android.os.Build
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
 
-open class BatteryIntentHelper(intent: Intent) {
+open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) {
     val level: Int
+    val charge: Int
     val status: Int
     val health: Int
     val temperatureCelsius: Float
@@ -25,6 +26,8 @@ open class BatteryIntentHelper(intent: Intent) {
 
     companion object {
         const val BATTERY_LEVEL = "BATTERY-LEVEL"
+
+        const val BATTERY_CHARGE = "BATTERY-CHARGE"
         const val BATTERY_STATUS = "BATTERY-STATUS"
         const val BATTERY_HEALTH = "BATTERY-HEALTH"
         const val BATTERY_TEMPERATURE = "BATTERY-TEMPERATURE"
@@ -43,6 +46,7 @@ open class BatteryIntentHelper(intent: Intent) {
         fun isValid(key: String, value: Any?): Boolean =
             when (key) {
                 BATTERY_LEVEL -> (value is Int) && (value >= 0)
+                BATTERY_CHARGE -> (value is Long) && (value > 0)
                 BATTERY_STATUS -> (value is Int) && (value != BatteryManager.BATTERY_STATUS_UNKNOWN)
                 BATTERY_HEALTH -> (value is Int) && (value != BatteryManager.BATTERY_HEALTH_UNKNOWN)
                 BATTERY_TEMPERATURE -> (value is Float) && (value >= 0)
@@ -57,6 +61,7 @@ open class BatteryIntentHelper(intent: Intent) {
         fun getLabel(context: Context, key: String): String =
             when (key) {
                 BATTERY_LEVEL -> context.getString(R.string.battery_level)
+                BATTERY_CHARGE -> context.getString(R.string.remaining_charge)
                 BATTERY_STATUS -> context.getString(R.string.battery_status)
                 BATTERY_PLUG_TYPE -> context.getString(R.string.battery_plug_type)
                 BATTERY_TEMPERATURE -> context.getString(R.string.battery_temperature)
@@ -74,6 +79,9 @@ open class BatteryIntentHelper(intent: Intent) {
         val intentLevelScale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
 
         level = if (intentLevel >= 0 && intentLevelScale > 0) intentLevel * 100 / intentLevelScale else -1
+
+        val currentCharge = batteryManager?.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER) ?: Long.MIN_VALUE
+        charge = if (currentCharge == Long.MIN_VALUE) 0 else currentCharge.toInt()
 
         status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN)
 
@@ -109,6 +117,7 @@ open class BatteryIntentHelper(intent: Intent) {
     open fun isValid(key: String): Boolean =
         when (key) {
             BATTERY_LEVEL -> isValid(BATTERY_LEVEL, level)
+            BATTERY_CHARGE -> isValid(BATTERY_CHARGE, charge)
             BATTERY_STATUS -> isValid(BATTERY_STATUS, status)
             BATTERY_HEALTH -> isValid(BATTERY_HEALTH, health)
             BATTERY_TEMPERATURE -> isValid(BATTERY_TEMPERATURE, temperatureCelsius)
@@ -126,6 +135,12 @@ open class BatteryIntentHelper(intent: Intent) {
                 when {
                     level < 0 -> context.getString(R.string.not_available)
                     else -> context.getString(R.string.percent_value_integer, level)
+                }
+            }
+            BATTERY_CHARGE -> {
+                when {
+                    charge < 0 -> context.getString(R.string.not_available)
+                    else -> context.getString(R.string.mah_value, charge / 1000)
                 }
             }
             BATTERY_STATUS -> {

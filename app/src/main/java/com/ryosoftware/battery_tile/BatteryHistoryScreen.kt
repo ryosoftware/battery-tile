@@ -1699,6 +1699,7 @@ private fun buildExcel(
         val batteryReadingsHeaders = listOf(
             context.getString(R.string.excel_header_timestamp),
             context.getString(R.string.excel_header_battery_level),
+            context.getString(R.string.excel_header_charge_counter),
             context.getString(R.string.excel_header_battery_status),
             context.getString(R.string.excel_header_temperature, temperatureUnit.toString(context)),
             context.getString(R.string.excel_header_voltage),
@@ -1720,13 +1721,14 @@ private fun buildExcel(
             val batteryReadingsBodyRow = batteryReadingsSheet.createRow(rowIndex + 1)
             batteryReadingsBodyRow.createCell(0).apply { setCellValue(Date(reading.timestamp)); cellStyle = dateTimeStyle }
             batteryReadingsBodyRow.createCell(1).setCellValue(reading.batteryLevel.toDouble())
-            batteryReadingsBodyRow.createCell(2).setCellValue(formatBatteryStatus(reading.batteryStatus))
-            batteryReadingsBodyRow.createCell(3).setCellValue(temperatureUnit.fromCelsius(reading.temperatureCelsius).toDouble())
-            batteryReadingsBodyRow.createCell(4).setCellValue(reading.voltage.toDouble())
-            batteryReadingsBodyRow.createCell(5).setCellValue(formatHealth(reading.health))
-            batteryReadingsBodyRow.createCell(6).setCellValue(reading.isCharging)
-            batteryReadingsBodyRow.createCell(7).setCellValue(formatPlugType(reading.plugType))
-            batteryReadingsBodyRow.createCell(8).setCellValue(isScreenOnAt(reading.timestamp, screenStates))
+            batteryReadingsBodyRow.createCell(2).setCellValue(reading.batteryCharge.toDouble())
+            batteryReadingsBodyRow.createCell(3).setCellValue(formatBatteryStatus(reading.batteryStatus))
+            batteryReadingsBodyRow.createCell(4).setCellValue(temperatureUnit.fromCelsius(reading.temperatureCelsius).toDouble())
+            batteryReadingsBodyRow.createCell(5).setCellValue(reading.voltage.toDouble())
+            batteryReadingsBodyRow.createCell(6).setCellValue(formatHealth(reading.health))
+            batteryReadingsBodyRow.createCell(7).setCellValue(reading.isCharging)
+            batteryReadingsBodyRow.createCell(8).setCellValue(formatPlugType(reading.plugType))
+            batteryReadingsBodyRow.createCell(9).setCellValue(isScreenOnAt(reading.timestamp, screenStates))
         }
 
         val chargingSessionsSheet = workbook.createSheet(context.getString(R.string.excel_charging_sessions_tab))
@@ -1940,7 +1942,8 @@ internal fun calculateDischargeRates(
         }
 
         val intervalDuration = next.timestamp - curr.timestamp
-        val intervalDelta = curr.batteryLevel - next.batteryLevel
+        val intervalDeltaPct = curr.batteryLevel - next.batteryLevel
+        val intervalDeltaUah = curr.batteryCharge - next.batteryCharge
 
         val firstChangeIdx = screenStateIdx
         var changeCount = 0
@@ -1953,48 +1956,61 @@ internal fun calculateDischargeRates(
         if (changeCount == 0) {
             if (wasScreenOn) {
                 screenOnDurationMs += intervalDuration
-                if (intervalDelta > 0) screenOnDeltaPositive += intervalDelta.toFloat()
+                if (intervalDeltaPct > 0) screenOnDeltaPositive += intervalDeltaPct.toFloat()
             } else {
                 screenOffDurationMs += intervalDuration
-                if (intervalDelta > 0) screenOffDeltaPositive += intervalDelta.toFloat()
+                if (intervalDeltaPct > 0) screenOffDeltaPositive += intervalDeltaPct.toFloat()
             }
-        } else {
+        } else if (intervalDeltaUah > 0) {
             var cursorTime = curr.timestamp
-            var cursorLevel = curr.batteryLevel.toFloat()
+            var cursorCharge = curr.batteryCharge.toFloat()
             var screenOn = wasScreenOn
 
             for (j in 0 until changeCount) {
                 val change = screenStatesBetween[firstChangeIdx + j]
                 val frac = (change.timestamp - curr.timestamp).toFloat() / intervalDuration
-                val levelHere = curr.batteryLevel + (next.batteryLevel - curr.batteryLevel) * frac
+                val chargeHere = curr.batteryCharge + (next.batteryCharge - curr.batteryCharge) * frac
 
-                val segDelta = cursorLevel - levelHere
+                val segUah = cursorCharge - chargeHere
                 val segDuration = change.timestamp - cursorTime
                 if (screenOn) {
                     screenOnDurationMs += segDuration
-                    if (segDelta > 0f) screenOnDeltaPositive += segDelta
+                    if (intervalDeltaPct > 0) {
+                        screenOnDeltaPositive += intervalDeltaPct.toFloat() * (segUah / intervalDeltaUah)
+                    }
                 } else {
                     screenOffDurationMs += segDuration
-                    if (segDelta > 0f) screenOffDeltaPositive += segDelta
+                    if (intervalDeltaPct > 0) {
+                        screenOffDeltaPositive += intervalDeltaPct.toFloat() * (segUah / intervalDeltaUah)
+                    }
                 }
 
                 cursorTime = change.timestamp
-                cursorLevel = levelHere
+                cursorCharge = chargeHere
                 screenOn = change.screenOn
             }
 
-            val segDelta = cursorLevel - next.batteryLevel
+            val segUah = cursorCharge - next.batteryCharge
             val segDuration = next.timestamp - cursorTime
             if (screenOn) {
                 screenOnDurationMs += segDuration
-                if (segDelta > 0f) screenOnDeltaPositive += segDelta
+                if (intervalDeltaPct > 0) {
+                    screenOnDeltaPositive += intervalDeltaPct.toFloat() * (segUah / intervalDeltaUah)
+                }
             } else {
                 screenOffDurationMs += segDuration
-                if (segDelta > 0f) screenOffDeltaPositive += segDelta
+                if (intervalDeltaPct > 0) {
+                    screenOffDeltaPositive += intervalDeltaPct.toFloat() * (segUah / intervalDeltaUah)
+                }
             }
 
             screenStateIdx += changeCount
             wasScreenOn = screenOn
+        } else {
+            screenStateIdx += changeCount
+            wasScreenOn = screenStatesBetween
+                .lastOrNull { it.timestamp in curr.timestamp..next.timestamp }
+                ?.screenOn ?: wasScreenOn
         }
     }
 

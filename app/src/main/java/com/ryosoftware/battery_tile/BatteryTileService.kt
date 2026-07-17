@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.graphics.drawable.Icon
+import android.os.BatteryManager
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -16,6 +17,7 @@ import android.os.Looper
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.ryosoftware.battery_tile.WhatAppOpens.Companion.getIntent
+import kotlin.getValue
 
 class BatteryTileService : TileService() {
     companion object {
@@ -146,11 +148,13 @@ class BatteryTileService : TileService() {
         val tile = qsTile ?: return
 
         val batteryServiceDataSnapshot = batteryService?.getBatteryDataSnapshot()
-        val batteryTileUIBuilder = BatteryTileUIBuilder(batteryIntent,
+        val batteryTileUIBuilder = BatteryTileUIBuilder(
+            batteryIntent,
             batteryServiceDataSnapshot?.lastStatsResetTime ?: -1L,
             batteryServiceDataSnapshot?.deepSleepTimeAtLastStatsReset ?: -1L,
             batteryServiceDataSnapshot?.screenOnTimeSinceBoot ?: -1L,
-            batteryServiceDataSnapshot?.screenOnTimeSinceLastStatsReset ?: -1L)
+            batteryServiceDataSnapshot?.screenOnTimeSinceLastStatsReset ?: -1L,
+            null)
         val (line1, line2) = buildText(batteryTileUIBuilder)
 
         tile.state = if (batteryTileUIBuilder.isCharging) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE

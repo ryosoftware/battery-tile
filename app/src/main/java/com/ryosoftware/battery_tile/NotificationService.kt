@@ -274,7 +274,7 @@ class NotificationService : Service() {
 
                 val batteryIntentHelper = run {
                     val batteryIntent = Main.from(context).batteryIntentProvider.get(true)
-                    batteryIntent?.let { BatteryIntentHelper(it) }
+                    batteryIntent?.let { BatteryIntentHelper(it, null) }
                 }
 
                 putLong(NotificationServicePreferences.KEY_LAST_STATS_RESET_TIME, now - interval)
@@ -359,6 +359,8 @@ class NotificationService : Service() {
         }
     }
 
+    private val batteryManager by lazy { getSystemService(BATTERY_SERVICE) as BatteryManager }
+
     private val logger by lazy { Main.from(this).logger }
 
     private val servicePersistentData by lazy { NotificationServicePreferences(this).prefs }
@@ -400,7 +402,6 @@ class NotificationService : Service() {
                 "%s"
             )
         }
-
     private var serviceStartTime = 0L
     private var disablePersistData = false
 
@@ -545,7 +546,7 @@ class NotificationService : Service() {
         if (isScreenOn) onScreenTurnedOn()
 
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
-        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it) }
+        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it, null) }
 
         if (batteryIntentHelper != null) {
             val millisSinceBoot = SystemClock.elapsedRealtime()
@@ -646,7 +647,7 @@ class NotificationService : Service() {
 
     private fun onPowerConnected() {
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
-        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it) }
+        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it, null) }
         val millisSinceBoot = SystemClock.elapsedRealtime()
 
         lastBatteryEventTime = millisSinceBoot
@@ -661,7 +662,7 @@ class NotificationService : Service() {
 
     private fun onPowerDisconnected() {
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
-        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it) }
+        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it, null) }
         val millisSinceBoot = SystemClock.elapsedRealtime()
 
         if ((! batteryCharged) || (!prefs.isBlockingPowerDisconnectNotificationWhenBatteryIsCharged))
@@ -706,7 +707,7 @@ class NotificationService : Service() {
     }
 
     private fun onBatteryChanged(intent: Intent) {
-        val batteryIntentHelper = BatteryIntentHelper(intent)
+        val batteryIntentHelper = BatteryIntentHelper(intent, batteryManager)
 
         val status = batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_STATUS, appPrefs, true)
         val level = batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_LEVEL, appPrefs, true)
@@ -726,10 +727,7 @@ class NotificationService : Service() {
         }
 
         if (batteryIntentHelper.isCharging && batteryIntentHelper.isFullCharged) {
-            val batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-            val capacity = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
-
-            appPrefs.batteryCapacityCurrent = (capacity / 1000f).toInt()
+            appPrefs.batteryCapacityCurrent = batteryIntentHelper.charge / 1000
         }
 
         if ((!batteryLow) && isBatteryLow(batteryIntentHelper)) {
@@ -817,6 +815,7 @@ class NotificationService : Service() {
                 repository.insertBatteryReading(BatteryReading(
                     timestamp = now,
                     batteryLevel = level,
+                    batteryCharge = batteryIntentHelper.charge,
                     batteryStatus = batteryIntentHelper.status,
                     temperatureCelsius = temperature,
                     voltage = batteryIntentHelper.voltage,
@@ -1023,7 +1022,8 @@ class NotificationService : Service() {
                 deepSleepTimeAtLastStatsReset,
                 if (screenOnTimeSinceBootIsValid) screenOnFields.sinceBoot else -1L,
                 screenOnFields.sinceLastReset,
-                lastBatteryEventTime)
+                lastBatteryEventTime,
+                batteryManager)
 
             buildText(notificationServiceUIBuilder)
         }
@@ -1161,7 +1161,7 @@ class NotificationService : Service() {
 
     private fun showOrHideChargedNotification() {
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
-        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it) }
+        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it, null) }
 
         logger.log("Received charged notification redraw alarm")
 
@@ -1238,7 +1238,7 @@ class NotificationService : Service() {
 
     private fun showOrHideBatteryLowChargedNotification() {
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
-        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it) }
+        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it, null) }
 
         logger.log("Received battery low notification redraw alarm")
 

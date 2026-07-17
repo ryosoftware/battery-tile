@@ -18,12 +18,14 @@ class BatteryTileUIBuilder(
     deepSleepTimeAtLastStatsReset: Long,
     screenOnTimeSinceBoot: Long,
     screenOnTimeSinceLastStatsReset: Long,
+    batteryManager: BatteryManager?
 ) : BaseUIBuilder(
     intent,
     lastStatsResetTime,
     deepSleepTimeAtLastStatsReset,
     screenOnTimeSinceBoot,
-    screenOnTimeSinceLastStatsReset) {
+    screenOnTimeSinceLastStatsReset,
+    batteryManager) {
     enum class BatteryTileField(val key: String, val iconizable: Boolean, val textualizable: Boolean, val isSupported: Boolean, val requiresBackgroundService: Boolean, @param:ArrayRes val defaultsRes: Int) {
         BATTERY_LEVEL(key = BatteryIntentHelper.BATTERY_LEVEL, iconizable = true, textualizable = true, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_LEVEL), requiresBackgroundService = false, defaultsRes = R.array.level_data_for_tile_default),
         BATTERY_LEVEL_ICON(key = "BATTERY-LEVEL-ICON", iconizable = true, textualizable = false, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_LEVEL), requiresBackgroundService = false, defaultsRes = 0),

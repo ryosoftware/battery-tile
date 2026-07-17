@@ -2,6 +2,7 @@ package com.ryosoftware.battery_tile
 
 import android.content.Context
 import android.content.Intent
+import android.os.BatteryManager
 import android.os.SystemClock
 
 abstract class BaseUIBuilder(
@@ -10,7 +11,8 @@ abstract class BaseUIBuilder(
     protected val deepSleepTimeAtLastStatsReset: Long,
     protected val screenOnTimeSinceBoot: Long,
     protected val screenOnTimeSinceLastStatsReset: Long,
-) : BatteryIntentHelper(intent) {
+    batteryManager: BatteryManager?
+) : BatteryIntentHelper(intent, batteryManager) {
     val timeSinceBoot: Long by lazy { SystemClock.elapsedRealtime() }
     val deepSleepTimeSinceBoot: Long by lazy { timeSinceBoot - SystemClock.uptimeMillis() }
     val timeSinceLastStatsReset: Long by lazy { System.currentTimeMillis() - lastStatsResetTime }
