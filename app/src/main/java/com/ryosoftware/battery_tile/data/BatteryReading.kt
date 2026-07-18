@@ -10,7 +10,7 @@ data class BatteryReading(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val timestamp: Long,
     val batteryLevel: Int,
-    val batteryCharge: Int = 0,
+    val batteryCharge: Int,
     val batteryStatus: Int,
     val temperatureCelsius: Float,
     val voltage: Int,

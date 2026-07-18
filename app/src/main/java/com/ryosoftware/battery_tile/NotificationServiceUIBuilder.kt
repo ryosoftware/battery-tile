@@ -3,8 +3,12 @@ package com.ryosoftware.battery_tile
 import android.content.Context
 import android.content.Intent
 import android.os.BatteryManager
-import android.os.SystemClock
 import androidx.annotation.ArrayRes
+import androidx.annotation.StringRes
+import com.ryosoftware.battery_tile.NotificationService.Companion.MIN_RECENT_INTERVAL
+import com.ryosoftware.battery_tile.NotificationService.Companion.MIN_RECENT_READINGS
+import com.ryosoftware.battery_tile.data.BatteryReading
+import com.ryosoftware.battery_tile.data.ScreenState
 
 class NotificationServiceUIBuilder(
     intent: Intent,
@@ -13,7 +17,10 @@ class NotificationServiceUIBuilder(
     screenOnTimeSinceBoot: Long,
     screenOnTimeSinceLastStatsReset: Long,
     private val lastBatteryEventTime: Long,
-    batteryManager: BatteryManager
+    batteryManager: BatteryManager,
+    private val screenOn: Boolean,
+    private val recentReadings: List<BatteryReading>,
+    private val recentScreenStates: List<ScreenState>
 ) : BaseUIBuilder(
     intent,
     lastStatsResetTime,
@@ -21,26 +28,20 @@ class NotificationServiceUIBuilder(
     screenOnTimeSinceBoot,
     screenOnTimeSinceLastStatsReset,
     batteryManager) {
-    enum class NotificationField(val key: String, val isSupported: Boolean, @param:ArrayRes val defaultsRes: Int) {
-        BATTERY_LEVEL(key = BatteryIntentHelper.BATTERY_LEVEL, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_LEVEL), defaultsRes = R.array.level_data_for_notification_default),
-        BATTERY_CHARGE(key = BatteryIntentHelper.BATTERY_CHARGE, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_CHARGE), defaultsRes = R.array.charge_data_for_notification_default),
-        BATTERY_STATUS(key = BatteryIntentHelper.BATTERY_STATUS, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_STATUS), defaultsRes = R.array.status_data_for_notification_default),
-        BATTERY_TEMPERATURE(key = BatteryIntentHelper.BATTERY_TEMPERATURE, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_TEMPERATURE), defaultsRes = R.array.temperature_data_for_notification_default),
-        BATTERY_VOLTAGE(key = BatteryIntentHelper.BATTERY_VOLTAGE, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_VOLTAGE), defaultsRes = R.array.voltage_data_for_notification_default),
-        BATTERY_HEALTH(key = BatteryIntentHelper.BATTERY_HEALTH, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_HEALTH), defaultsRes = R.array.health_data_for_notification_default),
-        BATTERY_CYCLES_COUNT(key = BatteryIntentHelper.BATTERY_CYCLES_COUNT, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_CYCLES_COUNT), defaultsRes = R.array.cycles_count_data_for_notification_default),
-        CPU_DEEP_SLEEP_TIME_SINCE_BOOT(key = "CPU-DEEP-SLEEP-TIME-SINCE-BOOT", isSupported = true, defaultsRes = R.array.deep_sleep_time_since_boot_data_for_notification_default),
-        CPU_DEEP_SLEEP_PERCENT_SINCE_BOOT(key = "CPU-DEEP-SLEEP-PERCENT-SINCE-BOOT", isSupported = true, defaultsRes = R.array.deep_sleep_percent_since_boot_data_for_notification_default),
-        CPU_DEEP_SLEEP_TIME_SINCE_LAST_STATS_RESET(key = "CPU-DEEP-SLEEP-TIME-SINCE-LAST-STATS-RESET", isSupported = true, defaultsRes = R.array.deep_sleep_time_since_last_stats_reset_data_for_notification_default),
-        CPU_DEEP_SLEEP_PERCENT_SINCE_LAST_STATS_RESET(key = "CPU-DEEP-SLEEP-PERCENT-SINCE-LAST-STATS-RESET", isSupported = true, defaultsRes = R.array.deep_sleep_percent_since_last_stats_reset_data_for_notification_default),
-        SCREEN_ON_TIME_SINCE_BOOT(key = "SCREEN-ON-TIME-SINCE-BOOT", isSupported = true, defaultsRes = R.array.screen_on_time_since_boot_data_for_notification_default),
-        SCREEN_ON_PERCENT_SINCE_BOOT(key = "SCREEN-ON-PERCENT-SINCE-BOOT", isSupported = true, defaultsRes = R.array.screen_on_percent_since_boot_data_for_notification_default),
-
-        SCREEN_ON_TIME_SINCE_LAST_STATS_RESET(key = "SCREEN-ON-TIME-SINCE-LAST-STATS-RESET", isSupported = true, defaultsRes = R.array.screen_on_time_since_last_stats_reset_data_for_notification_default),
-        SCREEN_ON_PERCENT_SINCE_LAST_STATS_RESET(key = "SCREEN-ON-PERCENT-SINCE-LAST-STATS-RESET", isSupported = true, defaultsRes = R.array.screen_on_percent_since_last_stats_reset_data_for_notification_default),
-        UPTIME_SINCE_BOOT(key = "UPTIME-SINCE-BOOT", isSupported = true, defaultsRes = R.array.uptime_since_boot_data_for_notification_default),
-        UPTIME_SINCE_LAST_STATS_RESET(key = "UPTIME-SINCE-LAST-STATS-RESET", isSupported = true, defaultsRes = R.array.uptime_since_last_stats_reset_data_for_notification_default),
-        BATTERY_CHARGING_TIME(key = "BATTERY-CHARGING-TIME", isSupported = true, defaultsRes = R.array.charging_time_data_for_notification_default);
+    enum class NotificationField(val key: String, val isSupported: Boolean, @param:StringRes val label: Int = 0, @param:StringRes val labelLong: Int = 0, @param:StringRes val labelModifier: Int = 0, @param:StringRes val comments: Int = 0, @param:ArrayRes val defaultsRes: Int) {
+        BATTERY_LEVEL(key = BatteryIntentHelper.BATTERY_LEVEL, isSupported = isSupported(BatteryIntentHelper.BATTERY_LEVEL), comments = R.string.battery_level_notification_comments, defaultsRes = R.array.level_data_for_notification_default),
+        BATTERY_CURRENT_CONSUMPTION(key = BatteryIntentHelper.BATTERY_CURRENT_CONSUMPTION, isSupported = isSupported(BatteryIntentHelper.BATTERY_CURRENT_CONSUMPTION), label = R.string.current_consumption, labelLong = R.string.current_consumption_long, defaultsRes = R.array.current_consumption_data_for_notification_default),
+        BATTERY_STATUS(key = BatteryIntentHelper.BATTERY_STATUS, isSupported = isSupported(BatteryIntentHelper.BATTERY_STATUS), defaultsRes = R.array.status_data_for_notification_default),
+        BATTERY_TEMPERATURE(key = BatteryIntentHelper.BATTERY_TEMPERATURE, isSupported = isSupported(BatteryIntentHelper.BATTERY_TEMPERATURE), defaultsRes = R.array.temperature_data_for_notification_default),
+        BATTERY_VOLTAGE(key = BatteryIntentHelper.BATTERY_VOLTAGE, isSupported = isSupported(BatteryIntentHelper.BATTERY_VOLTAGE), defaultsRes = R.array.voltage_data_for_notification_default),
+        BATTERY_HEALTH(key = BatteryIntentHelper.BATTERY_HEALTH, isSupported = isSupported(BatteryIntentHelper.BATTERY_HEALTH), defaultsRes = R.array.health_data_for_notification_default),
+        BATTERY_CYCLES_COUNT(key = BatteryIntentHelper.BATTERY_CYCLES_COUNT, isSupported = isSupported(BatteryIntentHelper.BATTERY_CYCLES_COUNT), comments = R.string.battery_cycles_notification_comments, defaultsRes = R.array.cycles_count_data_for_notification_default),
+        BATTERY_RECENT_CONSUMPTION(key = "BATTERY-RECENT-CONSUMPTION", isSupported = true, label = R.string.recent_consumption, labelLong = R.string.recent_consumption_long, comments = R.string.recent_consumption_notification_comments, defaultsRes = R.array.recent_consumption_data_for_notification_default),
+        CPU_DEEP_SLEEP_TIME_SINCE_BOOT(key = "CPU-DEEP-SLEEP-TIME-SINCE-BOOT", isSupported = true, label = R.string.cpu_deep_sleep_time, labelLong = R.string.cpu_deep_sleep_time_long, labelModifier = R.string.since_boot, comments = R.string.cpu_deep_sleep_time_notification_comments, defaultsRes = R.array.deep_sleep_time_since_boot_data_for_notification_default),
+        CPU_DEEP_SLEEP_TIME_SINCE_LAST_STATS_RESET(key = "CPU-DEEP-SLEEP-TIME-SINCE-LAST-STATS-RESET", isSupported = true, label = R.string.cpu_deep_sleep_time, labelLong = R.string.cpu_deep_sleep_time_long, labelModifier = R.string.since_last_stats_reset, comments = R.string.cpu_deep_sleep_time_notification_comments, defaultsRes = R.array.deep_sleep_time_since_last_stats_reset_data_for_notification_default),
+        UPTIME_SINCE_BOOT(key = "UPTIME-SINCE-BOOT", isSupported = true, label = R.string.uptime, labelLong = R.string.uptime_long, labelModifier = R.string.since_boot, comments = R.string.uptime_notification_comments, defaultsRes = R.array.uptime_since_boot_data_for_notification_default),
+        UPTIME_SINCE_LAST_STATS_RESET(key = "UPTIME-SINCE-LAST-STATS-RESET", isSupported = true, label = R.string.uptime, labelLong = R.string.uptime_long, labelModifier = R.string.since_last_stats_reset, comments = R.string.uptime_notification_comments, defaultsRes = R.array.uptime_since_last_stats_reset_data_for_notification_default),
+        BATTERY_CHARGING_TIME(key = "BATTERY-CHARGING-TIME", isSupported = true, label = R.string.time_charging, labelLong = R.string.time_charging_long, comments = R.string.time_charging_notification_comments, defaultsRes = R.array.charging_time_data_for_notification_default);
 
         companion object {
             private val map = entries.associateBy { it.key.uppercase() }
@@ -48,149 +49,111 @@ class NotificationServiceUIBuilder(
             fun fromKey(key: String?): NotificationField? = map[key?.uppercase()]
 
             fun NotificationField.getLabel(context: Context, small: Boolean): String =
-                when (this) {
-                    CPU_DEEP_SLEEP_TIME_SINCE_BOOT -> {
-                        val resource = if (small) R.string.cpu_deep_sleep_time else R.string.cpu_deep_sleep_time_long
-
-                        context.getString(resource, context.getString(R.string.since_boot))
-                    }
-                    CPU_DEEP_SLEEP_PERCENT_SINCE_BOOT -> {
-                        val resource = if (small) R.string.cpu_deep_sleep_percent else R.string.cpu_deep_sleep_percent_long
-
-                        context.getString(resource, context.getString(R.string.since_boot))
-                    }
-                    CPU_DEEP_SLEEP_TIME_SINCE_LAST_STATS_RESET -> {
-                        val resource = if (small) R.string.cpu_deep_sleep_time else R.string.cpu_deep_sleep_time_long
-
-                        context.getString(resource, context.getString(R.string.since_last_stats_reset))
-                    }
-                    CPU_DEEP_SLEEP_PERCENT_SINCE_LAST_STATS_RESET -> {
-                        val resource = if (small) R.string.cpu_deep_sleep_percent else R.string.cpu_deep_sleep_percent_long
-
-                        context.getString(resource, context.getString(R.string.since_last_stats_reset))
-                    }
-                    SCREEN_ON_TIME_SINCE_BOOT -> {
-                        val resource = if (small) R.string.screen_on_time else R.string.screen_on_time_long
-
-                        context.getString(resource, context.getString(R.string.since_boot))
-                    }
-                    SCREEN_ON_PERCENT_SINCE_BOOT -> {
-                        val resource = if (small) R.string.screen_on_percent else R.string.screen_on_percent_long
-
-                        context.getString(resource, context.getString(R.string.since_boot))
-                    }
-                    SCREEN_ON_TIME_SINCE_LAST_STATS_RESET -> {
-                        val resource = if (small) R.string.screen_on_time else R.string.screen_on_time_long
-
-                        context.getString(resource, context.getString(R.string.since_last_stats_reset))
-                    }
-                    SCREEN_ON_PERCENT_SINCE_LAST_STATS_RESET -> {
-                        val resource = if (small) R.string.screen_on_percent else R.string.screen_on_percent_long
-
-                        context.getString(resource, context.getString(R.string.since_last_stats_reset))
-                    }
-                    UPTIME_SINCE_BOOT -> {
-                        val resource = if (small) R.string.uptime else R.string.uptime_long
-
-                        context.getString(resource, context.getString(R.string.since_boot))
-                    }
-                    UPTIME_SINCE_LAST_STATS_RESET -> {
-                        val resource = if (small) R.string.uptime else R.string.uptime_long
-
-                        context.getString(resource, context.getString(R.string.since_last_stats_reset))
-                    }
-                    BATTERY_CHARGING_TIME -> {
-                        val resource = if (small) R.string.time_charging else R.string.time_charging_long
-
-                        context.getString(resource)
-                    }
-                    else -> getLabel(context, key)
+                when {
+                    label == 0 -> getLabel(context, key)
+                    labelModifier == 0 -> context.getString(if (small) label else labelLong)
+                    else -> context.getString(if (small) label else labelLong, context.getString(labelModifier))
                 }
-        }
-    }
 
-    fun isValid(notificationField: NotificationField): Boolean {
-        if (!notificationField.isSupported) return false
-
-        return when (notificationField) {
-            NotificationField.CPU_DEEP_SLEEP_TIME_SINCE_BOOT,
-            NotificationField.CPU_DEEP_SLEEP_PERCENT_SINCE_BOOT -> deepSleepTimeSinceBoot >= 0L
-
-            NotificationField.CPU_DEEP_SLEEP_TIME_SINCE_LAST_STATS_RESET,
-            NotificationField.CPU_DEEP_SLEEP_PERCENT_SINCE_LAST_STATS_RESET -> deepSleepTimeSinceLastStatsReset >= 0L
-
-            NotificationField.SCREEN_ON_TIME_SINCE_BOOT,
-            NotificationField.SCREEN_ON_PERCENT_SINCE_BOOT -> screenOnTimeSinceBoot >= 0L
-
-            NotificationField.SCREEN_ON_TIME_SINCE_LAST_STATS_RESET,
-            NotificationField.SCREEN_ON_PERCENT_SINCE_LAST_STATS_RESET -> screenOnTimeSinceLastStatsReset >= 0L
-
-            NotificationField.UPTIME_SINCE_BOOT -> timeSinceBoot >= 0L
-            NotificationField.UPTIME_SINCE_LAST_STATS_RESET -> timeSinceLastStatsReset >= 0L
-            NotificationField.BATTERY_CHARGING_TIME -> isCharging && lastBatteryEventTime != 0L
-
-            else -> isValid(notificationField.key)
+            fun NotificationField.getComments(context: Context): String? =
+                when {
+                    comments == 0 -> null
+                    else -> context.getString(comments)
+                }
         }
     }
 
     fun isVisible(notificationField: NotificationField, prefs: NotificationPreferences): Boolean =
         when (notificationField) {
-            NotificationField.CPU_DEEP_SLEEP_PERCENT_SINCE_BOOT -> !prefs.isFieldVisible(NotificationField.CPU_DEEP_SLEEP_TIME_SINCE_BOOT)
-            NotificationField.CPU_DEEP_SLEEP_PERCENT_SINCE_LAST_STATS_RESET -> !prefs.isFieldVisible(NotificationField.CPU_DEEP_SLEEP_TIME_SINCE_LAST_STATS_RESET)
-            NotificationField.SCREEN_ON_PERCENT_SINCE_BOOT -> !prefs.isFieldVisible(NotificationField.SCREEN_ON_TIME_SINCE_BOOT)
-            NotificationField.SCREEN_ON_PERCENT_SINCE_LAST_STATS_RESET -> !prefs.isFieldVisible(NotificationField.SCREEN_ON_TIME_SINCE_LAST_STATS_RESET)
             NotificationField.BATTERY_CHARGING_TIME -> isCharging && lastBatteryEventTime != 0L
             else -> true
         }
 
-    fun toString(context: Context, notificationField: NotificationField, prefs: NotificationPreferences, appPrefs: AppPreferences): String =
+    fun toString(context: Context, notificationField: NotificationField, prefs: NotificationPreferences, appPrefs: AppPreferences): String? =
         when(notificationField) {
-            NotificationField.CPU_DEEP_SLEEP_TIME_SINCE_BOOT -> {
-                if (prefs.isFieldVisible(NotificationField.CPU_DEEP_SLEEP_PERCENT_SINCE_BOOT))
-                    getStringTimeAndPercentFromInterval(context, deepSleepTimeSinceBoot, timeSinceBoot)
-                else
-                    getStringTimeFromInterval(context, deepSleepTimeSinceBoot)
+            NotificationField.BATTERY_LEVEL -> {
+                when {
+                    level < 0 -> null
+                    else -> {
+                        val level = toString(context, BATTERY_LEVEL, appPrefs, false)
+
+                        if (charge <= 0) {
+                            level
+                        } else {
+                            context.getString(R.string.battery_level_and_charge, level, toString(context, BATTERY_CHARGE, appPrefs, false))
+                        }
+                    }
+                }
             }
-            NotificationField.CPU_DEEP_SLEEP_PERCENT_SINCE_BOOT -> {
-                getStringPercentFromInterval(context, deepSleepTimeSinceBoot, timeSinceBoot)
+            NotificationField.BATTERY_RECENT_CONSUMPTION -> {
+                if ((!isCharging) && (recentReadings.size >= MIN_RECENT_READINGS) && (recentReadings.last().timestamp - recentReadings.first().timestamp > MIN_RECENT_INTERVAL)) {
+                    val updatedRecentReadings = recentReadings.toMutableList()
+                    val updatedRecentScreenStates = recentScreenStates.toMutableList()
+
+                    NotificationService.addToRecentBuffers(updatedRecentReadings, updatedRecentScreenStates, this, screenOn)
+
+                    val endTime = updatedRecentReadings.last().timestamp
+                    val startTime = updatedRecentScreenStates.first().timestamp
+
+                    val numbers = calculateDischargeRates(updatedRecentReadings, updatedRecentScreenStates, startTime, endTime)
+
+                    val overAllSpeed = numbers.overallSpeed?.takeIf { it != 0f }?.let { getStringPercent(context, numbers.overallSpeed, R.string.consumption_value_float, R.string.consumption_value_integer) }
+                    val screenOnSpeed = numbers.screenOnSpeed?.takeIf { it != 0f }?.let { getStringPercent(context, it, R.string.consumption_value_float, R.string.consumption_value_integer) }
+                    val screenOffSpeed = numbers.screenOffSpeed?.takeIf { it != 0f }?.let { getStringPercent(context, it, R.string.consumption_value_float, R.string.consumption_value_integer) }
+
+                    if (overAllSpeed == null) {
+                        return null
+                    }
+
+                    if ((screenOnSpeed != null) && (screenOffSpeed != null)) {
+                        context.getString(R.string.recent_consumption_format, overAllSpeed, screenOnSpeed, screenOffSpeed)
+                    } else {
+                        context.getString(R.string.recent_consumption_format_no_screen, overAllSpeed)
+                    }
+                } else null
+            }
+            NotificationField.CPU_DEEP_SLEEP_TIME_SINCE_BOOT -> {
+                if ((deepSleepTimeSinceBoot > 0L) && (timeSinceBoot > 0L)) {
+                    getStringTimeAndPercentFromInterval(context, deepSleepTimeSinceBoot, timeSinceBoot, true)
+                } else null
             }
             NotificationField.CPU_DEEP_SLEEP_TIME_SINCE_LAST_STATS_RESET -> {
-                if (prefs.isFieldVisible(NotificationField.CPU_DEEP_SLEEP_PERCENT_SINCE_LAST_STATS_RESET))
-                    getStringTimeAndPercentFromInterval(context, deepSleepTimeSinceLastStatsReset, timeSinceLastStatsReset)
-                else
-                    getStringTimeFromInterval(context, deepSleepTimeSinceLastStatsReset)
-            }
-            NotificationField.CPU_DEEP_SLEEP_PERCENT_SINCE_LAST_STATS_RESET -> {
-                getStringPercentFromInterval(context, deepSleepTimeSinceLastStatsReset, timeSinceLastStatsReset)
-            }
-            NotificationField.SCREEN_ON_TIME_SINCE_BOOT -> {
-                if (prefs.isFieldVisible(NotificationField.SCREEN_ON_PERCENT_SINCE_BOOT))
-                    getStringTimeAndPercentFromInterval(context, screenOnTimeSinceBoot, timeSinceBoot)
-                else
-                    getStringTimeFromInterval(context, screenOnTimeSinceBoot)
-            }
-            NotificationField.SCREEN_ON_PERCENT_SINCE_BOOT -> {
-                getStringPercentFromInterval(context, screenOnTimeSinceBoot, timeSinceBoot)
-            }
-            NotificationField.SCREEN_ON_TIME_SINCE_LAST_STATS_RESET -> {
-                if (prefs.isFieldVisible(NotificationField.SCREEN_ON_PERCENT_SINCE_LAST_STATS_RESET))
-                    getStringTimeAndPercentFromInterval(context, screenOnTimeSinceLastStatsReset, timeSinceLastStatsReset)
-                else
-                    getStringTimeFromInterval(context, screenOnTimeSinceLastStatsReset)
-            }
-            NotificationField.SCREEN_ON_PERCENT_SINCE_LAST_STATS_RESET -> {
-                getStringPercentFromInterval(context, screenOnTimeSinceLastStatsReset, timeSinceLastStatsReset)
+                if ((deepSleepTimeSinceLastStatsReset > 0L) && (timeSinceLastStatsReset > 0L)) {
+                    getStringTimeAndPercentFromInterval(context, deepSleepTimeSinceLastStatsReset, timeSinceLastStatsReset, true)
+                } else null
             }
             NotificationField.UPTIME_SINCE_BOOT -> {
-                getStringTimeFromInterval(context, timeSinceBoot)
+                if (timeSinceBoot > 0L) {
+                    val uptime = getStringTimeFromInterval(context, timeSinceBoot)
+
+                    if (isImperceptible(screenOnTimeSinceBoot, timeSinceBoot)) {
+                        context.getString(R.string.uptime_value, uptime)
+                    } else {
+                        val screenOnTime = getStringTimeAndPercentFromInterval(context, screenOnTimeSinceBoot, timeSinceBoot, true, R.string.screen_time_with_percent)
+                        context.getString(R.string.uptime_value_with_screen_on, uptime, screenOnTime)
+                    }
+                } else null
             }
             NotificationField.UPTIME_SINCE_LAST_STATS_RESET -> {
-                getStringTimeFromInterval(context, timeSinceLastStatsReset)
+                if (timeSinceLastStatsReset > 0L) {
+                    val uptime = getStringTimeFromInterval(context, timeSinceLastStatsReset)
+
+                    if (isImperceptible(screenOnTimeSinceLastStatsReset, timeSinceLastStatsReset)) {
+                        context.getString(R.string.uptime_value, uptime)
+                    } else {
+                        val screenOnTime = getStringTimeAndPercentFromInterval(context, screenOnTimeSinceLastStatsReset, timeSinceLastStatsReset, true, R.string.screen_time_with_percent)
+                        context.getString(R.string.uptime_value_with_screen_on, uptime, screenOnTime)
+                    }
+                } else null
             }
             NotificationField.BATTERY_CHARGING_TIME -> {
-                val timeCharging = timeSinceBoot - lastBatteryEventTime
+                if (isCharging) {
+                    val timeCharging = timeSinceBoot - lastBatteryEventTime
 
-                getStringTimeFromInterval(context, timeCharging)
+                    if (! isImperceptible(timeCharging)) {
+                        getStringTimeFromInterval(context, timeCharging)
+                    } else null
+                } else null
             }
             else -> super.toString(context, notificationField.key, appPrefs, false)
         }

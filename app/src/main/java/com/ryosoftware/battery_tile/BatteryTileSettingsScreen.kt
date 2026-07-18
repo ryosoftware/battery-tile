@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.ryosoftware.battery_tile.BatteryTileUIBuilder.BatteryTileField.Companion.getComments
 import com.ryosoftware.battery_tile.BatteryTileUIBuilder.BatteryTileField.Companion.getLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -169,9 +170,10 @@ fun TileSettingsScreen(
                         style = MaterialTheme.typography.bodyLarge
                     )
 
-                    if (iconField.requiresBackgroundService) {
+                    val comments = iconField.getComments(context)
+                    if (comments != null) {
                         Text(
-                            text = stringResource(R.string.requires_background_running),
+                            text = comments,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -192,9 +194,10 @@ fun TileSettingsScreen(
                                         text = field.getLabel(context),
                                         style = MaterialTheme.typography.bodyMedium
                                     )
-                                    if (field.requiresBackgroundService) {
+                                    val comments = field.getComments(context)
+                                    if (comments != null) {
                                         Text(
-                                            text = stringResource(R.string.requires_background_running),
+                                            text = comments,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -228,13 +231,13 @@ fun TileSettingsScreen(
 
             val textualizableFields = BatteryTileUIBuilder.BatteryTileField.entries.filter { it.textualizable && it.isSupported }
 
-            textualizableFields.forEach { field ->
+            textualizableFields.sortedBy{prefs.getFieldPosition(it)}.forEach { field ->
                 val visible = fieldVisibility[field] ?: false
                 val line = fieldLine[field] ?: 1
 
                 FieldRow(
                     label = field.getLabel(context),
-                    requiresBackgroundService = field.requiresBackgroundService,
+                    comments = field.getComments(context),
                     checked = visible,
                     line = line,
                     onCheckedChange = { newVisible ->
@@ -267,7 +270,7 @@ fun TileSettingsScreen(
 @Composable
 private fun FieldRow(
     label: String,
-    requiresBackgroundService: Boolean,
+    comments: String?,
     checked: Boolean,
     line: Int,
     onCheckedChange: (Boolean) -> Unit,
@@ -298,10 +301,10 @@ private fun FieldRow(
                     style = MaterialTheme.typography.bodyLarge
                 )
 
-                if (requiresBackgroundService) {
+                if (comments != null) {
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = stringResource(R.string.requires_background_running),
+                        text = comments,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

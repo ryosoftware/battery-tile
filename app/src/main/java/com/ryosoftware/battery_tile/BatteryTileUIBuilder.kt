@@ -8,8 +8,8 @@ import androidx.core.graphics.createBitmap
 import android.graphics.Paint
 import android.graphics.Color
 import android.os.BatteryManager
-import android.os.SystemClock
 import androidx.annotation.ArrayRes
+import androidx.annotation.StringRes
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 
 class BatteryTileUIBuilder(
@@ -18,7 +18,7 @@ class BatteryTileUIBuilder(
     deepSleepTimeAtLastStatsReset: Long,
     screenOnTimeSinceBoot: Long,
     screenOnTimeSinceLastStatsReset: Long,
-    batteryManager: BatteryManager?
+    batteryManager: BatteryManager
 ) : BaseUIBuilder(
     intent,
     lastStatsResetTime,
@@ -26,47 +26,39 @@ class BatteryTileUIBuilder(
     screenOnTimeSinceBoot,
     screenOnTimeSinceLastStatsReset,
     batteryManager) {
-    enum class BatteryTileField(val key: String, val iconizable: Boolean, val textualizable: Boolean, val isSupported: Boolean, val requiresBackgroundService: Boolean, @param:ArrayRes val defaultsRes: Int) {
-        BATTERY_LEVEL(key = BatteryIntentHelper.BATTERY_LEVEL, iconizable = true, textualizable = true, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_LEVEL), requiresBackgroundService = false, defaultsRes = R.array.level_data_for_tile_default),
-        BATTERY_LEVEL_ICON(key = "BATTERY-LEVEL-ICON", iconizable = true, textualizable = false, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_LEVEL), requiresBackgroundService = false, defaultsRes = 0),
-        BATTERY_STATUS(key = BatteryIntentHelper.BATTERY_STATUS, iconizable = true, textualizable = true, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_STATUS), requiresBackgroundService = false, defaultsRes = R.array.status_data_for_tile_default),
-        BATTERY_TEMPERATURE(key = BatteryIntentHelper.BATTERY_TEMPERATURE, iconizable = true, textualizable = true, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_TEMPERATURE), requiresBackgroundService = false, defaultsRes = R.array.temperature_data_for_tile_default),
-        BATTERY_VOLTAGE(key = BatteryIntentHelper.BATTERY_VOLTAGE, iconizable = false, textualizable = true, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_VOLTAGE), requiresBackgroundService = false, defaultsRes = R.array.voltage_data_for_tile_default),
-        BATTERY_HEALTH(key = BatteryIntentHelper.BATTERY_HEALTH, iconizable = false, textualizable = true, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_HEALTH), requiresBackgroundService = false, defaultsRes = R.array.health_data_for_tile_default),
-        BATTERY_CYCLES_COUNT(key = BatteryIntentHelper.BATTERY_CYCLES_COUNT, iconizable = false, textualizable = true, isSupported = BatteryIntentHelper.isSupported(BatteryIntentHelper.BATTERY_CYCLES_COUNT), requiresBackgroundService = false, defaultsRes = R.array.cycles_count_data_for_tile_default),
-        CPU_DEEP_SLEEP_PERCENT_SINCE_BOOT(key = "CPU-DEEP-SLEEP-PERCENT-SINCE-BOOT", iconizable = false, textualizable = true, isSupported = true, requiresBackgroundService = false, defaultsRes = R.array.deep_sleep_percent_since_boot_data_for_tile_default),
-        CPU_DEEP_SLEEP_PERCENT_SINCE_LAST_STATS_RESET(key = "CPU-DEEP-SLEEP-PERCENT-SINCE-LAST-STATS-RESET", iconizable = false, textualizable = true, isSupported = true, requiresBackgroundService = true, defaultsRes = R.array.deep_sleep_percent_since_last_stats_reset_data_for_tile_default),
-        SCREEN_ON_PERCENT_SINCE_BOOT(key = "SCREEN-ON-PERCENT-SINCE-BOOT", iconizable = false, textualizable = true, isSupported = true, requiresBackgroundService = true, defaultsRes = R.array.screen_on_percent_since_boot_data_for_tile_default),
-        SCREEN_ON_PERCENT_SINCE_LAST_STATS_RESET(key = "SCREEN-ON-PERCENT-SINCE-LAST-STATS-RESET", iconizable = false, textualizable = true, isSupported = true, requiresBackgroundService = true, defaultsRes = R.array.screen_on_percent_since_last_stats_reset_data_for_tile_default);
+    private val smallIcon = intent.getIntExtra(BatteryManager.EXTRA_ICON_SMALL, 0)
+
+    enum class BatteryTileField(val key: String, val iconizable: Boolean, val textualizable: Boolean, val isSupported: Boolean, @param:StringRes val label: Int = 0, @param:StringRes val labelModifier: Int = 0, @param:StringRes val comments: Int = 0, @param:ArrayRes val defaultsRes: Int) {
+        BATTERY_LEVEL(key = BatteryIntentHelper.BATTERY_LEVEL, iconizable = true, textualizable = true, isSupported = isSupported(BatteryIntentHelper.BATTERY_LEVEL), defaultsRes = R.array.level_data_for_tile_default),
+        BATTERY_LEVEL_ICON(key = "BATTERY-LEVEL-ICON", iconizable = true, textualizable = false, isSupported = isSupported(BatteryIntentHelper.BATTERY_LEVEL), label = R.string.battery_level_icon, defaultsRes = 0),
+        BATTERY_CHARGE(key = BatteryIntentHelper.BATTERY_CHARGE, iconizable = false, textualizable = true, isSupported = isSupported(BatteryIntentHelper.BATTERY_CHARGE), defaultsRes = R.array.charge_data_for_tile_default),
+        BATTERY_CONSUMPTION(key = BatteryIntentHelper.BATTERY_CURRENT_CONSUMPTION, iconizable = false, textualizable = true, isSupported = isSupported(BatteryIntentHelper.BATTERY_CURRENT_CONSUMPTION), defaultsRes = R.array.consumption_data_for_tile_default),
+        BATTERY_STATUS(key = BatteryIntentHelper.BATTERY_STATUS, iconizable = true, textualizable = true, isSupported = isSupported(BatteryIntentHelper.BATTERY_STATUS), defaultsRes = R.array.status_data_for_tile_default),
+        BATTERY_TEMPERATURE(key = BatteryIntentHelper.BATTERY_TEMPERATURE, iconizable = true, textualizable = true, isSupported = isSupported(BatteryIntentHelper.BATTERY_TEMPERATURE), defaultsRes = R.array.temperature_data_for_tile_default),
+        BATTERY_VOLTAGE(key = BatteryIntentHelper.BATTERY_VOLTAGE, iconizable = false, textualizable = true, isSupported = isSupported(BatteryIntentHelper.BATTERY_VOLTAGE), defaultsRes = R.array.voltage_data_for_tile_default),
+        BATTERY_HEALTH(key = BatteryIntentHelper.BATTERY_HEALTH, iconizable = false, textualizable = true, isSupported = isSupported(BatteryIntentHelper.BATTERY_HEALTH), defaultsRes = R.array.health_data_for_tile_default),
+        BATTERY_CYCLES_COUNT(key = BatteryIntentHelper.BATTERY_CYCLES_COUNT, iconizable = false, textualizable = true, isSupported = isSupported(BatteryIntentHelper.BATTERY_CYCLES_COUNT), defaultsRes = R.array.cycles_count_data_for_tile_default),
+        CPU_DEEP_SLEEP_PERCENT_SINCE_BOOT(key = "CPU-DEEP-SLEEP-PERCENT-SINCE-BOOT", iconizable = false, textualizable = true, isSupported = true, label = R.string.cpu_deep_sleep_percent_long, labelModifier = R.string.since_boot, defaultsRes = R.array.deep_sleep_percent_since_boot_data_for_tile_default),
+        CPU_DEEP_SLEEP_PERCENT_SINCE_LAST_STATS_RESET(key = "CPU-DEEP-SLEEP-PERCENT-SINCE-LAST-STATS-RESET", iconizable = false, textualizable = true, isSupported = true, label = R.string.cpu_deep_sleep_percent_long, labelModifier = R.string.since_last_stats_reset, comments = R.string.requires_background_running, defaultsRes = R.array.deep_sleep_percent_since_last_stats_reset_data_for_tile_default),
+        SCREEN_ON_PERCENT_SINCE_BOOT(key = "SCREEN-ON-PERCENT-SINCE-BOOT", iconizable = false, textualizable = true, isSupported = true, label = R.string.screen_on_percent_long, labelModifier = R.string.since_boot, comments = R.string.requires_background_running, defaultsRes = R.array.screen_on_percent_since_boot_data_for_tile_default),
+        SCREEN_ON_PERCENT_SINCE_LAST_STATS_RESET(key = "SCREEN-ON-PERCENT-SINCE-LAST-STATS-RESET", iconizable = false, textualizable = true, isSupported = true, label = R.string.screen_on_percent_long, labelModifier = R.string.since_last_stats_reset, comments = R.string.requires_background_running, defaultsRes = R.array.screen_on_percent_since_last_stats_reset_data_for_tile_default);
 
         companion object {
             private val map = entries.associateBy { it.key.uppercase() }
 
             fun fromKey(key: String?): BatteryTileField? = map[key?.uppercase()]
             fun BatteryTileField.getLabel(context: Context): String =
-                when (this) {
-                    BATTERY_LEVEL_ICON -> context.getString(R.string.battery_level_icon)
-                    CPU_DEEP_SLEEP_PERCENT_SINCE_BOOT -> context.getString(R.string.cpu_deep_sleep_percent_long, context.getString(R.string.since_boot))
-                    CPU_DEEP_SLEEP_PERCENT_SINCE_LAST_STATS_RESET ->  context.getString(R.string.cpu_deep_sleep_percent_long, context.getString(R.string.since_last_stats_reset))
-                    SCREEN_ON_PERCENT_SINCE_BOOT -> context.getString(R.string.screen_on_percent_long, context.getString(R.string.since_boot))
-                    SCREEN_ON_PERCENT_SINCE_LAST_STATS_RESET ->  context.getString(R.string.screen_on_percent_long, context.getString(R.string.since_last_stats_reset))
-                    else -> getLabel(context, key)
+                when {
+                    label == 0 -> getLabel(context, key)
+                    labelModifier == 0 -> context.getString(label)
+                    else -> context.getString(label, context.getString(labelModifier))
                 }
-        }
-    }
 
-    private val smallIcon = intent.getIntExtra(BatteryManager.EXTRA_ICON_SMALL, 0)
-
-    fun isValid(batteryTileField: BatteryTileField): Boolean {
-        if (! batteryTileField.isSupported) return false
-
-        return when (batteryTileField) {
-            BatteryTileField.BATTERY_LEVEL_ICON -> isValid(BatteryIntentHelper.BATTERY_LEVEL, level)
-            BatteryTileField.CPU_DEEP_SLEEP_PERCENT_SINCE_BOOT -> deepSleepTimeSinceBoot >= 0L
-            BatteryTileField.CPU_DEEP_SLEEP_PERCENT_SINCE_LAST_STATS_RESET -> deepSleepTimeSinceLastStatsReset >= 0L
-            BatteryTileField.SCREEN_ON_PERCENT_SINCE_BOOT -> screenOnTimeSinceBoot >= 0L
-            BatteryTileField.SCREEN_ON_PERCENT_SINCE_LAST_STATS_RESET -> screenOnTimeSinceLastStatsReset >= 0L
-            else -> isValid(batteryTileField.key)
+            fun BatteryTileField.getComments(context: Context): String? =
+                when {
+                    comments == 0 -> null
+                    else -> context.getString(comments)
+                }
         }
     }
 
@@ -120,35 +112,27 @@ class BatteryTileUIBuilder(
             }
         }
 
-    fun toString(context: Context, batteryTileField: BatteryTileField, appPrefs: AppPreferences): String =
+    fun toString(context: Context, batteryTileField: BatteryTileField, appPrefs: AppPreferences): String? =
         when(batteryTileField) {
             BatteryTileField.CPU_DEEP_SLEEP_PERCENT_SINCE_BOOT -> {
-                getStringPercentFromInterval(
-                    context,
-                    deepSleepTimeSinceBoot,
-                    timeSinceBoot
-                )
+                if ((deepSleepTimeSinceBoot > 0L) && (timeSinceBoot > 0L)) {
+                    getStringPercentFromInterval(context, deepSleepTimeSinceBoot, timeSinceBoot)
+                } else null
             }
             BatteryTileField.CPU_DEEP_SLEEP_PERCENT_SINCE_LAST_STATS_RESET -> {
-                getStringPercentFromInterval(
-                    context,
-                    deepSleepTimeSinceLastStatsReset,
-                    timeSinceLastStatsReset
-                )
+                if ((deepSleepTimeSinceLastStatsReset > 0L) && (timeSinceLastStatsReset > 0L)) {
+                    getStringPercentFromInterval(context, deepSleepTimeSinceLastStatsReset, timeSinceLastStatsReset)
+                } else null
             }
             BatteryTileField.SCREEN_ON_PERCENT_SINCE_BOOT -> {
-                getStringPercentFromInterval(
-                    context,
-                    screenOnTimeSinceBoot,
-                    timeSinceBoot
-                )
+                if ((screenOnTimeSinceBoot > 0L) && (timeSinceBoot > 0L)) {
+                    getStringPercentFromInterval(context, screenOnTimeSinceBoot, timeSinceBoot)
+                } else null
             }
             BatteryTileField.SCREEN_ON_PERCENT_SINCE_LAST_STATS_RESET -> {
-                getStringPercentFromInterval(
-                    context,
-                    screenOnTimeSinceLastStatsReset,
-                    timeSinceLastStatsReset
-                )
+                if ((screenOnTimeSinceLastStatsReset > 0L) && (timeSinceLastStatsReset > 0L)) {
+                    getStringPercentFromInterval(context, screenOnTimeSinceLastStatsReset, timeSinceLastStatsReset)
+                } else null
             }
             else -> super.toString(context, batteryTileField.key, appPrefs, true)
         }

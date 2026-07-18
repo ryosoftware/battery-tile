@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [BatteryReading::class, ChargingSession::class, ScreenState::class, DischargeSession::class], version = 9, exportSchema = false)
+@Database(entities = [BatteryReading::class, ChargingSession::class, ScreenState::class, DischargeSession::class], version = 10, exportSchema = false)
 abstract class BatteryDatabase : RoomDatabase() {
     abstract fun batteryReadingDao(): BatteryReadingDao
     abstract fun chargingSessionDao(): ChargingSessionDao
@@ -119,7 +119,16 @@ abstract class BatteryDatabase : RoomDatabase() {
 
         private val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE battery_readings ADD COLUMN batteryCharge INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE battery_readings ADD COLUMN batteryCharge INTEGER NOT NULL DEFAULT -1")
+            }
+        }
+
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE charging_sessions ADD COLUMN startCharge INTEGER NOT NULL DEFAULT -1")
+                db.execSQL("ALTER TABLE charging_sessions ADD COLUMN endCharge INTEGER")
+                db.execSQL("ALTER TABLE discharge_sessions ADD COLUMN startCharge INTEGER NOT NULL DEFAULT -1")
+                db.execSQL("ALTER TABLE discharge_sessions ADD COLUMN endCharge INTEGER")
             }
         }
 
@@ -129,7 +138,7 @@ abstract class BatteryDatabase : RoomDatabase() {
                     context.applicationContext,
                     BatteryDatabase::class.java,
                     "battery_database"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9).build()
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10).build()
                 INSTANCE = instance
                 instance
             }

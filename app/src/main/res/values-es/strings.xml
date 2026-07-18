@@ -97,27 +97,22 @@
 
     <string name="battery_voltage">Voltaje</string>
     <string name="voltage_value">%1$d mV</string>
+    <string name="consumption_value">%1$d mW</string>
     <string name="mah_value">%1$d mAh</string>
     <string name="mah_value_with_percent">%1$d mAh (%2$d%%)</string>
 
     <string name="battery_level">Nivel</string>
+    <string name="battery_level_notification_comments">Muestra el porcentaje de batería restante y, si está disponible, la carga restante (en mAh)</string>
     <string name="battery_level_icon">Nivel (icono)</string>
-
-    <string name="battery_capacity">Capacidad</string>
-    <string name="battery_capacity_full">Completa</string>
-    <string name="battery_capacity_high">Alta</string>
-    <string name="battery_capacity_normal">Normal</string>
-    <string name="battery_capacity_low">Baja</string>
-    <string name="battery_capacity_critical">Crítica</string>
-    <string name="battery_capacity_unknown">Desconocida</string>
-    <string name="battery_capacity_unsupported">No soportada</string>
-    <string name="battery_capacity_description">La capacidad de la batería, que no debe confundirse con el nivel actual de la batería, es un indicador clave del estado de la batería y las capacidades del sistema que ayuda tanto al éste como a las aplicaciones a tomar decisiones de administración de energía.</string>
+    <string name="battery_level_and_charge">%1$s (%2$s)</string>
 
     <string name="battery_technology">Tecnología</string>
 
-    <string name="battery_capacity_design">Capacidad nominal (según fabricante)</string>
+    <string name="battery_capacity_design">Capacidad nominal (especificaciones)</string>
     <string name="battery_capacity_current">Capacidad actual (calculada)</string>
-    <string name="remaining_charge">Carga eléctrica restante</string>
+
+    <string name="remaining_charge">Carga restante</string>
+
     <string name="remaining_energy">Energía restante</string>
 
     <string name="battery_temperature">Temperatura</string>
@@ -135,33 +130,44 @@
     <string name="temperature_value_integer">%1$d%2$s</string>
 
     <string name="battery_cycles">Ciclos de carga</string>
+    <string name="battery_cycles_notification_comments">Muestra el número de ciclos de carga completa equivalentes.\nCargar la batería en los extremos de su nivel de carga (muy baja o muy alta) puede generar más desgaste que hacerlo en niveles intermedios</string>
     <string name="battery_cycles_count">%1$d ciclos</string>
+
+    <string name="current_consumption">Consumo actual</string>
+    <string name="current_consumption_long">@string/current_consumption</string>
+
+    <string name="recent_consumption">Consumo</string>
+    <string name="recent_consumption_long">Estimación del consumo reciente</string>
+    <string name="recent_consumption_notification_comments">Muestra el consumo estimado de la batería (%/h) y, si está disponible, el consumo con la pantalla encendida y apagada</string>
+    <string name="recent_consumption_format">%1$s (▣ %2$s — □ %3$s)</string>
+    <string name="recent_consumption_format_no_screen">%1$s</string>
 
     <string name="since_boot">desde inicio</string>
     <string name="since_last_stats_reset">desde borrado</string>
 
-    <string name="deep_sleep_value">Reposo prof. (%1$s)</string>
-    <string name="cpu_deep_sleep_time">@string/deep_sleep_value</string>
+    <string name="cpu_deep_sleep_time">Reposo prof. (%1$s)</string>
     <string name="cpu_deep_sleep_time_long">Tiempo de CPU en reposo profundo (%1$s)</string>
-    <string name="cpu_deep_sleep_percent">@string/deep_sleep_value</string>
+    <string name="cpu_deep_sleep_time_notification_comments">Muestra el tiempo que la CPU ha estado en reposo profundo (ociosa) y el porcentaje del tiempo total</string>
     <string name="cpu_deep_sleep_percent_long">Porcentaje de CPU en reposo profundo (%1$s)</string>
 
-    <string name="screen_on_value">Tiempo de pantalla (%1$s)</string>
-    <string name="screen_on_time">@string/screen_on_value</string>
-    <string name="screen_on_time_long">Tiempo con la pantalla encendida (%1$s)</string>
-    <string name="screen_on_percent">@string/screen_on_value</string>
     <string name="screen_on_percent_long">Porcentaje de tiempo con la pantalla encendida (%1$s)</string>
 
-    <string name="charging_time_value">Tiempo cargando</string>
-    <string name="time_charging">@string/charging_time_value</string>
-    <string name="time_charging_long">@string/charging_time_value</string>
+    <string name="time_charging">Tiempo cargando</string>
+    <string name="time_charging_long">@string/time_charging</string>
+    <string name="time_charging_notification_comments">Cuando el dispositivo está conectado a la corriente, muestra el tiempo transcurrido desde que se conectó</string>
 
-    <string name="uptime_value">Tiempo (%1$s)</string>
-    <string name="uptime">@string/uptime_value</string>
-    <string name="uptime_long">@string/uptime_value</string>
+    <string name="uptime">Tiempo (%1$s)</string>
+    <string name="uptime_notification_comments">Muestra el tiempo total y, si está disponible, el tiempo de pantalla y su porcentaje respecto al total</string>
+    <string name="uptime_long">@string/uptime</string>
+    <string name="uptime_value">%1$s</string>
+    <string name="screen_time_with_percent">%1$s, %2$s</string>
+    <string name="uptime_value_with_screen_on">%1$s (▣ %2$s)</string>
 
     <string name="percent_value_integer">%1$d%%</string>
     <string name="percent_value_float">%.1f%%</string>
+
+    <string name="consumption_value_integer">%1$d%%/h</string>
+    <string name="consumption_value_float">%.1f%%/h</string>
 
     <string name="days_and_hours_and_minutes">%1$dd %2$dh %3$dm</string>
     <string name="hours_and_minutes">%1$dh %2$dm</string>
@@ -320,9 +326,11 @@
     <string name="excel_header_screen_off_speed">Velocidad de descarga (pantalla apagada) (%/h)</string>
     <string name="excel_header_screen_on_delta">Delta pantalla encendida (%)</string>
     <string name="excel_header_screen_off_delta">Delta pantalla apagada (%)</string>
-    <string name="excel_header_battery_level">Nivel de Batería</string>
-    <string name="excel_header_battery_start_level">Nivel de Batería inicial</string>
-    <string name="excel_header_battery_end_level">Nivel de Batería final</string>
+    <string name="excel_header_battery_level">Nivel de Batería (%)</string>
+    <string name="excel_header_battery_start_level">Nivel de Batería inicial (%)</string>
+    <string name="excel_header_battery_end_level">Nivel de Batería final (%)</string>
+    <string name="excel_header_battery_start_charge">Carga de Batería inicial (µAh)</string>
+    <string name="excel_header_battery_end_charge">Carga de Batería final (µAh)</string>
     <string name="excel_header_battery_status">Estado de Batería</string>
     <string name="excel_header_temperature">Temperatura (%1$s)</string>
     <string name="excel_header_min_temperature">Temperatura Mín. (%1$s)</string>
@@ -335,9 +343,7 @@
     <string name="excel_header_screen_on">¿Pantalla encendida?</string>
     <string name="excel_header_charge_counter">Carga (µAh)</string>
     <string name="screen_states_tab">Estados de pantalla</string>
-    <string name="chart_legend_screen_on">Pantalla encendida</string>
-    <string name="chart_legend_screen_off">Pantalla apagada</string>
-    <string name="battery_level_from_to">%1$s → %2$s</string>
+    <string name="value_from_to">%1$s → %2$s</string>
     <string name="battery_level_unknown">\?</string>
 
     <string name="data_is_not_available">No hay datos disponibles</string>
@@ -363,6 +369,5 @@
     <string name="import_config">Importar configuración</string>
     <string name="import_data">Importar datos</string>
     <string name="import_confirm">Restaurar</string>
-    <string name="import_invalid_file">Archivo de copia de seguridad no válido</string>
 
 </resources>

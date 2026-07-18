@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.BatteryManager
 import android.os.SystemClock
+import androidx.annotation.StringRes
 
 abstract class BaseUIBuilder(
     intent: Intent,
@@ -20,12 +21,12 @@ abstract class BaseUIBuilder(
 
     companion object {
         @JvmStatic
-        protected fun getStringPercentFromInterval(context: Context, interval: Long, total: Long, resFloat: Int, resInt: Int): String {
-            val percent = if (total == 0L) 0f else (interval * 100f / total).coerceAtLeast(0f)
-            val hasNoDecimals = percent % 1f == 0f
-            return if (hasNoDecimals) context.getString(resInt, percent.toInt())
-            else context.getString(resFloat, percent)
-        }
+        private fun getPercentFromInterval(interval: Long, total: Long): Float =
+            if (total == 0L) 0f else (interval * 100f / total).coerceAtLeast(0f)
+
+        @JvmStatic
+        protected fun getStringPercentFromInterval(context: Context, interval: Long, total: Long, resFloat: Int, resInt: Int): String =
+            getStringPercent(context, getPercentFromInterval(interval, total), resFloat, resInt)
 
         @JvmStatic
         protected fun getStringPercentFromInterval(context: Context, interval: Long, total: Long): String =
@@ -48,10 +49,26 @@ abstract class BaseUIBuilder(
         }
 
         @JvmStatic
-        protected fun getStringTimeAndPercentFromInterval(context: Context, interval: Long, total: Long): String =
-            context.getString(R.string.time_and_percent,
-                getStringTimeFromInterval(context, interval),
-                getStringPercentFromInterval(context, interval, total))
+        private fun isImperceptible(interval: Long, total: Long, checkTime: Boolean, checkPercent: Boolean): Boolean {
+            if (checkTime && (interval / 60_000L == 0L)) return true
+            if (checkPercent && (getPercentFromInterval(interval, total) == 0f)) return true
+            return false
+        }
 
+        @JvmStatic
+        protected fun isImperceptible(interval: Long, total: Long) =
+            isImperceptible(interval, total, checkTime = true, checkPercent = true)
+
+        @JvmStatic
+        protected fun isImperceptible(interval: Long) =
+            isImperceptible(interval, 0, checkTime = true, checkPercent = false)
+
+        @JvmStatic
+        protected fun getStringTimeAndPercentFromInterval(context: Context, interval: Long, total: Long, excludeImperceptibleValues: Boolean = false, @StringRes resource: Int = R.string.time_and_percent): String =
+            if (excludeImperceptibleValues && isImperceptible(interval, total, checkTime = true, checkPercent = false)) {
+                getStringPercentFromInterval(context, interval, total)
+            } else {
+                context.getString(resource, getStringTimeFromInterval(context, interval), getStringPercentFromInterval(context, interval, total))
+            }
     }
 }

@@ -54,6 +54,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import java.util.Date
 import kotlin.math.roundToInt
 import android.content.IntentFilter
+import com.ryosoftware.battery_tile.NotificationServiceUIBuilder.NotificationField.Companion.getComments
 import com.ryosoftware.battery_tile.NotificationServiceUIBuilder.NotificationField.Companion.getLabel
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
@@ -667,7 +668,7 @@ fun NotificationSettingsScreen(
                                     }
                                     updateOrder()
                                 },
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.Top
                         ) {
                             Checkbox(
                                 checked = fieldVisibility[field] ?: false,
@@ -675,13 +676,25 @@ fun NotificationSettingsScreen(
                                 enabled = !batteryLevelIsLastVisible
                             )
 
-                            Text(
-                                text = field.getLabel(context, false),
+                            Column(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .padding(start = 8.dp),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                                    .padding(start = 8.dp)
+                            ) {
+                                Text(
+                                    text = field.getLabel(context, false),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+
+                                val comments = field.getComments(context)
+                                if (comments != null) {
+                                    Text(
+                                        text = comments,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
                         }
                     }
                 }

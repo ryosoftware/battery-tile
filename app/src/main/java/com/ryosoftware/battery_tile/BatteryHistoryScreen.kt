@@ -85,10 +85,10 @@ import kotlin.math.roundToInt
 
 private sealed interface SessionItem {
     val startTime: Long
-    data class Charging(val session: com.ryosoftware.battery_tile.data.ChargingSession) : SessionItem {
+    data class Charging(val session: ChargingSession) : SessionItem {
         override val startTime get() = session.startTime
     }
-    data class Discharge(val session: com.ryosoftware.battery_tile.data.DischargeSession) : SessionItem {
+    data class Discharge(val session: DischargeSession) : SessionItem {
         override val startTime get() = session.startTime
     }
 }
@@ -453,6 +453,7 @@ private fun enrichReadingsWithScreenStates(
                         BatteryReading(
                             timestamp = state.timestamp,
                             batteryLevel = (prev.batteryLevel + (curr.batteryLevel - prev.batteryLevel) * progress).toInt(),
+                            batteryCharge = (prev.batteryCharge + (curr.batteryCharge - prev.batteryCharge) * progress).toInt(),
                             batteryStatus = prev.batteryStatus,
                             temperatureCelsius = prev.temperatureCelsius + (curr.temperatureCelsius - prev.temperatureCelsius) * progress,
                             voltage = (prev.voltage + (curr.voltage - prev.voltage) * progress).toInt(),
@@ -1052,17 +1053,17 @@ fun CombinedSessionsTab(
             session.id to calculateDischargeRates(readings, screenStates, session.startTime, session.endTime!!)
         }
     }
-    val totalScreenOnDelta = remember(dischargeRates) {
-        dischargeRates.values.sumOf { it.screenOnDelta ?: 0 }
+    val totalScreenOnDischargePercent = remember(dischargeRates) {
+        dischargeRates.values.sumOf { (it.screenOnDischargePercent ?: 0f).toDouble() }
     }
     val totalScreenOnMinutesForSpeed = remember(completedDischarge, dischargeRates) {
         completedDischarge.sumOf { session ->
             session.screenOnTimeMinutes ?: 0L
         }
     }
-    val avgScreenOnSpeed = remember(totalScreenOnDelta, totalScreenOnMinutesForSpeed) {
-        if (totalScreenOnDelta > 0 && totalScreenOnMinutesForSpeed > 0L)
-            totalScreenOnDelta.toFloat() / (totalScreenOnMinutesForSpeed / 60f)
+    val avgScreenOnSpeed = remember(totalScreenOnDischargePercent, totalScreenOnMinutesForSpeed) {
+        if (totalScreenOnDischargePercent > 0 && totalScreenOnMinutesForSpeed > 0L)
+            totalScreenOnDischargePercent.toFloat() / (totalScreenOnMinutesForSpeed / 60f)
         else null
     }
 
@@ -1076,8 +1077,8 @@ fun CombinedSessionsTab(
         if (totalHours > 0f) totalDelta / totalHours else null
     }
 
-    val totalScreenOffDelta = remember(dischargeRates) {
-        dischargeRates.values.sumOf { it.screenOffDelta ?: 0 }
+    val totalScreenOffDischargePercent = remember(dischargeRates) {
+        dischargeRates.values.sumOf { (it.screenOffDischargePercent ?: 0f).toDouble() }
     }
     val totalDurationForScreenOff = remember(completedDischarge, dischargeRates) {
         completedDischarge.sumOf { session ->
@@ -1089,10 +1090,10 @@ fun CombinedSessionsTab(
             session.screenOnTimeMinutes ?: 0L
         }
     }
-    val avgScreenOffSpeed = remember(totalScreenOffDelta, totalDurationForScreenOff, totalScreenOnForScreenOff) {
+    val avgScreenOffSpeed = remember(totalScreenOffDischargePercent, totalDurationForScreenOff, totalScreenOnForScreenOff) {
         val screenOffMin = totalDurationForScreenOff - totalScreenOnForScreenOff
-        if (totalScreenOffDelta > 0 && screenOffMin > 0L)
-            totalScreenOffDelta.toFloat() / (screenOffMin / 60f)
+        if (totalScreenOffDischargePercent > 0 && screenOffMin > 0L)
+            totalScreenOffDischargePercent.toFloat() / (screenOffMin / 60f)
         else null
     }
 
@@ -1398,13 +1399,31 @@ private fun DateTimeRow(context: Context, startTime: Long, endTime: Long?) {
 @Composable
 private fun BatteryLevelRow(startLevel: Int, endLevel: Int?) {
     Spacer(Modifier.height(4.dp))
-    val endLevelText = endLevel?.let { stringResource(R.string.percent_value_integer, it) }
-        ?: stringResource(R.string.battery_level_unknown)
+
     Text(
-        text = stringResource(R.string.battery_level_from_to,
-            stringResource(R.string.percent_value_integer, startLevel), endLevelText),
+        text = stringResource(
+            R.string.value_from_to,
+            stringResource(R.string.percent_value_integer, startLevel),
+            endLevel?.let { stringResource(R.string.percent_value_integer, it) } ?: stringResource(R.string.battery_level_unknown)
+        ),
         style = MaterialTheme.typography.titleMedium
     )
+}
+
+@Composable
+private fun BatteryChargeRow(startCharge: Int, endCharge: Int?) {
+    if (startCharge > 0) {
+        Spacer(Modifier.height(4.dp))
+
+        Text(
+            text = stringResource(
+                R.string.value_from_to,
+                stringResource(R.string.mah_value, startCharge / 1000),
+                endCharge?.let { stringResource(R.string.mah_value, it / 1000) } ?: stringResource(R.string.battery_level_unknown)
+            ),
+            style = MaterialTheme.typography.titleSmall
+        )
+    }
 }
 
 @Composable
@@ -1470,8 +1489,13 @@ private fun ChargingSessionCard(session: ChargingSession, context: Context, appP
         isOngoing = session.endTime == null,
         ongoingLabel = stringResource(R.string.charging_session_ongoing)
     )
+
     DateTimeRow(context, session.startTime, session.endTime)
+
     BatteryLevelRow(session.startLevel, session.endLevel)
+
+    BatteryChargeRow(session.startCharge, session.endCharge)
+
     DurationRow(context, session.durationMinutes, R.string.charging_session_duration)
 
     if (session.endLevel != null) {
@@ -1482,6 +1506,7 @@ private fun ChargingSessionCard(session: ChargingSession, context: Context, appP
 
         if (speedPerHour != null && speedPerHour > 0f) {
             Spacer(Modifier.height(4.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -1514,6 +1539,7 @@ private fun ChargingSessionCard(session: ChargingSession, context: Context, appP
         val wastedMin = diffMs / 60_000L
         if (wastedMin > 0) {
             Spacer(Modifier.height(4.dp))
+
             Text(
                 text = stringResource(
                     R.string.could_have_unplugged_before,
@@ -1550,12 +1576,18 @@ private fun DischargeSessionCard(
         isOngoing = session.endTime == null,
         ongoingLabel = stringResource(R.string.discharge_session_ongoing)
     )
+
     DateTimeRow(context, session.startTime, session.endTime)
+
     BatteryLevelRow(session.startLevel, session.endLevel)
+
+    BatteryChargeRow(session.startCharge, session.endCharge)
+
     DurationRow(context, session.durationMinutes, R.string.discharge_session_duration)
 
     if (session.screenOnTimeMinutes != null) {
         Spacer(Modifier.height(4.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -1574,6 +1606,7 @@ private fun DischargeSessionCard(
 
     if (rates?.overallSpeed != null && rates.overallSpeed > 0f) {
         Spacer(Modifier.height(4.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -1592,6 +1625,7 @@ private fun DischargeSessionCard(
 
     if (rates?.screenOnSpeed != null && rates.screenOnSpeed > 0f) {
         Spacer(Modifier.height(4.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -1610,6 +1644,7 @@ private fun DischargeSessionCard(
 
     if (rates?.screenOffSpeed != null && rates.screenOffSpeed > 0f) {
         Spacer(Modifier.height(4.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -1637,6 +1672,7 @@ private fun DischargeSessionCard(
 
     if (isFlaky) {
         Spacer(Modifier.height(6.dp))
+
         Text(
             text = stringResource(R.string.anomaly_flaky_connection_body_single),
             style = MaterialTheme.typography.bodySmall,
@@ -1738,6 +1774,8 @@ private fun buildExcel(
             context.getString(R.string.charging_session_duration),
             context.getString(R.string.excel_header_battery_start_level),
             context.getString(R.string.excel_header_battery_end_level),
+            context.getString(R.string.excel_header_battery_start_charge),
+            context.getString(R.string.excel_header_battery_end_charge),
             context.getString(R.string.excel_header_session_speed),
             context.getString(R.string.excel_header_min_temperature, temperatureUnit.toString(context)),
             context.getString(R.string.excel_header_max_temperature, temperatureUnit.toString(context)),
@@ -1768,18 +1806,21 @@ private fun buildExcel(
             chargingSessionsBodyRow.createCell(3).setCellValue(session.startLevel.toDouble())
             if (session.endLevel != null) chargingSessionsBodyRow.createCell(4).setCellValue(session.endLevel.toDouble())
 
+            if (session.startCharge > 0) chargingSessionsBodyRow.createCell(5).setCellValue(session.startCharge.toDouble())
+            if ((session.endCharge != null) && (session.endCharge > 0)) chargingSessionsBodyRow.createCell(6).setCellValue(session.endCharge.toDouble())
+
             if (session.endLevel != null && session.durationMinutes != null && session.durationMinutes > 0) {
                 val delta = session.endLevel - session.startLevel
                 val speedPerHour = delta.toFloat() / (session.durationMinutes / 60f)
-                chargingSessionsBodyRow.createCell(5).setCellValue(speedPerHour.toDouble())
+                chargingSessionsBodyRow.createCell(7).setCellValue(speedPerHour.toDouble())
             }
 
-            if (session.minTemperatureCelsius != null) chargingSessionsBodyRow.createCell(6).setCellValue(temperatureUnit.fromCelsius(session.minTemperatureCelsius).toDouble())
-            if (session.maxTemperatureCelsius != null) chargingSessionsBodyRow.createCell(7).setCellValue(temperatureUnit.fromCelsius(session.maxTemperatureCelsius).toDouble())
-            if (session.avgTemperatureCelsius != null) chargingSessionsBodyRow.createCell(8).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
+            if (session.minTemperatureCelsius != null) chargingSessionsBodyRow.createCell(8).setCellValue(temperatureUnit.fromCelsius(session.minTemperatureCelsius).toDouble())
+            if (session.maxTemperatureCelsius != null) chargingSessionsBodyRow.createCell(9).setCellValue(temperatureUnit.fromCelsius(session.maxTemperatureCelsius).toDouble())
+            if (session.avgTemperatureCelsius != null) chargingSessionsBodyRow.createCell(10).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
 
             chargingSessionsBodyRow.createCell(9).setCellValue(formatPlugType(session.plugType))
-            if (session.chargedTimeStamp != null) chargingSessionsBodyRow.createCell(10).apply { setCellValue(Date(session.chargedTimeStamp)); cellStyle = dateTimeStyle }
+            if (session.chargedTimeStamp != null) chargingSessionsBodyRow.createCell(11).apply { setCellValue(Date(session.chargedTimeStamp)); cellStyle = dateTimeStyle }
         }
 
         val dischargeSessionsSheet = workbook.createSheet(context.getString(R.string.excel_discharge_sessions_tab))
@@ -1789,6 +1830,8 @@ private fun buildExcel(
             context.getString(R.string.discharge_session_duration),
             context.getString(R.string.excel_header_battery_start_level),
             context.getString(R.string.excel_header_battery_end_level),
+            context.getString(R.string.excel_header_battery_start_charge),
+            context.getString(R.string.excel_header_battery_end_charge),
             context.getString(R.string.excel_header_screen_on_time),
             context.getString(R.string.excel_header_discharge_speed),
             context.getString(R.string.excel_header_screen_on_speed),
@@ -1822,26 +1865,27 @@ private fun buildExcel(
             dischargeSessionsBodyRow.createCell(3).setCellValue(session.startLevel.toDouble())
             if (session.endLevel != null) dischargeSessionsBodyRow.createCell(4).setCellValue(session.endLevel.toDouble())
 
+            if (session.startCharge > 0) dischargeSessionsBodyRow.createCell(5).setCellValue(session.startCharge.toDouble())
+            if ((session.endCharge != null) && (session.endCharge > 0)) dischargeSessionsBodyRow.createCell(6).setCellValue(session.endCharge.toDouble())
+
             if (session.screenOnTimeMinutes != null)
-                dischargeSessionsBodyRow.createCell(5).apply {
-                    setCellValue(session.screenOnTimeMinutes / 1440.0)
-                    cellStyle = durationTimeStyle
-                }
+                dischargeSessionsBodyRow.createCell(7).apply { setCellValue(session.screenOnTimeMinutes / 1440.0); cellStyle = durationTimeStyle }
 
             val rates = if (session.endTime != null) {
                 calculateDischargeRates(batteryReadings, screenStates, session.startTime, session.endTime)
             } else null
 
-            if (rates?.overallSpeed != null) dischargeSessionsBodyRow.createCell(6).setCellValue(rates.overallSpeed.toDouble())
-            if (rates?.screenOnSpeed != null) dischargeSessionsBodyRow.createCell(7).setCellValue(rates.screenOnSpeed.toDouble())
-            if (rates?.screenOffSpeed != null) dischargeSessionsBodyRow.createCell(8).setCellValue(rates.screenOffSpeed.toDouble())
+            if (rates?.overallSpeed != null) dischargeSessionsBodyRow.createCell(8).setCellValue(rates.overallSpeed.toDouble())
 
-            if (rates?.screenOnDelta != null) dischargeSessionsBodyRow.createCell(9).setCellValue(rates.screenOnDelta.toDouble())
-            if (rates?.screenOffDelta != null) dischargeSessionsBodyRow.createCell(10).setCellValue(rates.screenOffDelta.toDouble())
+            if (rates?.screenOnSpeed != null) dischargeSessionsBodyRow.createCell(9).setCellValue(rates.screenOnSpeed.toDouble())
+            if (rates?.screenOffSpeed != null) dischargeSessionsBodyRow.createCell(10).setCellValue(rates.screenOffSpeed.toDouble())
 
-            if (session.minTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(11).setCellValue(temperatureUnit.fromCelsius(session.minTemperatureCelsius).toDouble())
-            if (session.maxTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(12).setCellValue(temperatureUnit.fromCelsius(session.maxTemperatureCelsius).toDouble())
-            if (session.avgTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(13).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
+            if (rates?.screenOnDischargePercent != null) dischargeSessionsBodyRow.createCell(11).setCellValue(rates.screenOnDischargePercent.toDouble())
+            if (rates?.screenOffDischargePercent != null) dischargeSessionsBodyRow.createCell(12).setCellValue(rates.screenOffDischargePercent.toDouble())
+
+            if (session.minTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(13).setCellValue(temperatureUnit.fromCelsius(session.minTemperatureCelsius).toDouble())
+            if (session.maxTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(14).setCellValue(temperatureUnit.fromCelsius(session.maxTemperatureCelsius).toDouble())
+            if (session.avgTemperatureCelsius != null) dischargeSessionsBodyRow.createCell(15).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
         }
 
         val screenStatesSheet = workbook.createSheet(context.getString(R.string.screen_states_tab))
@@ -1881,158 +1925,15 @@ fun getStringTimeFromInterval(context: Context, interval: Long): String {
     }
 }
 
-fun getStringPercent(context: Context, percent: Float?): String {
+fun getStringPercent(context: Context, percent: Float?, resFloat: Int, resInt: Int): String {
     if (percent == null) return context.getString(R.string.not_available)
 
     val hasNoDecimals = percent % 1f == 0f
 
-    return if (hasNoDecimals) context.getString(R.string.percent_value_integer, percent.toInt())
-    else context.getString(R.string.percent_value_float, percent)
+    return if (hasNoDecimals) context.getString(resInt, percent.toInt())
+    else context.getString(resFloat, percent)
 }
 
-data class DischargeRateStats(
-    val overallSpeed: Float?,
-    val screenOnSpeed: Float?,
-    val screenOffSpeed: Float?,
-    val screenOnDelta: Int?,
-    val screenOffDelta: Int?
-)
-
-internal fun calculateDischargeRates(
-    readings: List<BatteryReading>,
-    screenStates: List<ScreenState>,
-    startTime: Long,
-    endTime: Long
-): DischargeRateStats {
-    val sortedReadings = readings
-        .filter { it.timestamp in startTime..endTime }
-        .sortedBy { it.timestamp }
-
-    if (sortedReadings.size < 2) return DischargeRateStats(null, null, null, null, null)
-
-    val totalRealDelta = sortedReadings.first().batteryLevel - sortedReadings.last().batteryLevel
-    val totalRealDurationMs = sortedReadings.last().timestamp - sortedReadings.first().timestamp
-
-    val overallSpeed = if (totalRealDurationMs > 0) {
-        totalRealDelta.toFloat() / (totalRealDurationMs / 3_600_000f)
-    } else null
-
-    val sortedScreenStates = screenStates.sortedBy { it.timestamp }
-
-    var wasScreenOn = sortedScreenStates.lastOrNull { it.timestamp < startTime }?.screenOn ?: false
-
-    val screenStatesBetween = sortedScreenStates
-        .filter { it.timestamp in startTime..endTime }
-
-    var screenOnDeltaPositive = 0.0f
-    var screenOnDurationMs = 0L
-    var screenOffDeltaPositive = 0.0f
-    var screenOffDurationMs = 0L
-    var screenStateIdx = 0
-
-    for (i in 0 until sortedReadings.size - 1) {
-        val curr = sortedReadings[i]
-        val next = sortedReadings[i + 1]
-
-        while (screenStateIdx < screenStatesBetween.size &&
-            screenStatesBetween[screenStateIdx].timestamp < curr.timestamp
-        ) {
-            wasScreenOn = screenStatesBetween[screenStateIdx].screenOn
-            screenStateIdx++
-        }
-
-        val intervalDuration = next.timestamp - curr.timestamp
-        val intervalDeltaPct = curr.batteryLevel - next.batteryLevel
-        val intervalDeltaUah = curr.batteryCharge - next.batteryCharge
-
-        val firstChangeIdx = screenStateIdx
-        var changeCount = 0
-        while (screenStateIdx + changeCount < screenStatesBetween.size &&
-            screenStatesBetween[screenStateIdx + changeCount].timestamp < next.timestamp
-        ) {
-            changeCount++
-        }
-
-        if (changeCount == 0) {
-            if (wasScreenOn) {
-                screenOnDurationMs += intervalDuration
-                if (intervalDeltaPct > 0) screenOnDeltaPositive += intervalDeltaPct.toFloat()
-            } else {
-                screenOffDurationMs += intervalDuration
-                if (intervalDeltaPct > 0) screenOffDeltaPositive += intervalDeltaPct.toFloat()
-            }
-        } else if (intervalDeltaUah > 0) {
-            var cursorTime = curr.timestamp
-            var cursorCharge = curr.batteryCharge.toFloat()
-            var screenOn = wasScreenOn
-
-            for (j in 0 until changeCount) {
-                val change = screenStatesBetween[firstChangeIdx + j]
-                val frac = (change.timestamp - curr.timestamp).toFloat() / intervalDuration
-                val chargeHere = curr.batteryCharge + (next.batteryCharge - curr.batteryCharge) * frac
-
-                val segUah = cursorCharge - chargeHere
-                val segDuration = change.timestamp - cursorTime
-                if (screenOn) {
-                    screenOnDurationMs += segDuration
-                    if (intervalDeltaPct > 0) {
-                        screenOnDeltaPositive += intervalDeltaPct.toFloat() * (segUah / intervalDeltaUah)
-                    }
-                } else {
-                    screenOffDurationMs += segDuration
-                    if (intervalDeltaPct > 0) {
-                        screenOffDeltaPositive += intervalDeltaPct.toFloat() * (segUah / intervalDeltaUah)
-                    }
-                }
-
-                cursorTime = change.timestamp
-                cursorCharge = chargeHere
-                screenOn = change.screenOn
-            }
-
-            val segUah = cursorCharge - next.batteryCharge
-            val segDuration = next.timestamp - cursorTime
-            if (screenOn) {
-                screenOnDurationMs += segDuration
-                if (intervalDeltaPct > 0) {
-                    screenOnDeltaPositive += intervalDeltaPct.toFloat() * (segUah / intervalDeltaUah)
-                }
-            } else {
-                screenOffDurationMs += segDuration
-                if (intervalDeltaPct > 0) {
-                    screenOffDeltaPositive += intervalDeltaPct.toFloat() * (segUah / intervalDeltaUah)
-                }
-            }
-
-            screenStateIdx += changeCount
-            wasScreenOn = screenOn
-        } else {
-            screenStateIdx += changeCount
-            wasScreenOn = screenStatesBetween
-                .lastOrNull { it.timestamp in curr.timestamp..next.timestamp }
-                ?.screenOn ?: wasScreenOn
-        }
-    }
-
-    val totalPositiveDelta = screenOnDeltaPositive + screenOffDeltaPositive
-    val ratio = if (totalPositiveDelta > 0f) {
-        (totalRealDelta.toFloat() / totalPositiveDelta).coerceAtLeast(0f)
-    } else 1f
-
-    val screenOnDelta = screenOnDeltaPositive * ratio
-    val screenOffDelta = screenOffDeltaPositive * ratio
-
-    val screenOnDeltaRounded = Math.round(screenOnDelta)
-    val screenOffDeltaRounded = Math.round(screenOffDelta)
-
-    val screenOnSpeed = if (screenOnDurationMs > 0) {
-        screenOnDelta / (screenOnDurationMs / 3_600_000f)
-    } else null
-
-    val screenOffSpeed = if (screenOffDurationMs > 0) {
-        screenOffDelta / (screenOffDurationMs / 3_600_000f)
-    } else null
-
-    return DischargeRateStats(overallSpeed, screenOnSpeed, screenOffSpeed, screenOnDeltaRounded, screenOffDeltaRounded)
-}
+fun getStringPercent(context: Context, percent: Float?): String =
+    getStringPercent(context, percent, R.string.percent_value_float, R.string.percent_value_integer)
 

@@ -7,10 +7,12 @@ import android.os.BatteryManager
 import android.os.Build
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
+import kotlin.math.abs
 
 open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) {
     val level: Int
     val charge: Int
+    val currentConsumption: Int
     val status: Int
     val health: Int
     val temperatureCelsius: Float
@@ -22,12 +24,13 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
     val isCharging: Boolean
     val isFullCharged: Boolean
     val cyclesCount: Int
-    val capacity: Int
 
     companion object {
         const val BATTERY_LEVEL = "BATTERY-LEVEL"
 
         const val BATTERY_CHARGE = "BATTERY-CHARGE"
+
+        const val BATTERY_CURRENT_CONSUMPTION = "BATTERY-CURRENT-CONSUMPTION"
         const val BATTERY_STATUS = "BATTERY-STATUS"
         const val BATTERY_HEALTH = "BATTERY-HEALTH"
         const val BATTERY_TEMPERATURE = "BATTERY-TEMPERATURE"
@@ -35,33 +38,17 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
         const val BATTERY_PLUG_TYPE = "BATTERY-PLUG-TYPE"
         const val BATTERY_TECHNOLOGY = "BATTERY-TECHNOLOGY"
         const val BATTERY_CYCLES_COUNT = "BATTERY-CYCLES-COUNT"
-        const val BATTERY_CAPACITY = "BATTERY-CAPACITY"
         fun isSupported(key: String): Boolean =
             when (key) {
                 BATTERY_CYCLES_COUNT -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
-                BATTERY_CAPACITY -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA
                 else -> true
-            }
-
-        fun isValid(key: String, value: Any?): Boolean =
-            when (key) {
-                BATTERY_LEVEL -> (value is Int) && (value >= 0)
-                BATTERY_CHARGE -> (value is Long) && (value > 0)
-                BATTERY_STATUS -> (value is Int) && (value != BatteryManager.BATTERY_STATUS_UNKNOWN)
-                BATTERY_HEALTH -> (value is Int) && (value != BatteryManager.BATTERY_HEALTH_UNKNOWN)
-                BATTERY_TEMPERATURE -> (value is Float) && (value >= 0)
-                BATTERY_VOLTAGE -> (value is Int) && (value >= 0)
-                BATTERY_PLUG_TYPE -> (value is Int) && (value > 0)
-                BATTERY_TECHNOLOGY -> (value is String) && (value.isNotEmpty())
-                BATTERY_CYCLES_COUNT -> (value is Int) && (value >= 0)
-                BATTERY_CAPACITY -> (value is Int) && (value >= 0)
-                else -> false
             }
 
         fun getLabel(context: Context, key: String): String =
             when (key) {
                 BATTERY_LEVEL -> context.getString(R.string.battery_level)
                 BATTERY_CHARGE -> context.getString(R.string.remaining_charge)
+                BATTERY_CURRENT_CONSUMPTION -> context.getString(R.string.current_consumption)
                 BATTERY_STATUS -> context.getString(R.string.battery_status)
                 BATTERY_PLUG_TYPE -> context.getString(R.string.battery_plug_type)
                 BATTERY_TEMPERATURE -> context.getString(R.string.battery_temperature)
@@ -69,7 +56,6 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
                 BATTERY_HEALTH -> context.getString(R.string.battery_health)
                 BATTERY_TECHNOLOGY -> context.getString(R.string.battery_technology)
                 BATTERY_CYCLES_COUNT -> context.getString(R.string.battery_cycles)
-                BATTERY_CAPACITY -> context.getString(R.string.battery_capacity)
                 else -> ""
             }
     }
@@ -81,7 +67,7 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
         level = if (intentLevel >= 0 && intentLevelScale > 0) intentLevel * 100 / intentLevelScale else -1
 
         val currentCharge = batteryManager?.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER) ?: Long.MIN_VALUE
-        charge = if (currentCharge == Long.MIN_VALUE) 0 else currentCharge.toInt()
+        charge = if (currentCharge == Long.MIN_VALUE) -1 else currentCharge.toInt()
 
         status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN)
 
@@ -89,8 +75,8 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
         isPlugged = (plugType != 0)
 
         isCharging = when (status) {
-            BatteryManager.BATTERY_STATUS_CHARGING,
             BatteryManager.BATTERY_STATUS_FULL -> isPlugged
+            BatteryManager.BATTERY_STATUS_CHARGING -> true
             else -> false
         }
         isFullCharged = status == BatteryManager.BATTERY_STATUS_FULL
@@ -102,6 +88,9 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
 
         voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1)
 
+        val consumption = batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) ?: Int.MIN_VALUE
+        currentConsumption = if ((consumption == Int.MIN_VALUE) || (voltage <= 0)) -1 else abs(consumption) * voltage / 1_000_000
+
         present = intent.getBooleanExtra(BatteryManager.EXTRA_PRESENT, false)
 
         val intentTechnology = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY)
@@ -109,38 +98,26 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
 
         @SuppressLint("InlinedApi")
         cyclesCount = if (isSupported(BATTERY_CYCLES_COUNT)) intent.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, -1) else -1
-
-        @SuppressLint("InlinedApi")
-        capacity = if (isSupported(BATTERY_CAPACITY)) intent.getIntExtra(BatteryManager.EXTRA_CAPACITY_LEVEL, BatteryManager.BATTERY_CAPACITY_LEVEL_UNKNOWN) else -1
     }
 
-    open fun isValid(key: String): Boolean =
-        when (key) {
-            BATTERY_LEVEL -> isValid(BATTERY_LEVEL, level)
-            BATTERY_CHARGE -> isValid(BATTERY_CHARGE, charge)
-            BATTERY_STATUS -> isValid(BATTERY_STATUS, status)
-            BATTERY_HEALTH -> isValid(BATTERY_HEALTH, health)
-            BATTERY_TEMPERATURE -> isValid(BATTERY_TEMPERATURE, temperatureCelsius)
-            BATTERY_VOLTAGE -> isValid(BATTERY_VOLTAGE, voltage)
-            BATTERY_PLUG_TYPE -> isValid(BATTERY_PLUG_TYPE, plugType)
-            BATTERY_TECHNOLOGY -> isValid(BATTERY_TECHNOLOGY, technology)
-            BATTERY_CYCLES_COUNT -> isValid(BATTERY_CYCLES_COUNT, cyclesCount)
-            BATTERY_CAPACITY -> isValid(BATTERY_CAPACITY, capacity)
-            else -> false
-        }
-
-    open fun toString(context: Context, key: String, appPrefs: AppPreferences, small: Boolean): String =
+    open fun toString(context: Context, key: String, appPrefs: AppPreferences, small: Boolean): String? =
         when (key) {
             BATTERY_LEVEL -> {
                 when {
-                    level < 0 -> context.getString(R.string.not_available)
+                    level < 0 -> null
                     else -> context.getString(R.string.percent_value_integer, level)
                 }
             }
             BATTERY_CHARGE -> {
                 when {
-                    charge < 0 -> context.getString(R.string.not_available)
+                    charge < 0 -> null
                     else -> context.getString(R.string.mah_value, charge / 1000)
+                }
+            }
+            BATTERY_CURRENT_CONSUMPTION -> {
+                when {
+                    currentConsumption < 0 -> null
+                    else -> context.getString(R.string.consumption_value, currentConsumption)
                 }
             }
             BATTERY_STATUS -> {
@@ -161,7 +138,7 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
                     BatteryManager.BATTERY_STATUS_DISCHARGING -> context.getString(R.string.battery_status_discharging)
                     BatteryManager.BATTERY_STATUS_NOT_CHARGING -> context.getString(R.string.battery_status_not_charging)
                     BatteryManager.BATTERY_STATUS_FULL -> context.getString(R.string.battery_status_full)
-                    else -> context.getString(R.string.battery_status_unknown)
+                    else -> null
                 }
             }
             BATTERY_PLUG_TYPE -> {
@@ -170,12 +147,12 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
                     BatteryManager.BATTERY_PLUGGED_DOCK -> context.getString(R.string.battery_plug_dock)
                     BatteryManager.BATTERY_PLUGGED_USB -> context.getString(R.string.battery_plug_usb)
                     BatteryManager.BATTERY_PLUGGED_WIRELESS -> context.getString(R.string.battery_plug_wireless)
-                    else -> context.getString(R.string.not_available)
+                    else -> null
                 }
             }
             BATTERY_TEMPERATURE -> {
                 when {
-                    temperatureCelsius < 0 -> context.getString(R.string.not_available)
+                    temperatureCelsius < 0 -> null
                     else -> {
                         val temperature = appPrefs.temperatureUnit.fromCelsius(temperatureCelsius)
 
@@ -185,7 +162,7 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
             }
             BATTERY_VOLTAGE -> {
                 when {
-                    voltage < 0 -> context.getString(R.string.not_available)
+                    voltage < 0 -> null
                     else -> context.getString(R.string.voltage_value, voltage)
                 }
             }
@@ -197,27 +174,21 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
                     BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> context.getString(R.string.battery_health_over_voltage)
                     BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE -> context.getString(R.string.battery_health_failure)
                     BatteryManager.BATTERY_HEALTH_COLD -> context.getString(R.string.battery_health_cold)
-                    else -> context.getString(R.string.battery_health_unknown)
+                    else -> null
                 }
             }
-            BATTERY_TECHNOLOGY -> if (technology.isNullOrEmpty()) context.getString(R.string.not_available) else technology
+            BATTERY_TECHNOLOGY -> {
+                when {
+                    technology.isNullOrEmpty() -> null
+                    else -> technology
+                }
+            }
             BATTERY_CYCLES_COUNT -> {
                 when {
-                    cyclesCount < 0 -> context.getString(R.string.not_available)
+                    cyclesCount < 0 -> null
                     else -> context.getString(R.string.battery_cycles_count, cyclesCount)
                 }
             }
-            BATTERY_CAPACITY -> {
-                when (capacity) {
-                    BatteryManager.BATTERY_CAPACITY_LEVEL_FULL -> context.getString(R.string.battery_capacity_full)
-                    BatteryManager.BATTERY_CAPACITY_LEVEL_HIGH -> context.getString(R.string.battery_capacity_high)
-                    BatteryManager.BATTERY_CAPACITY_LEVEL_NORMAL -> context.getString(R.string.battery_capacity_normal)
-                    BatteryManager.BATTERY_CAPACITY_LEVEL_LOW -> context.getString(R.string.battery_capacity_low)
-                    BatteryManager.BATTERY_CAPACITY_LEVEL_CRITICAL -> context.getString(R.string.battery_capacity_critical)
-                    BatteryManager.BATTERY_CAPACITY_LEVEL_UNKNOWN -> context.getString(R.string.battery_capacity_unknown)
-                    else -> context.getString(R.string.battery_capacity_unsupported)
-                }
-            }
-            else -> ""
+            else -> null
         }
     }

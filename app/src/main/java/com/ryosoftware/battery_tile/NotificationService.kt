@@ -61,7 +61,9 @@ interface IBatteryServiceData {
         val screenOnTimeSinceBoot: Long,
         val screenOnTimeSinceLastStatsReset: Long,
         val deepSleepTimeAtLastStatsReset: Long,
-        val lastStatsResetTime: Long
+        val lastStatsResetTime: Long,
+        val recentReadings: List<BatteryReading> = emptyList(),
+        val recentScreenStates: List<ScreenState> = emptyList()
     )
 
     fun getBatteryDataSnapshot(): BatteryServiceDataSnapshot
@@ -130,6 +132,9 @@ class NotificationService : Service() {
         private const val EXTRA_TEMPERATURE = "temperature"
         private const val SAVE_READINGS_BATTERY_LEVEL_THRESHOLD = 1
         private const val SAVE_READINGS_BATTERY_TEMPERATURE_THRESHOLD = 0.5f
+        const val MAX_RECENT_INTERVAL = 4 * 60 * 60 * 1_000L
+        const val MIN_RECENT_INTERVAL = 15 * 60 * 1_000L
+        const val MIN_RECENT_READINGS = 5
 
         private var _isRunning = MutableStateFlow(false)
         val isRunning = _isRunning.asStateFlow()
@@ -303,6 +308,34 @@ class NotificationService : Service() {
 
         fun resetStats(context: Context) = resetStats(context, LastStatsResetReason.USER_REQUEST)
 
+        fun addToRecentBuffers(recentReadings: MutableList<BatteryReading>, recentScreenStates: MutableList<ScreenState>, batteryIntentHelper: BatteryIntentHelper?, screenOn: Boolean) {
+            val now = System.currentTimeMillis()
+
+            if (batteryIntentHelper != null) {
+                val index = recentReadings.binarySearchBy(now) { it.timestamp }
+
+                recentReadings.add(
+                    if (index >= 0) index else -index - 1,
+                    BatteryReading(
+                        timestamp = now,
+                        batteryLevel = batteryIntentHelper.level,
+                        batteryCharge = batteryIntentHelper.charge,
+                        batteryStatus = batteryIntentHelper.status,
+                        temperatureCelsius = batteryIntentHelper.temperatureCelsius,
+                        voltage = batteryIntentHelper.voltage,
+                        health = batteryIntentHelper.health,
+                        isCharging = batteryIntentHelper.isCharging,
+                        plugType = batteryIntentHelper.plugType
+                    )
+                )
+
+                recentReadings.removeAll { it.timestamp < now - MAX_RECENT_INTERVAL }
+            }
+
+            recentScreenStates.add(ScreenState(timestamp = now, screenOn = screenOn))
+            recentScreenStates.removeAll { it.timestamp < now - 3 * MAX_RECENT_INTERVAL }
+        }
+
         fun runOrStop(context: Context, action: String?) {
             val prefs = NotificationPreferences(context)
             val willRun = prefs.isNotificationEnabled
@@ -402,6 +435,7 @@ class NotificationService : Service() {
                 "%s"
             )
         }
+
     private var serviceStartTime = 0L
     private var disablePersistData = false
 
@@ -435,15 +469,19 @@ class NotificationService : Service() {
 
     private var healthNotificationShown = false
 
+    private val recentReadings = mutableListOf<BatteryReading>()
+    private val recentScreenStates = mutableListOf<ScreenState>()
+
     private val binder = object : android.os.Binder(), IBatteryServiceData {
-        override fun getBatteryDataSnapshot(): IBatteryServiceData.BatteryServiceDataSnapshot {
-            return IBatteryServiceData.BatteryServiceDataSnapshot(
+        override fun getBatteryDataSnapshot(): IBatteryServiceData.BatteryServiceDataSnapshot =
+            IBatteryServiceData.BatteryServiceDataSnapshot(
                 screenOnTimeSinceBoot = if (this@NotificationService.screenOnTimeSinceBootIsValid) this@NotificationService.screenOnTimeSinceBoot else -1L,
                 screenOnTimeSinceLastStatsReset = this@NotificationService.screenOnTimeSinceLastStatsReset,
                 deepSleepTimeAtLastStatsReset = this@NotificationService.deepSleepTimeAtLastStatsReset,
-                lastStatsResetTime = this@NotificationService.lastStatsResetTime
+                lastStatsResetTime = this@NotificationService.lastStatsResetTime,
+                recentReadings = this@NotificationService.recentReadings.toList(),
+                recentScreenStates = this@NotificationService.recentScreenStates.toList()
             )
-        }
     }
 
     override fun onBind(intent: Intent): IBinder = binder
@@ -614,12 +652,16 @@ class NotificationService : Service() {
         return ScreenOnFields(screenOnTimeSinceBoot + interval, screenOnTimeSinceLastStatsReset + interval)
     }
 
+    private fun addToRecentBuffers(batteryIntentHelper: BatteryIntentHelper?, screenOn: Boolean) =
+        addToRecentBuffers(recentReadings, recentScreenStates, batteryIntentHelper, screenOn)
+
     private fun onScreenTurnedOn() {
         persistData()
 
         isScreenOn = true
 
         saveScreenStateToDB()
+        addToRecentBuffers(null, true)
 
         updateNotificationTask.startRepeating(0L, UPDATE_SERVICE_NOTIFICATION_INTERVAL)
     }
@@ -629,6 +671,7 @@ class NotificationService : Service() {
         isScreenOn = false
 
         saveScreenStateToDB()
+        addToRecentBuffers(null, false)
 
         updateNotificationTask.stop()
     }
@@ -715,83 +758,132 @@ class NotificationService : Service() {
 
         logger.log("Current battery relevant values: status=$status, level=$level, temperature=$temperature")
 
+        fun scheduleChargedNotificationAlarmIfNeeded() {
+            if ((!batteryCharged) && isBatteryCharged(batteryIntentHelper)) {
+                logger.log("Battery charged notification will be shown")
+
+                batteryCharged = true
+
+                val batteryChargedNotificationInterval = prefs.notificationChargedInterval * 60_000L
+                scheduleChargedNotificationAlarm(batteryChargedNotificationInterval)
+            }
+        }
+
+        fun setBatteryCapacityCurrentIfNeeded() {
+            if (batteryIntentHelper.isCharging && ((batteryIntentHelper.level == 100) || batteryIntentHelper.isFullCharged)) {
+                appPrefs.batteryCapacityCurrent = batteryIntentHelper.charge / 1000
+            }
+        }
+
+        fun showOrHideBatteryLowChargedNotificationIfNeeded() {
+            if ((!batteryLow) && isBatteryLow(batteryIntentHelper)) {
+                logger.log("Battery low notification will be shown")
+
+                batteryLow = true
+
+                showOrHideBatteryLowChargedNotification()
+            }
+        }
+
+        fun showOrHideTemperatureNotificationIfNeeded() {
+            val temperatureThreshold = prefs.getBatteryTemperatureThreshold(TemperatureUnit.CELSIUS)
+            val shouldTemperatureBeNotified = batteryIntentHelper.temperatureCelsius >= temperatureThreshold
+            val shouldTemperatureBeNotifiedAgain = when {
+                batteryTemperatureNotifiedLevel == -1f -> true
+                batteryTemperatureNotificationDeletionLevel != -1 -> batteryIntentHelper.temperatureCelsius > batteryTemperatureNotificationDeletionLevel
+                else -> batteryTemperatureNotifiedLevel != batteryIntentHelper.temperatureCelsius
+            }
+            if (shouldTemperatureBeNotified && shouldTemperatureBeNotifiedAgain) {
+                logger.log("Temperature Alert notification will be shown")
+                batteryTemperatureNotifiedLevel = batteryIntentHelper.temperatureCelsius
+                showTemperatureNotification(batteryIntentHelper)
+            } else if (!shouldTemperatureBeNotified && (batteryTemperatureNotifiedLevel != -1f)) {
+                logger.log("Temperature Alert notification will be hidden")
+                batteryTemperatureNotifiedLevel = -1f
+                batteryTemperatureNotificationDeletionLevel = -1
+                hideTemperatureNotification()
+            }
+        }
+
+        fun showOrHideHealthNotificationIfNeeded() {
+            val shouldHealthBeNotified = batteryIntentHelper.health !in listOf(BatteryManager.BATTERY_HEALTH_GOOD, BatteryManager.BATTERY_HEALTH_UNKNOWN)
+            val shouldHealthBeNotifiedAgain = !healthNotificationShown
+            if (shouldHealthBeNotified && shouldHealthBeNotifiedAgain) {
+                logger.log("Health Alert notification will be shown")
+                healthNotificationShown = true
+                showHealthNotification(batteryIntentHelper)
+            } else if (!shouldHealthBeNotified && healthNotificationShown) {
+                logger.log("Health Alert notification will be hidden")
+                hideHealthNotification()
+                healthNotificationShown = false
+            }
+        }
+
         persistData()
 
-        if ((!batteryCharged) && isBatteryCharged(batteryIntentHelper)) {
-            logger.log("Battery charged notification will be shown")
+        addToRecentBuffers(batteryIntentHelper, isScreenOn)
 
-            batteryCharged = true
+        scheduleChargedNotificationAlarmIfNeeded()
 
-            val batteryChargedNotificationInterval = prefs.notificationChargedInterval * 60_000L
-            scheduleChargedNotificationAlarm(batteryChargedNotificationInterval)
-        }
+        setBatteryCapacityCurrentIfNeeded()
 
-        if (batteryIntentHelper.isCharging && batteryIntentHelper.isFullCharged) {
-            appPrefs.batteryCapacityCurrent = batteryIntentHelper.charge / 1000
-        }
+        showOrHideBatteryLowChargedNotificationIfNeeded()
 
-        if ((!batteryLow) && isBatteryLow(batteryIntentHelper)) {
-            logger.log("Battery low notification will be shown")
+        showOrHideTemperatureNotificationIfNeeded()
 
-            batteryLow = true
-
-            showOrHideBatteryLowChargedNotification()
-        }
-
-        val temperatureThreshold = prefs.getBatteryTemperatureThreshold(TemperatureUnit.CELSIUS)
-        val shouldTemperatureBeNotified = batteryIntentHelper.temperatureCelsius >= temperatureThreshold
-        val shouldTemperatureBeNotifiedAgain = when {
-            batteryTemperatureNotifiedLevel == -1f -> true
-            batteryTemperatureNotificationDeletionLevel != -1 -> batteryIntentHelper.temperatureCelsius > batteryTemperatureNotificationDeletionLevel
-            else -> batteryTemperatureNotifiedLevel != batteryIntentHelper.temperatureCelsius
-        }
-        if (shouldTemperatureBeNotified && shouldTemperatureBeNotifiedAgain) {
-            logger.log("Temperature Alert notification will be shown")
-            batteryTemperatureNotifiedLevel = batteryIntentHelper.temperatureCelsius
-            showTemperatureNotification(batteryIntentHelper)
-        } else if (!shouldTemperatureBeNotified && (batteryTemperatureNotifiedLevel != -1f)) {
-            logger.log("Temperature Alert notification will be hidden")
-            batteryTemperatureNotifiedLevel = -1f
-            batteryTemperatureNotificationDeletionLevel = -1
-            hideTemperatureNotification()
-        }
-
-        val shouldHealthBeNotified = batteryIntentHelper.health !in listOf(BatteryManager.BATTERY_HEALTH_GOOD, BatteryManager.BATTERY_HEALTH_UNKNOWN)
-        val shouldHealthBeNotifiedAgain = !healthNotificationShown
-        if (shouldHealthBeNotified && shouldHealthBeNotifiedAgain) {
-            logger.log("Health Alert notification will be shown")
-            healthNotificationShown = true
-            showHealthNotification(batteryIntentHelper)
-        } else if (!shouldHealthBeNotified && healthNotificationShown) {
-            logger.log("Health Alert notification will be hidden")
-            hideHealthNotification()
-            healthNotificationShown = false
-        }
+        showOrHideHealthNotificationIfNeeded()
 
         saveBatteryDataToDB(batteryIntentHelper)
     }
 
-    private fun getAverageTemperature(batteryReadings: List<BatteryReading>, now: Long): Float? =
-        if (batteryReadings.isEmpty()) {
-            null
-        } else if (batteryReadings.size == 1) {
-            batteryReadings[0].temperatureCelsius
-        } else {
-            var weightedSum = 0.0
-            var totalDuration = 0L
-            for (i in batteryReadings.indices) {
-                val d = if (i < batteryReadings.size - 1) {
-                    batteryReadings[i + 1].timestamp - batteryReadings[i].timestamp
-                } else {
-                    now - batteryReadings[i].timestamp
+    private fun saveBatteryDataToDB(batteryIntentHelper: BatteryIntentHelper) {
+        fun getAverageTemperature(batteryReadings: List<BatteryReading>, now: Long): Float? =
+            if (batteryReadings.isEmpty()) {
+                null
+            } else if (batteryReadings.size == 1) {
+                batteryReadings[0].temperatureCelsius
+            } else {
+                var weightedSum = 0.0
+                var totalDuration = 0L
+                for (i in batteryReadings.indices) {
+                    val d = if (i < batteryReadings.size - 1) {
+                        batteryReadings[i + 1].timestamp - batteryReadings[i].timestamp
+                    } else {
+                        now - batteryReadings[i].timestamp
+                    }
+                    weightedSum += batteryReadings[i].temperatureCelsius * d
+                    totalDuration += d
                 }
-                weightedSum += batteryReadings[i].temperatureCelsius * d
-                totalDuration += d
+                if (totalDuration > 0) (weightedSum / totalDuration).toFloat() else null
             }
-            if (totalDuration > 0) (weightedSum / totalDuration).toFloat() else null
+
+        suspend fun calculateScreenOnTime(screenStates: List<ScreenState>, startTime: Long, endTime: Long): Long {
+            if (screenStates.isEmpty()) {
+                val lastState = repository.getLatestScreenStateBefore(startTime)
+                return if (lastState?.screenOn == true) endTime - startTime else 0L
+            }
+
+            var total = 0L
+            val firstState = screenStates.first()
+            val lastStateBefore = repository.getLatestScreenStateBefore(firstState.timestamp)
+            var prevTime = startTime
+            var wasOn = lastStateBefore?.screenOn ?: false
+
+            for (state in screenStates) {
+                if (wasOn) {
+                    total += state.timestamp - prevTime
+                }
+                prevTime = state.timestamp
+                wasOn = state.screenOn
+            }
+
+            if (wasOn) {
+                total += endTime - prevTime
+            }
+
+            return total
         }
 
-    private fun saveBatteryDataToDB(batteryIntentHelper: BatteryIntentHelper) {
         val now = System.currentTimeMillis()
         val level = batteryIntentHelper.level
         val temperature = batteryIntentHelper.temperatureCelsius
@@ -810,12 +902,14 @@ class NotificationService : Service() {
         lastSavedTemperature = temperature
         lastSavedIsCharging = isCharging
 
+        val charge = batteryIntentHelper.charge
+        
         serviceScope.launch {
             try {
                 repository.insertBatteryReading(BatteryReading(
                     timestamp = now,
                     batteryLevel = level,
-                    batteryCharge = batteryIntentHelper.charge,
+                    batteryCharge = charge,
                     batteryStatus = batteryIntentHelper.status,
                     temperatureCelsius = temperature,
                     voltage = batteryIntentHelper.voltage,
@@ -856,6 +950,8 @@ class NotificationService : Service() {
                             endTime = null,
                             startLevel = level,
                             endLevel = null,
+                            startCharge = charge,
+                            endCharge = null,
                             plugType = batteryIntentHelper.plugType,
                             durationMinutes = null,
                             avgTemperatureCelsius = null,
@@ -885,6 +981,7 @@ class NotificationService : Service() {
                                 repository.updateDischargeSession(currentDischargeSession.copy(
                                     endTime = now,
                                     endLevel = level,
+                                    endCharge = charge,
                                     durationMinutes = durationMs / 60_000L,
                                     screenOnTimeMinutes = screenOnTimeMs / 60_000L,
                                     avgTemperatureCelsius = averageTemperature,
@@ -913,6 +1010,8 @@ class NotificationService : Service() {
                                 endTime = null,
                                 startLevel = level,
                                 endLevel = null,
+                                startCharge = charge,
+                                endCharge = null,
                                 durationMinutes = null,
                                 screenOnTimeMinutes = null,
                                 avgTemperatureCelsius = null,
@@ -939,6 +1038,7 @@ class NotificationService : Service() {
                                 repository.updateChargingSession(currentChargeSession.copy(
                                     endTime = now,
                                     endLevel = level,
+                                    endCharge = charge,
                                     durationMinutes = durationMs / 60_000L,
                                     avgTemperatureCelsius = averageTemperature,
                                     maxTemperatureCelsius = if (validBatteryReadings.isNotEmpty()) validBatteryReadings.maxOf { it.temperatureCelsius } else null,
@@ -956,57 +1056,21 @@ class NotificationService : Service() {
                     }
                 }
             } catch (e: Exception) {
-                logger.log("Error saving data to DB: ${e.message}")
+                logger.log("Error saving data to DB: ${e.toString()}")
             }
         }
     }
-
-    private suspend fun calculateScreenOnTime(screenStates: List<ScreenState>, startTime: Long, endTime: Long): Long {
-        if (screenStates.isEmpty()) {
-            val lastState = repository.getLatestScreenStateBefore(startTime)
-            return if (lastState?.screenOn == true) endTime - startTime else 0L
-        }
-
-        var total = 0L
-        val firstState = screenStates.first()
-        val lastStateBefore = repository.getLatestScreenStateBefore(firstState.timestamp)
-        var prevTime = startTime
-        var wasOn = lastStateBefore?.screenOn ?: false
-
-        for (state in screenStates) {
-            if (wasOn) {
-                total += state.timestamp - prevTime
-            }
-            prevTime = state.timestamp
-            wasOn = state.screenOn
-        }
-
-        if (wasOn) {
-            total += endTime - prevTime
-        }
-
-        return total
-    }
-
 
     private fun buildServiceNotification(): Notification {
         fun buildText(notificationServiceUIBuilder: NotificationServiceUIBuilder): String {
-            val values = NotificationServiceUIBuilder.NotificationField.entries.associateWith { field ->
-                notificationServiceUIBuilder.toString(this, field, prefs, appPrefs)
-            }
-
-            val fields = NotificationServiceUIBuilder.NotificationField.entries
-                .filter {
-                    notificationServiceUIBuilder.isValid(it) && notificationServiceUIBuilder.isVisible(it, prefs) && prefs.isFieldVisible(it)
+            return NotificationServiceUIBuilder.NotificationField.entries
+                .filter { notificationServiceUIBuilder.isVisible(it, prefs) && prefs.isFieldVisible(it) }
+                .sortedBy { prefs.getFieldPosition(it) }
+                .mapNotNull { field ->
+                    val value = notificationServiceUIBuilder.toString(this, field, prefs, appPrefs)
+                    if (value == null) { null } else { getCachedLabel(field).format(value) }
                 }
-                .map { field ->
-                    field to getCachedLabel(field).format(values[field])
-                }
-                .sortedBy { (field, _) ->
-                    prefs.getFieldPosition(field)
-                }
-
-            return fields.joinToString("\n") { it.second }
+                .joinToString("\n")
         }
 
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
@@ -1016,6 +1080,7 @@ class NotificationService : Service() {
         }
         else {
             val screenOnFields = getScreenOnTime()
+            val snapshot = binder.getBatteryDataSnapshot()
             val notificationServiceUIBuilder = NotificationServiceUIBuilder(
                 batteryIntent,
                 lastStatsResetTime,
@@ -1023,7 +1088,10 @@ class NotificationService : Service() {
                 if (screenOnTimeSinceBootIsValid) screenOnFields.sinceBoot else -1L,
                 screenOnFields.sinceLastReset,
                 lastBatteryEventTime,
-                batteryManager)
+                batteryManager,
+                isScreenOn,
+                snapshot.recentReadings,
+                snapshot.recentScreenStates)
 
             buildText(notificationServiceUIBuilder)
         }

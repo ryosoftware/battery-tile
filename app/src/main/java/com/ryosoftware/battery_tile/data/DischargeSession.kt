@@ -12,6 +12,8 @@ data class DischargeSession(
     val endTime: Long?,
     val startLevel: Int,
     val endLevel: Int?,
+    val startCharge: Int,
+    val endCharge: Int?,
     val durationMinutes: Long?,
     val screenOnTimeMinutes: Long?,
     val avgTemperatureCelsius: Float?,

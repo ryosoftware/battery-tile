@@ -39,6 +39,8 @@ class BatteryTileService : TileService() {
         }
     }
 
+    private val batteryManager by lazy { getSystemService(BATTERY_SERVICE) as BatteryManager }
+
     private val logger by lazy { Main.from(this).logger }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -128,19 +130,11 @@ class BatteryTileService : TileService() {
 
             val (lines1, lines2) = BatteryTileUIBuilder.BatteryTileField.entries
                 .asSequence()
-                .filter {
-                    it.textualizable && batteryTileUIBuilder.isValid(it) && prefs.isFieldVisible(it)
-                }
+                .filter { it.textualizable && prefs.isFieldVisible(it) }
                 .sortedBy { prefs.getFieldPosition(it) }
-                .map { field ->
-                    val line = prefs.getFieldLine(field)
-                    val text = batteryTileUIBuilder.toString(this, field, appPrefs)
-                    line to text
-                }
+                .mapNotNull { field -> batteryTileUIBuilder.toString(this, field, appPrefs)?.let { text -> prefs.getFieldLine(field) to text } }
                 .partition { (line, _) -> line == 1 }
-                .let { (first, second) ->
-                    first.map { it.second } to second.map { it.second }
-                }
+                .let { (first, second) -> first.map { it.second } to second.map { it.second } }
 
             return lines1.joinToString(separator) to lines2.joinToString(separator)
         }
@@ -154,7 +148,7 @@ class BatteryTileService : TileService() {
             batteryServiceDataSnapshot?.deepSleepTimeAtLastStatsReset ?: -1L,
             batteryServiceDataSnapshot?.screenOnTimeSinceBoot ?: -1L,
             batteryServiceDataSnapshot?.screenOnTimeSinceLastStatsReset ?: -1L,
-            null)
+            batteryManager)
         val (line1, line2) = buildText(batteryTileUIBuilder)
 
         tile.state = if (batteryTileUIBuilder.isCharging) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE

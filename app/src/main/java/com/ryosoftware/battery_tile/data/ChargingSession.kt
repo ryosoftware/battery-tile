@@ -12,6 +12,8 @@ data class ChargingSession(
     val endTime: Long?,
     val startLevel: Int,
     val endLevel: Int?,
+    val startCharge: Int,
+    val endCharge: Int?,
     val plugType: Int,
     val durationMinutes: Long?,
     val avgTemperatureCelsius: Float?,
