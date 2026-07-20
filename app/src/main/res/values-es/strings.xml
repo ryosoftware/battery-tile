@@ -140,7 +140,7 @@
     <string name="recent_consumption">Consumo</string>
     <string name="recent_consumption_long">Estimación del consumo reciente</string>
     <string name="recent_consumption_from_interval">Consumo (desde hace %1$s)</string>
-    <string name="recent_consumption_notification_comments">Muestra el consumo estimado de la batería (%/h) y, si está disponible, el consumo con la pantalla encendida (▣) y apagada (□)</string>
+    <string name="recent_consumption_notification_comments">Muestra el consumo estimado de la batería (%/h) y, si está disponible, el consumo con la pantalla encendida (■) y apagada (□)</string>
     <string name="recent_consumption_format">%1$s (▣ %2$s — □ %3$s)</string>
     <string name="recent_consumption_format_no_screen">%1$s</string>
 
@@ -148,7 +148,7 @@
     <string name="since_last_stats_reset">desde borrado</string>
 
     <string name="data_since">Datos (%1$s)</string>
-    <string name="data_since_notification_comments">Muestra el tiempo total y, si está disponible, el tiempo de pantalla (▣) y el tiempo durante el que la CPU ha permanecido en reposo (Z)</string>
+    <string name="data_since_notification_comments">Muestra el tiempo total y, si está disponible, el tiempo de pantalla (■) y el tiempo durante el que la CPU ha permanecido en reposo (Z)</string>
     <string name="data_since_long">@string/data_since</string>
     <string name="data_since_boot_label">Inicio (hace %1$s)</string>
     <string name="data_since_last_stats_reset_label">Borrado (hace %1$s)</string>
