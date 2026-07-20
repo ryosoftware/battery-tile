@@ -5,6 +5,8 @@ import com.ryosoftware.battery_tile.data.ScreenState
 import kotlin.math.max
 
 data class DischargeRateStats(
+    val startTime: Long,
+    val endTime: Long,
     val overallSpeed: Float?,
     val screenOnSpeed: Float?,
     val screenOffSpeed: Float?,
@@ -21,9 +23,9 @@ internal fun calculateDischargeRates(readings: List<BatteryReading>, screenState
         .filter { it.timestamp in analysisStartTime..endTime }
         .sortedBy { it.timestamp }
 
-    if (sortedReadings.size < 2) return DischargeRateStats(null, null, null, null, null)
+    if (sortedReadings.size < 2) return DischargeRateStats(analysisStartTime, endTime, null, null, null, null, null)
     if (sortedReadings.any { it.batteryCharge <= 0 }) {
-        return DischargeRateStats(null, null, null, null, null)
+        return DischargeRateStats(analysisStartTime, endTime, null, null, null, null, null)
     }
 
     var wasScreenOn = sortedScreenStates.lastOrNull { it.timestamp < startTime }?.screenOn ?: false
@@ -115,5 +117,11 @@ internal fun calculateDischargeRates(readings: List<BatteryReading>, screenState
         screenOffDischargePercent / (screenOffDurationMs / 3_600_000f)
     } else null
 
-    return DischargeRateStats(overallSpeed, screenOnSpeed, screenOffSpeed, screenOnDischargePercent, screenOffDischargePercent)
+    return DischargeRateStats(analysisStartTime, endTime, overallSpeed, screenOnSpeed, screenOffSpeed, screenOnDischargePercent, screenOffDischargePercent)
 }
+
+internal fun calculateDischargeRates(readings: List<BatteryReading>, screenStates: List<ScreenState>): DischargeRateStats? =
+    if (readings.isEmpty())
+        null
+    else
+        calculateDischargeRates(readings, screenStates, readings.first().timestamp, readings.last().timestamp)

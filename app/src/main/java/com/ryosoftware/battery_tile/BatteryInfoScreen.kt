@@ -126,6 +126,7 @@ fun BatteryInfoContent(
             } else {
                 val fields = listOf(
                     BatteryIntentHelper.BATTERY_LEVEL,
+                    BatteryIntentHelper.BATTERY_CURRENT_CONSUMPTION,
                     BatteryIntentHelper.BATTERY_STATUS,
                     BatteryIntentHelper.BATTERY_TEMPERATURE,
                     BatteryIntentHelper.BATTERY_VOLTAGE,
@@ -136,7 +137,6 @@ fun BatteryInfoContent(
                     BATTERY_CAPACITY_CURRENT,
                     BatteryIntentHelper.BATTERY_CHARGE,
                     BATTERY_PROPERTY_ENERGY_COUNTER,
-                    BatteryIntentHelper.BATTERY_CURRENT_CONSUMPTION,
                 )
 
                 fields.forEachIndexed { index, field ->

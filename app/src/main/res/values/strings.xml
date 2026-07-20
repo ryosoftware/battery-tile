@@ -25,6 +25,7 @@
     <string name="health_alert_with_value">Health Alert — %1$s</string>
     <string name="last_stats_reset_notification_title">Data reset — %1$s</string>
 
+    <string name="calculating">Calculating&#8230;</string>
     <string name="general_information">Add the battery tile to your Quick Settings panel to check the battery level at a glance, or enable a persistent notification for detailed battery information and customizable alerts.\n\nThis app does not send any data outside your device and does not require internet access. It also requests no special permissions, so you can use it with confidence.</string>
 
     <string name="battery_charged_section_title">Battery charged notification</string>
@@ -139,16 +140,23 @@
     <string name="recent_consumption">Consumption</string>
     <string name="recent_consumption_long">Estimated recent consumption</string>
     <string name="recent_consumption_from_interval">Consumption (since %1$s)</string>
-    <string name="recent_consumption_notification_comments">Shows the estimated battery drain (%/h) and, if available, the drain with the screen on and off</string>
+    <string name="recent_consumption_notification_comments">Shows the estimated battery drain (%/h) and, if available, the drain with the screen on (▣) and off (□)</string>
     <string name="recent_consumption_format">%1$s (▣ %2$s — □ %3$s)</string>
     <string name="recent_consumption_format_no_screen">%1$s</string>
 
     <string name="since_boot">Since boot</string>
     <string name="since_last_stats_reset">Since reset</string>
 
-    <string name="cpu_deep_sleep_time">Deep sleep (%1$s)</string>
-    <string name="cpu_deep_sleep_time_long">CPU deep sleep time (%1$s)</string>
-    <string name="cpu_deep_sleep_time_notification_comments">Shows the time the CPU has spent in deep sleep (idle) and its percentage of the total time</string>
+    <string name="data_since">Data (%1$s)</string>
+    <string name="data_since_notification_comments">Shows the total time and, if available, the screen-on time (▣) and the CPU deep sleep time (Z)</string>
+    <string name="data_since_long">@string/data_since</string>
+    <string name="data_since_boot_label">Boot (since %1$s)</string>
+    <string name="data_since_last_stats_reset_label">Reset (since %1$s)</string>
+    <string name="interval_value_with_percent">%1$s, %2$s</string>
+    <string name="screen_on_data_value">▣ (%1$s)</string>
+    <string name="cpu_deep_sleep_value">Z (%1$s)</string>
+    <string name="data_values_separator">,&#160;</string>
+
     <string name="cpu_deep_sleep_percent_long">CPU deep sleep percent (%1$s)</string>
 
     <string name="screen_on_percent_long">Screen on percent (%1$s)</string>
@@ -156,13 +164,6 @@
     <string name="time_charging">Charging time</string>
     <string name="time_charging_long">@string/time_charging</string>
     <string name="time_charging_notification_comments">When the device is connected to a power source, shows the elapsed time since it was connected.</string>
-
-    <string name="uptime">Uptime (%1$s)</string>
-    <string name="uptime_notification_comments">Shows the total time and, if available, the screen-on time and its percentage of the total.</string>
-    <string name="uptime_long">@string/uptime</string>
-    <string name="uptime_value">%1$s</string>
-    <string name="screen_time_with_percent">%1$s, %2$s</string>
-    <string name="uptime_value_with_screen_on">%1$s (▣ %2$s)</string>
 
     <string name="percent_value_integer">%1$d%%</string>
     <string name="percent_value_float">%.1f%%</string>

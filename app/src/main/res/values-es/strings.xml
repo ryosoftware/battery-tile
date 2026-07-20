@@ -25,6 +25,7 @@
     <string name="health_alert_with_value">Alerta de salud — %1$s</string>
     <string name="last_stats_reset_notification_title">Datos reseteados — %1$s</string>
 
+    <string name="calculating">Calculando&#8230;</string>
     <string name="general_information">Añade el icono de Batería a tu panel de Ajustes Rápidos para ver el porcentaje de batería de un vistazo, o añade una notificación persistente para obtener mucha más información y notificaciones adicionales.\n\nEsta app no envía ningún tipo de información fuera de tu dispositivo (no incluye el permiso de acceso a Internet) ni solicita ningún permiso especial, así que puedes usarla tranquilamente.</string>
 
     <string name="battery_charged_section_title">Notificación de batería cargada</string>
@@ -139,16 +140,23 @@
     <string name="recent_consumption">Consumo</string>
     <string name="recent_consumption_long">Estimación del consumo reciente</string>
     <string name="recent_consumption_from_interval">Consumo (desde hace %1$s)</string>
-    <string name="recent_consumption_notification_comments">Muestra el consumo estimado de la batería (%/h) y, si está disponible, el consumo con la pantalla encendida y apagada</string>
+    <string name="recent_consumption_notification_comments">Muestra el consumo estimado de la batería (%/h) y, si está disponible, el consumo con la pantalla encendida (▣) y apagada (□)</string>
     <string name="recent_consumption_format">%1$s (▣ %2$s — □ %3$s)</string>
     <string name="recent_consumption_format_no_screen">%1$s</string>
 
     <string name="since_boot">desde inicio</string>
     <string name="since_last_stats_reset">desde borrado</string>
 
-    <string name="cpu_deep_sleep_time">CPU en reposo (%1$s)</string>
-    <string name="cpu_deep_sleep_time_long">Tiempo de CPU en reposo profundo (%1$s)</string>
-    <string name="cpu_deep_sleep_time_notification_comments">Muestra el tiempo que la CPU ha estado en reposo profundo (ociosa) y el porcentaje del tiempo total</string>
+    <string name="data_since">Datos (%1$s)</string>
+    <string name="data_since_notification_comments">Muestra el tiempo total y, si está disponible, el tiempo de pantalla (▣) y el tiempo durante el que la CPU ha permanecido en reposo (Z)</string>
+    <string name="data_since_long">@string/data_since</string>
+    <string name="data_since_boot_label">Inicio (hace %1$s)</string>
+    <string name="data_since_last_stats_reset_label">Borrado (hace %1$s)</string>
+    <string name="interval_value_with_percent">%1$s, %2$s</string>
+    <string name="screen_on_data_value">▣ (%1$s)</string>
+    <string name="cpu_deep_sleep_value">Z (%1$s)</string>
+    <string name="data_values_separator">,&#160;</string>
+
     <string name="cpu_deep_sleep_percent_long">Porcentaje de CPU en reposo profundo (%1$s)</string>
 
     <string name="screen_on_percent_long">Porcentaje de tiempo con la pantalla encendida (%1$s)</string>
@@ -156,13 +164,6 @@
     <string name="time_charging">Tiempo cargando</string>
     <string name="time_charging_long">@string/time_charging</string>
     <string name="time_charging_notification_comments">Cuando el dispositivo está conectado a la corriente, muestra el tiempo transcurrido desde que se conectó</string>
-
-    <string name="uptime">Tiempo (%1$s)</string>
-    <string name="uptime_notification_comments">Muestra el tiempo total y, si está disponible, el tiempo de pantalla y su porcentaje respecto al total</string>
-    <string name="uptime_long">@string/uptime</string>
-    <string name="uptime_value">%1$s</string>
-    <string name="screen_time_with_percent">%1$s, %2$s</string>
-    <string name="uptime_value_with_screen_on">%1$s (▣ %2$s)</string>
 
     <string name="percent_value_integer">%1$d%%</string>
     <string name="percent_value_float">%.1f%%</string>

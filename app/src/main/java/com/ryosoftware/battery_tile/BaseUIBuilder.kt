@@ -15,8 +15,9 @@ abstract class BaseUIBuilder(
     protected val screenOnTimeSinceLastStatsReset: Long,
     batteryManager: BatteryManager?
 ) : BatteryIntentHelper(intent, batteryManager) {
+    val now: Long by lazy { System.currentTimeMillis() }
     val timeSinceBoot: Long by lazy { SystemClock.elapsedRealtime() }
     val deepSleepTimeSinceBoot: Long by lazy { timeSinceBoot - SystemClock.uptimeMillis() }
-    val timeSinceLastStatsReset: Long by lazy { System.currentTimeMillis() - lastStatsResetTime }
+    val timeSinceLastStatsReset: Long by lazy { now - lastStatsResetTime }
     val deepSleepTimeSinceLastStatsReset: Long by lazy { deepSleepTimeSinceBoot - deepSleepTimeAtLastStatsReset }
 }

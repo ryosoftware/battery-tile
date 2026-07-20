@@ -414,29 +414,6 @@ class NotificationService : Service() {
                 NotificationManagerCompat.from(applicationContext).notify(NOTIFICATION_ID, notification)
         }
     }
-    private val notificationFieldFormats = mutableMapOf<NotificationServiceUIBuilder.NotificationField, String>()
-    private var notificationFieldFormatsLocale: LocaleList? = null
-
-    private val configCallbacks = object : ComponentCallbacks {
-        override fun onConfigurationChanged(newConfig: Configuration) {
-            if (newConfig.locales != notificationFieldFormatsLocale) {
-                notificationFieldFormatsLocale = newConfig.locales
-                notificationFieldFormats.clear()
-           }
-        }
-
-        @Deprecated("Deprecated in Java")
-        override fun onLowMemory() {}
-    }
-
-    private fun getCachedLabel(notificationField: NotificationServiceUIBuilder.NotificationField): String =
-        notificationFieldFormats.getOrPut(notificationField) {
-            getString(R.string.label_and_value,
-            notificationField.getLabel(this, true),
-                "%s"
-            )
-        }
-
     private var serviceStartTime = 0L
     private var disablePersistData = false
 
@@ -511,17 +488,12 @@ class NotificationService : Service() {
             @SuppressLint("UnspecifiedRegisterReceiverFlag")
             registerReceiver(receiver, filter)
         }
-
-        notificationFieldFormatsLocale = resources.configuration.locales
-        registerComponentCallbacks(configCallbacks)
     }
 
     override fun onDestroy() {
         _isRunning.value = false
 
         logger.log("Notification Service was destroyed")
-
-        unregisterComponentCallbacks(configCallbacks)
 
         unregisterReceiver(receiver)
 
@@ -1089,20 +1061,18 @@ class NotificationService : Service() {
                     .filter { prefs.isFieldVisible(it) && notificationServiceUIBuilder.isVisible(it, prefs) }
                     .sortedBy { prefs.getFieldPosition(it) }
                     .mapNotNull { field ->
-                        val value = notificationServiceUIBuilder.toString(this, field, prefs, appPrefs)
+                        val value = notificationServiceUIBuilder.toStringValue(this, field, prefs, appPrefs)
 
                         when {
                             value == null -> null
 
-                            field == NotificationServiceUIBuilder.NotificationField.BATTERY_RECENT_CONSUMPTION -> {
-                                val now = System.currentTimeMillis()
-                                val interval = now - snapshot.recentReadings.first().timestamp
+                            else -> {
+                                val label = notificationServiceUIBuilder.toStringLabel(this, field, prefs, appPrefs)
+                                val value = notificationServiceUIBuilder.toStringValue(this, field, prefs, appPrefs)
 
-                                val label = getString(R.string.recent_consumption_from_interval, getStringTimeFromInterval(this, interval))
-                                getString(R.string.label_and_value, label, value)
+                                if ((label == null) || (value == null)) null
+                                else getString(R.string.label_and_value, label, value)
                             }
-
-                            else -> getCachedLabel(field).format(value)
                         }
                     }
                     .joinToString("\n")
@@ -1114,7 +1084,7 @@ class NotificationService : Service() {
         return getNotification(
             context = this,
             channelId = CHANNEL_ID,
-            text = text,
+            text = text.ifBlank { getString(R.string.calculating) },
             icon = R.drawable.ic_statusbar_notification,
             clickRequestCode = NOTIFICATION_CLICK_REQUEST_CODE,
             ongoing = true,

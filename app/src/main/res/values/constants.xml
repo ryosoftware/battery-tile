@@ -152,11 +152,6 @@
         <item>false</item>
     </string-array>
 
-    <string-array name="charge_data_for_notification_default">
-        <item>2</item>
-        <item>false</item>
-    </string-array>
-
     <string-array name="current_consumption_data_for_notification_default">
         <item>3</item>
         <item>false</item>
@@ -197,22 +192,12 @@
         <item>true</item>
     </string-array>
 
-    <string-array name="deep_sleep_time_since_last_stats_reset_data_for_notification_default">
-        <item>11</item>
-        <item>true</item>
-    </string-array>
-
-    <string-array name="uptime_since_last_stats_reset_data_for_notification_default">
+    <string-array name="data_since_last_stats_reset_data_for_notification_default">
         <item>12</item>
         <item>true</item>
     </string-array>
 
-    <string-array name="deep_sleep_time_since_boot_data_for_notification_default">
-        <item>13</item>
-        <item>true</item>
-    </string-array>
-
-    <string-array name="uptime_since_boot_data_for_notification_default">
+    <string-array name="data_since_boot_data_for_notification_default">
         <item>14</item>
         <item>true</item>
     </string-array>
