@@ -99,7 +99,7 @@
     <string name="voltage_value">%1$d mV</string>
     <string name="consumption_value">%1$d mW</string>
     <string name="mah_value">%1$d mAh</string>
-    <string name="mah_value_with_percent">%1$d mAh (%2$d%%)</string>
+    <string name="mah_value_with_percent">%1$d mAh (%2$s)</string>
 
     <string name="battery_level">Level</string>
     <string name="battery_level_notification_comments">Shows the remaining battery percentage and, if available, the remaining charge (in mAh)</string>

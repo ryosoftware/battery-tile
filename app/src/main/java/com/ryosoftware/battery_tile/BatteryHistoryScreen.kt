@@ -79,6 +79,8 @@ import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
 import java.io.OutputStream
 import java.util.Calendar
 import androidx.core.content.edit
+import com.ryosoftware.battery_tile.Utils.Companion.getStringPercent
+import com.ryosoftware.battery_tile.Utils.Companion.getStringTimeFromInterval
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.math.roundToInt
@@ -1909,31 +1911,4 @@ private fun buildExcel(
         workbook.write(outputStream)
     }
 }
-
-fun getStringTimeFromInterval(context: Context, interval: Long): String {
-    val totalMinutes = interval / 60_000
-    val days = totalMinutes / (24 * 60)
-    val hours = (totalMinutes % (24 * 60)) / 60
-    val minutes = totalMinutes % 60
-
-    return if (days > 0) {
-        context.getString(R.string.days_and_hours_and_minutes, days, hours, minutes)
-    } else if (hours > 0) {
-        context.getString(R.string.hours_and_minutes, hours, minutes)
-    } else {
-        context.getString(R.string.minutes, minutes)
-    }
-}
-
-fun getStringPercent(context: Context, percent: Float?, resFloat: Int, resInt: Int): String {
-    if (percent == null) return context.getString(R.string.not_available)
-
-    val hasNoDecimals = percent % 1f == 0f
-
-    return if (hasNoDecimals) context.getString(resInt, percent.toInt())
-    else context.getString(resFloat, percent)
-}
-
-fun getStringPercent(context: Context, percent: Float?): String =
-    getStringPercent(context, percent, R.string.percent_value_float, R.string.percent_value_integer)
 

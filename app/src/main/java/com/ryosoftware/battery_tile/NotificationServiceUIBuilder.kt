@@ -7,6 +7,10 @@ import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
 import com.ryosoftware.battery_tile.NotificationService.Companion.MIN_RECENT_INTERVAL
 import com.ryosoftware.battery_tile.NotificationService.Companion.MIN_RECENT_READINGS
+import com.ryosoftware.battery_tile.Utils.Companion.getStringPercent
+import com.ryosoftware.battery_tile.Utils.Companion.getStringTimeAndPercentFromInterval
+import com.ryosoftware.battery_tile.Utils.Companion.getStringTimeFromInterval
+import com.ryosoftware.battery_tile.Utils.Companion.isImperceptible
 import com.ryosoftware.battery_tile.data.BatteryReading
 import com.ryosoftware.battery_tile.data.ScreenState
 

@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.ryosoftware.battery_tile.Utils.Companion.getStringPercent
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -205,7 +206,7 @@ private fun getBatteryFieldValue(context: Context, batteryIntentHelper: BatteryI
             val currentCapacity = appPrefs.batteryCapacityCurrent
 
             return if ((designCapacity > 0) && (currentCapacity > 0)) {
-                context.getString(R.string.mah_value_with_percent, currentCapacity, (currentCapacity / designCapacity) * 100)
+                context.getString(R.string.mah_value_with_percent, currentCapacity, getStringPercent(context, (currentCapacity * 100f) / designCapacity))
             } else null
         }
 

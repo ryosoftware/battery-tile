@@ -11,6 +11,7 @@ import android.os.BatteryManager
 import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
+import com.ryosoftware.battery_tile.Utils.Companion.getStringPercentFromInterval
 
 class BatteryTileUIBuilder(
     intent: Intent,
