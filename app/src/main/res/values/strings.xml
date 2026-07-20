@@ -138,6 +138,7 @@
 
     <string name="recent_consumption">Consumption</string>
     <string name="recent_consumption_long">Estimated recent consumption</string>
+    <string name="recent_consumption_from_interval">Consumption (since %1$s)</string>
     <string name="recent_consumption_notification_comments">Shows the estimated battery drain (%/h) and, if available, the drain with the screen on and off</string>
     <string name="recent_consumption_format">%1$s (▣ %2$s — □ %3$s)</string>
     <string name="recent_consumption_format_no_screen">%1$s</string>

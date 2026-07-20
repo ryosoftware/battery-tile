@@ -138,6 +138,7 @@
 
     <string name="recent_consumption">Consumo</string>
     <string name="recent_consumption_long">Estimación del consumo reciente</string>
+    <string name="recent_consumption_from_interval">Consumo (desde hace %1$s)</string>
     <string name="recent_consumption_notification_comments">Muestra el consumo estimado de la batería (%/h) y, si está disponible, el consumo con la pantalla encendida y apagada</string>
     <string name="recent_consumption_format">%1$s (▣ %2$s — □ %3$s)</string>
     <string name="recent_consumption_format_no_screen">%1$s</string>

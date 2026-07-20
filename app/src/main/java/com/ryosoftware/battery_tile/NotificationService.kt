@@ -24,6 +24,7 @@ import androidx.core.content.edit
 import com.ryosoftware.battery_tile.Main.Companion.hasPostNotificationsPermission
 import com.ryosoftware.battery_tile.Main.Companion.isScreenOn
 import com.ryosoftware.battery_tile.NotificationServiceUIBuilder.NotificationField.Companion.getLabel
+import com.ryosoftware.battery_tile.Utils.Companion.getStringTimeFromInterval
 import com.ryosoftware.battery_tile.WhatAppOpens.Companion.getIntent
 import com.ryosoftware.battery_tile.data.BatteryReading
 import com.ryosoftware.battery_tile.data.BatteryRepository
@@ -1062,17 +1063,6 @@ class NotificationService : Service() {
     }
 
     private fun buildServiceNotification(): Notification {
-        fun buildText(notificationServiceUIBuilder: NotificationServiceUIBuilder): String {
-            return NotificationServiceUIBuilder.NotificationField.entries
-                .filter { prefs.isFieldVisible(it) && notificationServiceUIBuilder.isVisible(it, prefs) }
-                .sortedBy { prefs.getFieldPosition(it) }
-                .mapNotNull { field ->
-                    val value = notificationServiceUIBuilder.toString(this, field, prefs, appPrefs)
-                    if (value == null) { null } else { getCachedLabel(field).format(value) }
-                }
-                .joinToString("\n")
-        }
-
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
 
         val text = if (batteryIntent == null) {
@@ -1093,6 +1083,30 @@ class NotificationService : Service() {
                 screenOn = isScreenOn,
                 recentReadings = snapshot.recentReadings,
                 recentScreenStates = snapshot.recentScreenStates)
+
+            fun buildText(notificationServiceUIBuilder: NotificationServiceUIBuilder): String {
+                return NotificationServiceUIBuilder.NotificationField.entries
+                    .filter { prefs.isFieldVisible(it) && notificationServiceUIBuilder.isVisible(it, prefs) }
+                    .sortedBy { prefs.getFieldPosition(it) }
+                    .mapNotNull { field ->
+                        val value = notificationServiceUIBuilder.toString(this, field, prefs, appPrefs)
+
+                        when {
+                            value == null -> null
+
+                            field == NotificationServiceUIBuilder.NotificationField.BATTERY_RECENT_CONSUMPTION -> {
+                                val now = System.currentTimeMillis()
+                                val interval = now - snapshot.recentReadings.first().timestamp
+
+                                val label = getString(R.string.recent_consumption_from_interval, getStringTimeFromInterval(this, interval))
+                                getString(R.string.label_and_value, label, value)
+                            }
+
+                            else -> getCachedLabel(field).format(value)
+                        }
+                    }
+                    .joinToString("\n")
+            }
 
             buildText(notificationServiceUIBuilder)
         }
