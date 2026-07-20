@@ -353,9 +353,9 @@
     <string name="back">Back</string>
 
     <string name="backup_restore">Backup and restore</string>
-    <string name="backup_restore_body">Export or import all settings and historical data</string>
-    <string name="export_backup">Export</string>
-    <string name="import_backup">Import</string>
+    <string name="backup_restore_body">Backup or restore app settings and historical data</string>
+    <string name="export_backup">Backup</string>
+    <string name="import_backup">Restore</string>
     <string name="backup_exported">Backup created successfully</string>
     <string name="backup_imported">Backup restored successfully</string>
     <string name="backup_error">Error creating backup</string>

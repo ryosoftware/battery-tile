@@ -145,7 +145,7 @@
     <string name="since_boot">desde inicio</string>
     <string name="since_last_stats_reset">desde borrado</string>
 
-    <string name="cpu_deep_sleep_time">Reposo prof. (%1$s)</string>
+    <string name="cpu_deep_sleep_time">CPU en reposo (%1$s)</string>
     <string name="cpu_deep_sleep_time_long">Tiempo de CPU en reposo profundo (%1$s)</string>
     <string name="cpu_deep_sleep_time_notification_comments">Muestra el tiempo que la CPU ha estado en reposo profundo (ociosa) y el porcentaje del tiempo total</string>
     <string name="cpu_deep_sleep_percent_long">Porcentaje de CPU en reposo profundo (%1$s)</string>
@@ -358,7 +358,7 @@
     <string name="back">Atrás</string>
 
     <string name="backup_restore">Copia de seguridad y restauración</string>
-    <string name="backup_restore_body">Exporta o importa todos los ajustes y datos históricos</string>
+    <string name="backup_restore_body">Exporta o importa los ajustes de la app y datos históricos</string>
     <string name="export_backup">Exportar</string>
     <string name="import_backup">Importar</string>
     <string name="backup_exported">Copia de seguridad creada correctamente</string>
