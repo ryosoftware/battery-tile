@@ -17,6 +17,7 @@ import com.ryosoftware.battery_tile.data.ScreenState
 class NotificationServiceUIBuilder(
     intent: Intent,
     lastStatsResetTime: Long,
+    private val lastStatsResetReason: LastStatsResetReason?,
     deepSleepTimeAtLastStatsReset: Long,
     screenOnTimeSinceBoot: Long,
     screenOnTimeSinceLastStatsReset: Long,
@@ -69,6 +70,8 @@ class NotificationServiceUIBuilder(
 
     fun isVisible(notificationField: NotificationField, prefs: NotificationPreferences): Boolean =
         when (notificationField) {
+            NotificationField.UPTIME_SINCE_LAST_STATS_RESET -> (!prefs.isFieldVisible(NotificationField.UPTIME_SINCE_BOOT)) || (lastStatsResetReason != LastStatsResetReason.DEVICE_REBOOT)
+            NotificationField.CPU_DEEP_SLEEP_TIME_SINCE_LAST_STATS_RESET -> (!prefs.isFieldVisible(NotificationField.CPU_DEEP_SLEEP_TIME_SINCE_BOOT)) || (lastStatsResetReason != LastStatsResetReason.DEVICE_REBOOT)
             NotificationField.BATTERY_CHARGING_TIME -> isCharging && lastBatteryEventTime != 0L
             else -> true
         }

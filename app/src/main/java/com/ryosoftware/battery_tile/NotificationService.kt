@@ -1064,7 +1064,7 @@ class NotificationService : Service() {
     private fun buildServiceNotification(): Notification {
         fun buildText(notificationServiceUIBuilder: NotificationServiceUIBuilder): String {
             return NotificationServiceUIBuilder.NotificationField.entries
-                .filter { notificationServiceUIBuilder.isVisible(it, prefs) && prefs.isFieldVisible(it) }
+                .filter { prefs.isFieldVisible(it) && notificationServiceUIBuilder.isVisible(it, prefs) }
                 .sortedBy { prefs.getFieldPosition(it) }
                 .mapNotNull { field ->
                     val value = notificationServiceUIBuilder.toString(this, field, prefs, appPrefs)
@@ -1082,16 +1082,17 @@ class NotificationService : Service() {
             val screenOnFields = getScreenOnTime()
             val snapshot = binder.getBatteryDataSnapshot()
             val notificationServiceUIBuilder = NotificationServiceUIBuilder(
-                batteryIntent,
-                lastStatsResetTime,
-                deepSleepTimeAtLastStatsReset,
-                if (screenOnTimeSinceBootIsValid) screenOnFields.sinceBoot else -1L,
-                screenOnFields.sinceLastReset,
-                lastBatteryEventTime,
-                batteryManager,
-                isScreenOn,
-                snapshot.recentReadings,
-                snapshot.recentScreenStates)
+                intent = batteryIntent,
+                lastStatsResetTime = lastStatsResetTime,
+                lastStatsResetReason = lastStatsResetReason,
+                deepSleepTimeAtLastStatsReset = deepSleepTimeAtLastStatsReset,
+                screenOnTimeSinceBoot = if (screenOnTimeSinceBootIsValid) screenOnFields.sinceBoot else -1L,
+                screenOnTimeSinceLastStatsReset = screenOnFields.sinceLastReset,
+                lastBatteryEventTime = lastBatteryEventTime,
+                batteryManager = batteryManager,
+                screenOn = isScreenOn,
+                recentReadings = snapshot.recentReadings,
+                recentScreenStates = snapshot.recentScreenStates)
 
             buildText(notificationServiceUIBuilder)
         }
