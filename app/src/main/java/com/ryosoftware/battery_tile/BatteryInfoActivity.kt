@@ -19,20 +19,24 @@ class BatteryInfoActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            val context = LocalContext.current
-            val prefs = remember { BatteryTilePreferences(context) }
-            val appPrefs = remember { AppPreferences(context) }
-            val sheetState = rememberModalBottomSheetState(true)
+            ActivityTheme {
+                val context = LocalContext.current
 
-            ModalBottomSheet(
-                onDismissRequest = { finish() },
-                sheetState = sheetState
-            ) {
-                BatteryInfoContent(
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                    prefs = prefs,
-                    appPrefs = appPrefs
-                )
+                val prefs = remember { BatteryTilePreferences(context) }
+                val appPrefs = remember { AppPreferences(context) }
+
+                val sheetState = rememberModalBottomSheetState(true)
+
+                ModalBottomSheet(
+                    onDismissRequest = { finish() },
+                    sheetState = sheetState
+                ) {
+                    BatteryInfoContent(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        prefs = prefs,
+                        appPrefs = appPrefs
+                    )
+                }
             }
         }
     }

@@ -58,15 +58,7 @@ class MainActivity : ComponentActivity() {
         if (appPrefs.batteryCapacityDesign == -1) appPrefs.batteryCapacityDesign = getBatteryCapacityDesign(this)
 
         setContent {
-            val colorScheme = when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                    val context = LocalContext.current
-                    if (isSystemInDarkTheme()) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-                }
-                else -> if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
-            }
-
-            MaterialTheme(colorScheme = colorScheme) {
+            ActivityTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val context = LocalContext.current
                     val prefs = remember { BatteryTilePreferences(context) }
