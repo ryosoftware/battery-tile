@@ -16,6 +16,7 @@ import com.ryosoftware.battery_tile.data.BatteryReading
 import com.ryosoftware.battery_tile.data.ScreenState
 
 class NotificationServiceUIBuilder(
+    context: Context,
     intent: Intent,
     lastStatsResetTime: Long,
     private val lastStatsResetReason: LastStatsResetReason?,
@@ -28,6 +29,7 @@ class NotificationServiceUIBuilder(
     private val recentReadings: List<BatteryReading>,
     private val recentScreenStates: List<ScreenState>
 ) : BaseUIBuilder(
+    context,
     intent,
     lastStatsResetTime,
     deepSleepTimeAtLastStatsReset,
@@ -69,12 +71,12 @@ class NotificationServiceUIBuilder(
 
     private val recentConsumptionValues:DischargeRateStats? by lazy {
         if ((!isCharging) && (recentReadings.size >= MIN_RECENT_READINGS)) {
-            val updatedRecentReadings = recentReadings.toMutableList()
-            val updatedRecentScreenStates = recentScreenStates.toMutableList()
+            val updatableRecentReadings = recentReadings as MutableList<BatteryReading>
+            val updatableRecentScreenStates = recentScreenStates as MutableList<ScreenState>
 
-            NotificationService.addToRecentBuffers(updatedRecentReadings, updatedRecentScreenStates, this, screenOn)
+            NotificationService.addToRecentBuffers(updatableRecentReadings, updatableRecentScreenStates, this, screenOn)
 
-            val recentConsumptionNumbers = calculateDischargeRates(updatedRecentReadings, updatedRecentScreenStates)
+            val recentConsumptionNumbers = calculateDischargeRates(updatableRecentReadings, updatableRecentScreenStates)
             if ((recentConsumptionNumbers != null) && (recentConsumptionNumbers.endTime - recentConsumptionNumbers.startTime > MIN_RECENT_INTERVAL)) {
                 recentConsumptionNumbers
             } else null
@@ -92,8 +94,8 @@ class NotificationServiceUIBuilder(
         when (notificationField) {
             NotificationField.BATTERY_RECENT_CONSUMPTION -> {
                 val recents = recentConsumptionValues
-                if (recents != null) {
-                    context.getString(R.string.recent_consumption_from_interval, getStringTimeFromInterval(context, now - recents.startTime))
+                if ((recents != null) && (recents.overallDischargePercent != null) && (recents.overallDischargePercent > 0)) {
+                    context.getString(R.string.recent_consumption_from_interval, getStringPercent(context, recents.overallDischargePercent), getStringTimeFromInterval(context, now - recents.startTime))
                 } else null
             }
             NotificationField.DATA_SINCE_BOOT -> {

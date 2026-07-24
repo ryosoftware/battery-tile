@@ -37,17 +37,6 @@ class MainActivity : ComponentActivity() {
     private var batteryOptimizationsBypassPermissionRequested = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        fun getBatteryCapacityDesign(context: Context): Int =
-            runCatching {
-                @SuppressLint("PrivateApi")
-                val cls = Class.forName("com.android.internal.os.PowerProfile")
-                val instance = try { cls.getConstructor(Context::class.java).newInstance(context) } catch (e: NoSuchMethodException) { cls.getDeclaredConstructor().newInstance() }
-                when (val result = cls.getMethod("getBatteryCapacity").invoke(instance)) {
-                    is Number -> result.toInt()
-                    else -> 0
-                }
-            }.getOrDefault(0)
-
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
@@ -55,7 +44,7 @@ class MainActivity : ComponentActivity() {
         val appPrefs = AppPreferences(this)
         screen = if (!appPrefs.isFirstRun) Screen.Selector else Screen.Main
 
-        if (appPrefs.batteryCapacityDesign == -1) appPrefs.batteryCapacityDesign = getBatteryCapacityDesign(this)
+        if (appPrefs.batteryCapacityDesign == -1) appPrefs.batteryCapacityDesign = BatteryIntentHelper.getBatteryCapacityDesign(this)
 
         setContent {
             ActivityTheme {

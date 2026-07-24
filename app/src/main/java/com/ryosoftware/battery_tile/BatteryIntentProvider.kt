@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.SystemClock
+import android.text.format.DateUtils
 
 interface BatteryIntentProvider {
     fun get(useFreshValue: Boolean): Intent?
@@ -18,7 +19,7 @@ class CachedBatteryIntentProvider(context: Context) : BatteryIntentProvider {
     private var cachedTime = 0L
 
     companion object {
-        private const val CACHE_DURATION = 5_000L
+        private const val CACHE_DURATION = 5 * DateUtils.SECOND_IN_MILLIS
     }
 
     override fun get(useFreshValue: Boolean): Intent? {

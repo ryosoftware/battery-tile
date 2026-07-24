@@ -125,9 +125,10 @@ fun BatteryInfoContent(
                 }
             } else {
                 val fields = listOf(
+                    BatteryIntentHelper.BATTERY_STATUS,
                     BatteryIntentHelper.BATTERY_LEVEL,
                     BatteryIntentHelper.BATTERY_CURRENT_CONSUMPTION,
-                    BatteryIntentHelper.BATTERY_STATUS,
+                    BatteryIntentHelper.BATTERY_CHARGE,
                     BatteryIntentHelper.BATTERY_TEMPERATURE,
                     BatteryIntentHelper.BATTERY_VOLTAGE,
                     BatteryIntentHelper.BATTERY_TECHNOLOGY,
@@ -135,7 +136,6 @@ fun BatteryInfoContent(
                     BatteryIntentHelper.BATTERY_CYCLES_COUNT,
                     BATTERY_CAPACITY_DESIGN,
                     BATTERY_CAPACITY_CURRENT,
-                    BatteryIntentHelper.BATTERY_CHARGE,
                     BATTERY_PROPERTY_ENERGY_COUNTER,
                 )
 
@@ -178,7 +178,7 @@ fun BatteryInfoContent(
 }
 
 private fun getBatteryHelper(context: Context, batteryManager: BatteryManager): BatteryIntentHelper? =
-    Main.from(context).batteryIntentProvider.get()?.let { BatteryIntentHelper(it, batteryManager) }
+    Main.from(context).batteryIntentProvider.get()?.let { BatteryIntentHelper(context, it, batteryManager) }
 
 private fun getBatteryFieldLabel(context: Context, field: String): String =
     when (field) {

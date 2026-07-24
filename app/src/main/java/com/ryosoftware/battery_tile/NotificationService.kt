@@ -5,26 +5,22 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
-import android.content.ComponentCallbacks
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
-import android.content.res.Configuration
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
-import android.os.LocaleList
 import android.os.Looper
 import android.os.SystemClock
+import android.text.format.DateUtils
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import com.ryosoftware.battery_tile.Main.Companion.hasPostNotificationsPermission
 import com.ryosoftware.battery_tile.Main.Companion.isScreenOn
-import com.ryosoftware.battery_tile.NotificationServiceUIBuilder.NotificationField.Companion.getLabel
-import com.ryosoftware.battery_tile.Utils.Companion.getStringTimeFromInterval
 import com.ryosoftware.battery_tile.WhatAppOpens.Companion.getIntent
 import com.ryosoftware.battery_tile.data.BatteryReading
 import com.ryosoftware.battery_tile.data.BatteryRepository
@@ -58,16 +54,21 @@ data class ScreenOnFields(
 )
 
 interface IBatteryServiceData {
+    enum class RecentReadingsAccessType {
+        RO,
+        RDWR,
+    }
+
     data class BatteryServiceDataSnapshot(
         val screenOnTimeSinceBoot: Long,
         val screenOnTimeSinceLastStatsReset: Long,
         val deepSleepTimeAtLastStatsReset: Long,
         val lastStatsResetTime: Long,
-        val recentReadings: List<BatteryReading> = emptyList(),
-        val recentScreenStates: List<ScreenState> = emptyList()
+        val recentReadings: List<BatteryReading>? = null,
+        val recentScreenStates: List<ScreenState>? = null
     )
 
-    fun getBatteryDataSnapshot(): BatteryServiceDataSnapshot
+    fun getBatteryDataSnapshot(recentReadingsAccessType: RecentReadingsAccessType? = null): BatteryServiceDataSnapshot
 }
 
 class NotificationServicePreferences(context: Context): Preferences(context, FILENAME) {
@@ -118,10 +119,10 @@ class NotificationService : Service() {
         private const val TEMPERATURE_WARNING_NOTIFICATION_DELETE_REQUEST_CODE = TEMPERATURE_WARNING_NOTIFICATION_CLICK_REQUEST_CODE + 1
         private const val HEALTH_WARNING_NOTIFICATION_CLICK_REQUEST_CODE = TEMPERATURE_WARNING_NOTIFICATION_DELETE_REQUEST_CODE + 1
         private const val LAST_STATS_RESET_NOTIFICATION_CLICK_REQUEST_CODE = HEALTH_WARNING_NOTIFICATION_CLICK_REQUEST_CODE + 1
-        private const val POWER_CONNECTED_NOTIFICATION_TIMEOUT = 10_000L
+        private const val POWER_CONNECTED_NOTIFICATION_TIMEOUT = 10 * DateUtils.SECOND_IN_MILLIS
         private const val POWER_DISCONNECTED_NOTIFICATION_TIMEOUT = POWER_CONNECTED_NOTIFICATION_TIMEOUT
-        private const val UPDATE_SERVICE_NOTIFICATION_INTERVAL = 15_000L
-        private const val DATA_PERSISTENCE_THRESHOLD_TOLERANCE = 600_000L
+        private const val UPDATE_SERVICE_NOTIFICATION_INTERVAL = 30 * DateUtils.SECOND_IN_MILLIS
+        private const val DATA_PERSISTENCE_THRESHOLD_TOLERANCE = 10 * DateUtils.MINUTE_IN_MILLIS
         const val ACTION_RESET_STATS = "${BuildConfig.APPLICATION_ID}.RESET_STATS"
         const val EXTRA_REASON = "reason"
         const val ACTION_UPDATE_CHARGED_NOTIFICATION_ALARM = "${BuildConfig.APPLICATION_ID}.UPDATE_CHARGED_NOTIFICATION_ALARM"
@@ -133,8 +134,9 @@ class NotificationService : Service() {
         private const val EXTRA_TEMPERATURE = "temperature"
         private const val SAVE_READINGS_BATTERY_LEVEL_THRESHOLD = 1
         private const val SAVE_READINGS_BATTERY_TEMPERATURE_THRESHOLD = 0.5f
-        const val MAX_RECENT_INTERVAL = 4 * 60 * 60 * 1_000L
-        const val MIN_RECENT_INTERVAL = 15 * 60 * 1_000L
+        const val MAX_RECENT_INTERVAL = 2.5 * DateUtils.DAY_IN_MILLIS
+        const val MAX_RECENT_ITEMS = 1000
+        const val MIN_RECENT_INTERVAL = 15 * DateUtils.MINUTE_IN_MILLIS
         const val MIN_RECENT_READINGS = 5
 
         private var _isRunning = MutableStateFlow(false)
@@ -280,7 +282,7 @@ class NotificationService : Service() {
 
                 val batteryIntentHelper = run {
                     val batteryIntent = Main.from(context).batteryIntentProvider.get(true)
-                    batteryIntent?.let { BatteryIntentHelper(it, null) }
+                    batteryIntent?.let { BatteryIntentHelper(context, it, null) }
                 }
 
                 putLong(NotificationServicePreferences.KEY_LAST_STATS_RESET_TIME, now - interval)
@@ -329,12 +331,9 @@ class NotificationService : Service() {
                         plugType = batteryIntentHelper.plugType
                     )
                 )
-
-                recentReadings.removeAll { it.timestamp < now - MAX_RECENT_INTERVAL }
             }
 
             recentScreenStates.add(ScreenState(timestamp = now, screenOn = screenOn))
-            recentScreenStates.removeAll { it.timestamp < now - 3 * MAX_RECENT_INTERVAL }
         }
 
         fun runOrStop(context: Context, action: String?) {
@@ -451,15 +450,22 @@ class NotificationService : Service() {
     private val recentScreenStates = mutableListOf<ScreenState>()
 
     private val binder = object : android.os.Binder(), IBatteryServiceData {
-        override fun getBatteryDataSnapshot(): IBatteryServiceData.BatteryServiceDataSnapshot =
-            IBatteryServiceData.BatteryServiceDataSnapshot(
-                screenOnTimeSinceBoot = if (this@NotificationService.screenOnTimeSinceBootIsValid) this@NotificationService.screenOnTimeSinceBoot else -1L,
+        override fun getBatteryDataSnapshot(recentReadingsAccessType: IBatteryServiceData.RecentReadingsAccessType?): IBatteryServiceData.BatteryServiceDataSnapshot {
+            val (recentReadings, recentScreenStates) = when (recentReadingsAccessType) {
+                IBatteryServiceData.RecentReadingsAccessType.RO -> this@NotificationService.recentReadings.toList() to this@NotificationService.recentScreenStates.toList()
+                IBatteryServiceData.RecentReadingsAccessType.RDWR -> this@NotificationService.recentReadings.toMutableList() to this@NotificationService.recentScreenStates.toMutableList()
+                else -> null to null
+            }
+
+            return IBatteryServiceData.BatteryServiceDataSnapshot(
+                screenOnTimeSinceBoot = if (this@NotificationService.screenOnTimeSinceBootIsValid) { this@NotificationService.screenOnTimeSinceBoot } else { -1L },
                 screenOnTimeSinceLastStatsReset = this@NotificationService.screenOnTimeSinceLastStatsReset,
                 deepSleepTimeAtLastStatsReset = this@NotificationService.deepSleepTimeAtLastStatsReset,
                 lastStatsResetTime = this@NotificationService.lastStatsResetTime,
-                recentReadings = this@NotificationService.recentReadings.toList(),
-                recentScreenStates = this@NotificationService.recentScreenStates.toList()
+                recentReadings = recentReadings,
+                recentScreenStates = recentScreenStates
             )
+        }
     }
 
     override fun onBind(intent: Intent): IBinder = binder
@@ -541,6 +547,8 @@ class NotificationService : Service() {
 
         lastScreenEventTime = millisSinceBoot
         isScreenOn = isScreenOn()
+
+        clearRecentBuffers()
     }
 
     private fun initializeService() {
@@ -557,7 +565,7 @@ class NotificationService : Service() {
         if (isScreenOn) onScreenTurnedOn()
 
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
-        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it, null) }
+        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(this, it, null) }
 
         if (batteryIntentHelper != null) {
             val millisSinceBoot = SystemClock.elapsedRealtime()
@@ -625,8 +633,24 @@ class NotificationService : Service() {
         return ScreenOnFields(screenOnTimeSinceBoot + interval, screenOnTimeSinceLastStatsReset + interval)
     }
 
-    private fun addToRecentBuffers(batteryIntentHelper: BatteryIntentHelper?, screenOn: Boolean) =
-        addToRecentBuffers(recentReadings, recentScreenStates, batteryIntentHelper, screenOn)
+    private fun clearRecentBuffers() {
+        recentReadings.clear()
+        recentScreenStates.clear()
+    }
+
+    private fun addToRecentBuffers(batteryIntentHelper: BatteryIntentHelper? = null) {
+        addToRecentBuffers(recentReadings, recentScreenStates, batteryIntentHelper, isScreenOn)
+
+        val now = System.currentTimeMillis()
+
+        recentReadings.removeAll { it.timestamp < now - MAX_RECENT_INTERVAL }
+        while (recentReadings.size > MAX_RECENT_ITEMS) { recentReadings.removeAt(0) }
+
+        recentScreenStates.removeAll { it.timestamp < now - MAX_RECENT_INTERVAL * 1.5 }
+        while (recentScreenStates.size > MAX_RECENT_ITEMS) { recentScreenStates.removeAt(0) }
+
+        logger.log("Recent buffers size changed: recentReadings=${recentReadings.size}, recentScreenStates=${recentScreenStates.size}")
+    }
 
     private fun onScreenTurnedOn() {
         persistData()
@@ -634,7 +658,7 @@ class NotificationService : Service() {
         isScreenOn = true
 
         saveScreenStateToDB()
-        addToRecentBuffers(null, true)
+        addToRecentBuffers()
 
         updateNotificationTask.startRepeating(0L, UPDATE_SERVICE_NOTIFICATION_INTERVAL)
     }
@@ -644,7 +668,7 @@ class NotificationService : Service() {
         isScreenOn = false
 
         saveScreenStateToDB()
-        addToRecentBuffers(null, false)
+        addToRecentBuffers()
 
         updateNotificationTask.stop()
     }
@@ -655,7 +679,7 @@ class NotificationService : Service() {
 
             repository.insertScreenState(ScreenState(timestamp = now, screenOn = isScreenOn))
 
-            val batteryHistoryWindowInMillis = (appPrefs.batteryHistoryWindow + 1) * 24 * 60 * 60 * 1_000L
+            val batteryHistoryWindowInMillis = (appPrefs.batteryHistoryWindow + 1) * DateUtils.DAY_IN_MILLIS
             val batteryScreenHistoryCutOffTime = now - batteryHistoryWindowInMillis
             repository.deleteScreenStatesOlderThan(batteryScreenHistoryCutOffTime)
         }
@@ -663,7 +687,7 @@ class NotificationService : Service() {
 
     private fun onPowerConnected() {
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
-        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it, null) }
+        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(this, it, null) }
         val millisSinceBoot = SystemClock.elapsedRealtime()
 
         lastBatteryEventTime = millisSinceBoot
@@ -674,11 +698,13 @@ class NotificationService : Service() {
         showPowerConnectedNotification(batteryIntentHelper)
 
         hideBatteryLowChargedNotification()
+
+        updateNotificationTask.executeNow()
     }
 
     private fun onPowerDisconnected() {
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
-        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it, null) }
+        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(this, it, null) }
         val millisSinceBoot = SystemClock.elapsedRealtime()
 
         if ((! batteryCharged) || (!prefs.isBlockingPowerDisconnectNotificationWhenBatteryIsCharged))
@@ -694,7 +720,7 @@ class NotificationService : Service() {
                         (lastChargingStartLevel >= 0) &&
                         (batteryIntentHelper.level >= (lastChargingStartLevel + prefs.resetStatsBatteryThresholdPercent).coerceAtMost(100))
                     ) &&
-                    (lastBatteryEventTime + prefs.resetStatsBatteryChargeTime * 60_000L < millisSinceBoot)
+                    (lastBatteryEventTime + prefs.resetStatsBatteryChargeTime * DateUtils.MINUTE_IN_MILLIS < millisSinceBoot)
                 )
             )
         )
@@ -705,6 +731,8 @@ class NotificationService : Service() {
         lastBatteryEventTime = millisSinceBoot
 
         hideChargedNotification()
+
+        updateNotificationTask.executeNow()
     }
 
     private fun isBatteryCharged(batteryIntentHelper: BatteryIntentHelper): Boolean {
@@ -723,7 +751,7 @@ class NotificationService : Service() {
     }
 
     private fun onBatteryChanged(intent: Intent) {
-        val batteryIntentHelper = BatteryIntentHelper(intent, batteryManager)
+        val batteryIntentHelper = BatteryIntentHelper(this, intent, batteryManager)
 
         val status = batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_STATUS, appPrefs, true)
         val level = batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_LEVEL, appPrefs, true)
@@ -737,14 +765,14 @@ class NotificationService : Service() {
 
                 batteryCharged = true
 
-                val batteryChargedNotificationInterval = prefs.notificationChargedInterval * 60_000L
+                val batteryChargedNotificationInterval = prefs.notificationChargedInterval * DateUtils.MINUTE_IN_MILLIS
                 scheduleChargedNotificationAlarm(batteryChargedNotificationInterval)
             }
         }
 
         fun setBatteryCapacityCurrentIfNeeded() {
             if (batteryIntentHelper.isCharging && ((batteryIntentHelper.level == 100) || batteryIntentHelper.isFullCharged)) {
-                appPrefs.batteryCapacityCurrent = batteryIntentHelper.charge / 1000
+                appPrefs.batteryCapacityCurrent = (batteryIntentHelper.charge / 1_000L).toInt()
             }
         }
 
@@ -794,7 +822,7 @@ class NotificationService : Service() {
 
         persistData()
 
-        addToRecentBuffers(batteryIntentHelper, isScreenOn)
+        addToRecentBuffers(batteryIntentHelper)
 
         scheduleChargedNotificationAlarmIfNeeded()
 
@@ -807,6 +835,8 @@ class NotificationService : Service() {
         showOrHideHealthNotificationIfNeeded()
 
         saveBatteryDataToDB(batteryIntentHelper)
+
+        updateNotificationTask.executeNow()
     }
 
     private fun saveBatteryDataToDB(batteryIntentHelper: BatteryIntentHelper) {
@@ -893,7 +923,7 @@ class NotificationService : Service() {
 
                 logger.log("Battery reading stored at DB")
 
-                val batteryReadingsHistoryWindowInMillis = appPrefs.batteryHistoryWindow * 24 * 60 * 60 * 1_000L
+                val batteryReadingsHistoryWindowInMillis = appPrefs.batteryHistoryWindow * DateUtils.DAY_IN_MILLIS
                 val batteryReadingsHistoryCutOffTime = now - batteryReadingsHistoryWindowInMillis
                 repository.deleteBatteryReadingsOlderThan(batteryReadingsHistoryCutOffTime)
 
@@ -955,8 +985,8 @@ class NotificationService : Service() {
                                     endTime = now,
                                     endLevel = level,
                                     endCharge = charge,
-                                    durationMinutes = durationMs / 60_000L,
-                                    screenOnTimeMinutes = screenOnTimeMs / 60_000L,
+                                    durationMinutes = durationMs / DateUtils.MINUTE_IN_MILLIS,
+                                    screenOnTimeMinutes = screenOnTimeMs / DateUtils.MINUTE_IN_MILLIS,
                                     avgTemperatureCelsius = averageTemperature,
                                     maxTemperatureCelsius = if (validBatteryReadings.isNotEmpty()) validBatteryReadings.maxOf { it.temperatureCelsius } else null,
                                     minTemperatureCelsius = if (validBatteryReadings.isNotEmpty()) validBatteryReadings.minOf { it.temperatureCelsius } else null
@@ -965,7 +995,7 @@ class NotificationService : Service() {
                                 logger.log("Discharge session end stored at DB")
                             }
 
-                            val dischargingHistoryWindowInMillis = appPrefs.dischargingHistoryWindow * 24 * 60 * 60 * 1_000L
+                            val dischargingHistoryWindowInMillis = appPrefs.dischargingHistoryWindow * DateUtils.DAY_IN_MILLIS
                             val dischargingHistoryCutOffTime = now - dischargingHistoryWindowInMillis
 
                             repository.deleteDischargeSessionsOlderThan(dischargingHistoryCutOffTime)
@@ -1012,7 +1042,7 @@ class NotificationService : Service() {
                                     endTime = now,
                                     endLevel = level,
                                     endCharge = charge,
-                                    durationMinutes = durationMs / 60_000L,
+                                    durationMinutes = durationMs / DateUtils.MINUTE_IN_MILLIS,
                                     avgTemperatureCelsius = averageTemperature,
                                     maxTemperatureCelsius = if (validBatteryReadings.isNotEmpty()) validBatteryReadings.maxOf { it.temperatureCelsius } else null,
                                     minTemperatureCelsius = if (validBatteryReadings.isNotEmpty()) validBatteryReadings.minOf { it.temperatureCelsius } else null
@@ -1021,7 +1051,7 @@ class NotificationService : Service() {
                                 logger.log("Charging session end stored at DB")
                             }
 
-                            val chargingHistoryWindowInMillis = appPrefs.chargingHistoryWindow * 24 * 60 * 60 * 1_000L
+                            val chargingHistoryWindowInMillis = appPrefs.chargingHistoryWindow * DateUtils.DAY_IN_MILLIS
                             val chargingHistoryCutOffTime = now - chargingHistoryWindowInMillis
 
                             repository.deleteChargingSessionsOlderThan(chargingHistoryCutOffTime)
@@ -1042,8 +1072,9 @@ class NotificationService : Service() {
         }
         else {
             val screenOnFields = getScreenOnTime()
-            val snapshot = binder.getBatteryDataSnapshot()
+            val snapshot = binder.getBatteryDataSnapshot(IBatteryServiceData.RecentReadingsAccessType.RDWR)
             val notificationServiceUIBuilder = NotificationServiceUIBuilder(
+                context = this,
                 intent = batteryIntent,
                 lastStatsResetTime = lastStatsResetTime,
                 lastStatsResetReason = lastStatsResetReason,
@@ -1053,8 +1084,8 @@ class NotificationService : Service() {
                 lastBatteryEventTime = lastBatteryEventTime,
                 batteryManager = batteryManager,
                 screenOn = isScreenOn,
-                recentReadings = snapshot.recentReadings,
-                recentScreenStates = snapshot.recentScreenStates)
+                recentReadings = snapshot.recentReadings!!,
+                recentScreenStates = snapshot.recentScreenStates!!)
 
             fun buildText(notificationServiceUIBuilder: NotificationServiceUIBuilder): String {
                 return NotificationServiceUIBuilder.NotificationField.entries
@@ -1214,13 +1245,13 @@ class NotificationService : Service() {
 
     private fun showOrHideChargedNotification() {
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
-        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it, null) }
+        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(this, it, null) }
 
         logger.log("Received charged notification redraw alarm")
 
         val repeatInterval = prefs.notificationChargedRepeatInterval
         val shouldScheduleAlarm = repeatInterval != 0
-        val delay = repeatInterval * 60_000L
+        val delay = repeatInterval * DateUtils.MINUTE_IN_MILLIS
 
         when {
             batteryIntentHelper == null -> {
@@ -1291,13 +1322,13 @@ class NotificationService : Service() {
 
     private fun showOrHideBatteryLowChargedNotification() {
         val batteryIntent = Main.from(this).batteryIntentProvider.get(true)
-        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(it, null) }
+        val batteryIntentHelper = batteryIntent?.let { BatteryIntentHelper(this, it, null) }
 
         logger.log("Received battery low notification redraw alarm")
 
         val repeatInterval = prefs.notificationLowChargeRepeatInterval
         val shouldScheduleAlarm = repeatInterval != 0
-        val delay = repeatInterval * 60_000L
+        val delay = repeatInterval * DateUtils.MINUTE_IN_MILLIS
 
         when {
             batteryIntentHelper == null -> {

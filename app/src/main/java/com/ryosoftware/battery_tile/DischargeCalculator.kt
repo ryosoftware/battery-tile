@@ -1,5 +1,6 @@
 package com.ryosoftware.battery_tile
 
+import android.text.format.DateUtils
 import com.ryosoftware.battery_tile.data.BatteryReading
 import com.ryosoftware.battery_tile.data.ScreenState
 import kotlin.math.max
@@ -10,6 +11,8 @@ data class DischargeRateStats(
     val overallSpeed: Float?,
     val screenOnSpeed: Float?,
     val screenOffSpeed: Float?,
+    val overallDischargePercent: Float?,
+    val overallDischargeMaH: Float?,
     val screenOnDischargePercent: Float?,
     val screenOffDischargePercent: Float?
 )
@@ -23,9 +26,9 @@ internal fun calculateDischargeRates(readings: List<BatteryReading>, screenState
         .filter { it.timestamp in analysisStartTime..endTime }
         .sortedBy { it.timestamp }
 
-    if (sortedReadings.size < 2) return DischargeRateStats(analysisStartTime, endTime, null, null, null, null, null)
+    if (sortedReadings.size < 2) return DischargeRateStats(analysisStartTime, endTime, null, null, null, null, null, null, null)
     if (sortedReadings.any { it.batteryCharge <= 0 }) {
-        return DischargeRateStats(analysisStartTime, endTime, null, null, null, null, null)
+        return DischargeRateStats(analysisStartTime, endTime, null, null, null, null, null, null, null)
     }
 
     var wasScreenOn = sortedScreenStates.lastOrNull { it.timestamp < startTime }?.screenOn ?: false
@@ -106,18 +109,18 @@ internal fun calculateDischargeRates(readings: List<BatteryReading>, screenState
     val screenOffDischargePercent = screenOffDischargeMicroAh * percentPerMicroAh
 
     val overallSpeed = if (totalDischargeDurationMs > 0) {
-        totalDischargePercent / (totalDischargeDurationMs / 3_600_000f)
+        totalDischargePercent / (totalDischargeDurationMs.toFloat() / DateUtils.HOUR_IN_MILLIS)
     } else null
 
     val screenOnSpeed = if (screenOnDurationMs > 0) {
-        screenOnDischargePercent / (screenOnDurationMs / 3_600_000f)
+        screenOnDischargePercent / (screenOnDurationMs.toFloat() / DateUtils.HOUR_IN_MILLIS)
     } else null
 
     val screenOffSpeed = if (screenOffDurationMs > 0) {
-        screenOffDischargePercent / (screenOffDurationMs / 3_600_000f)
+        screenOffDischargePercent / (screenOffDurationMs.toFloat() / DateUtils.HOUR_IN_MILLIS)
     } else null
 
-    return DischargeRateStats(analysisStartTime, endTime, overallSpeed, screenOnSpeed, screenOffSpeed, screenOnDischargePercent, screenOffDischargePercent)
+    return DischargeRateStats(analysisStartTime, endTime, overallSpeed, screenOnSpeed, screenOffSpeed, totalDischargePercent, totalDischargeMicroAh / 1_000L, screenOnDischargePercent, screenOffDischargePercent)
 }
 
 internal fun calculateDischargeRates(readings: List<BatteryReading>, screenStates: List<ScreenState>): DischargeRateStats? =

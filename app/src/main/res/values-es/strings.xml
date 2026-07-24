@@ -103,7 +103,7 @@
     <string name="mah_value_with_percent">%1$d mAh (%2$s)</string>
 
     <string name="battery_level">Nivel</string>
-    <string name="battery_level_notification_comments">Muestra el porcentaje de batería restante y, si está disponible, la carga restante (en mAh)</string>
+    <string name="battery_level_notification_comments">Muestra el porcentaje de batería restante y, si está disponible, la capacidad restante (en mAh)</string>
     <string name="battery_level_icon">Nivel (icono)</string>
     <string name="battery_level_and_charge">%1$s (%2$s)</string>
 
@@ -112,7 +112,7 @@
     <string name="battery_capacity_design">Capacidad nominal (especificaciones)</string>
     <string name="battery_capacity_current">Capacidad actual (calculada)</string>
 
-    <string name="remaining_charge">Carga restante</string>
+    <string name="remaining_charge">Capacidad restante</string>
 
     <string name="remaining_energy">Energía restante</string>
 
@@ -137,9 +137,9 @@
     <string name="current_consumption">Consumo actual</string>
     <string name="current_consumption_long">@string/current_consumption</string>
 
-    <string name="recent_consumption">Consumo</string>
-    <string name="recent_consumption_long">Estimación del consumo reciente</string>
-    <string name="recent_consumption_from_interval">Consumo (desde hace %1$s)</string>
+    <string name="recent_consumption">Estimación del consumo reciente</string>
+    <string name="recent_consumption_long">@string/recent_consumption</string>
+    <string name="recent_consumption_from_interval">%1$s de consumo en %2$s</string>
     <string name="recent_consumption_notification_comments">Muestra el consumo estimado de la batería (%/h) y, si está disponible, el consumo con la pantalla encendida (■) y apagada (□)</string>
     <string name="recent_consumption_format">%1$s (■ %2$s — □ %3$s)</string>
     <string name="recent_consumption_format_no_screen">%1$s</string>
@@ -148,13 +148,13 @@
     <string name="since_last_stats_reset">desde borrado</string>
 
     <string name="data_since">Datos (%1$s)</string>
-    <string name="data_since_notification_comments">Muestra el tiempo total y, si está disponible, el tiempo de pantalla (■) y el tiempo durante el que la CPU ha permanecido en reposo (Z)</string>
     <string name="data_since_long">@string/data_since</string>
-    <string name="data_since_boot_label">Inicio (hace %1$s)</string>
-    <string name="data_since_last_stats_reset_label">Borrado (hace %1$s)</string>
+    <string name="data_since_notification_comments">Muestra el tiempo total y, si está disponible, el tiempo de pantalla (■) y el tiempo durante el que la CPU ha permanecido en reposo (zZ)</string>
+    <string name="data_since_boot_label">Dispositivo iniciado hace %1$s</string>
+    <string name="data_since_last_stats_reset_label">Datos borrados hace %1$s</string>
     <string name="interval_value_with_percent">%1$s, %2$s</string>
     <string name="screen_on_data_value">■ (%1$s)</string>
-    <string name="cpu_deep_sleep_value">Z (%1$s)</string>
+    <string name="cpu_deep_sleep_value">zZ (%1$s)</string>
     <string name="data_values_separator">,&#160;</string>
 
     <string name="cpu_deep_sleep_percent_long">Porcentaje de CPU en reposo profundo (%1$s)</string>

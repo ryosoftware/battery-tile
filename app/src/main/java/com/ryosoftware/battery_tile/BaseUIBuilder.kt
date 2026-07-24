@@ -8,13 +8,14 @@ import androidx.annotation.StringRes
 import com.ryosoftware.battery_tile.Utils.Companion.getStringPercent
 
 abstract class BaseUIBuilder(
+    context: Context,
     intent: Intent,
     protected val lastStatsResetTime: Long,
     protected val deepSleepTimeAtLastStatsReset: Long,
     protected val screenOnTimeSinceBoot: Long,
     protected val screenOnTimeSinceLastStatsReset: Long,
     batteryManager: BatteryManager?
-) : BatteryIntentHelper(intent, batteryManager) {
+) : BatteryIntentHelper(context, intent, batteryManager) {
     val now: Long by lazy { System.currentTimeMillis() }
     val timeSinceBoot: Long by lazy { SystemClock.elapsedRealtime() }
     val deepSleepTimeSinceBoot: Long by lazy { timeSinceBoot - SystemClock.uptimeMillis() }

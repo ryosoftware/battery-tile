@@ -14,6 +14,7 @@ import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 import com.ryosoftware.battery_tile.Utils.Companion.getStringPercentFromInterval
 
 class BatteryTileUIBuilder(
+    context: Context,
     intent: Intent,
     lastStatsResetTime: Long,
     deepSleepTimeAtLastStatsReset: Long,
@@ -21,6 +22,7 @@ class BatteryTileUIBuilder(
     screenOnTimeSinceLastStatsReset: Long,
     batteryManager: BatteryManager
 ) : BaseUIBuilder(
+    context,
     intent,
     lastStatsResetTime,
     deepSleepTimeAtLastStatsReset,

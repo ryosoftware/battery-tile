@@ -1,6 +1,7 @@
 package com.ryosoftware.battery_tile
 
 import android.content.Context
+import android.text.format.DateUtils
 import androidx.annotation.StringRes
 
 class Utils {
@@ -27,7 +28,7 @@ class Utils {
             getStringPercentFromInterval(context, interval, total, R.string.percent_value_float, R.string.percent_value_integer)
 
         fun getStringTimeFromInterval(context: Context, interval: Long): String {
-            val totalMinutes = interval / 60_000L
+            val totalMinutes = interval / DateUtils.MINUTE_IN_MILLIS
             val days = totalMinutes / (24 * 60)
             val hours = (totalMinutes % (24 * 60)) / 60
             val minutes = totalMinutes % 60
@@ -42,7 +43,7 @@ class Utils {
         }
 
         private fun isImperceptible(interval: Long, total: Long, checkTime: Boolean, checkPercent: Boolean): Boolean {
-            if (checkTime && (interval / 60_000L == 0L)) return true
+            if (checkTime && (interval / DateUtils.MINUTE_IN_MILLIS == 0L)) return true
             if (checkPercent && (getPercentFromInterval(interval, total) == 0f)) return true
             return false
         }

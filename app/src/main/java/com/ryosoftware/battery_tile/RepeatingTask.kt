@@ -1,6 +1,7 @@
 package com.ryosoftware.battery_tile
 
 import android.os.Handler
+import kotlinx.coroutines.sync.Mutex
 
 class RepeatingTask(
     private val handler: Handler,
@@ -13,6 +14,19 @@ class RepeatingTask(
     var iteration = 0
         private set
 
+    private val mutex = Mutex()
+
+    private fun executeTask() {
+        if (mutex.tryLock()) {
+            try {
+                task()
+            }
+            finally {
+                mutex.unlock()
+            }
+        }
+    }
+
     fun startRepeating(initialDelayMillis: Long, repeatsDelayMillis: Long) {
         stop()
 
@@ -20,7 +34,8 @@ class RepeatingTask(
             override fun run() {
                 logger.log("$tag running now (iteration $iteration)")
 
-                task()
+                executeTask()
+
                 iteration++
                 if (repeatsDelayMillis != 0L) {
                     logger.log("$tag will rerun in ${repeatsDelayMillis / 1000} seconds, at $TIME_REFERENCE", System.currentTimeMillis() + repeatsDelayMillis)
@@ -48,7 +63,7 @@ class RepeatingTask(
     fun executeNow() {
         logger.log("$tag running forced now")
 
-        task()
+        executeTask()
     }
 
     fun stop() {

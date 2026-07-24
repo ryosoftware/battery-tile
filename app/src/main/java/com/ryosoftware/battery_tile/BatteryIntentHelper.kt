@@ -9,9 +9,9 @@ import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
 import kotlin.math.abs
 
-open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) {
+open class BatteryIntentHelper(context: Context, intent: Intent, batteryManager: BatteryManager?) {
     val level: Int
-    val charge: Int
+    val charge: Long
     val currentConsumption: Int
     val status: Int
     val health: Int
@@ -58,16 +58,58 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
                 BATTERY_CYCLES_COUNT -> context.getString(R.string.battery_cycles)
                 else -> ""
             }
+
+        private var batteryCapacityDesign: Int = -1
+
+        private fun calculateBatteryCapacityDesign(context: Context): Int =
+            runCatching {
+                @SuppressLint("PrivateApi")
+                val cls = Class.forName("com.android.internal.os.PowerProfile")
+                val instance = try {
+                    cls.getConstructor(Context::class.java).newInstance(context)
+                } catch (e: NoSuchMethodException) {
+                    cls.getDeclaredConstructor().newInstance()
+                }
+                when (val result = cls.getMethod("getBatteryCapacity").invoke(instance)) {
+                    is Number -> result.toInt()
+                    else -> 0
+                }
+            }.getOrDefault(0)
+
+        fun getBatteryCapacityDesign(context: Context): Int {
+            if (batteryCapacityDesign < 0) {
+                batteryCapacityDesign = calculateBatteryCapacityDesign(context)
+            }
+
+            return batteryCapacityDesign
+        }
     }
-
     init {
-        val intentLevel = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-        val intentLevelScale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+        fun getChargeMicroAh(context: Context, charge: Long, level: Int): Long {
+            if ((charge == Long.MIN_VALUE) || (charge < 0) || (level < 0)) return -1L
 
-        level = if (intentLevel >= 0 && intentLevelScale > 0) intentLevel * 100 / intentLevelScale else -1
+            val batteryCapacityDesign = getBatteryCapacityDesign(context)
+            if (batteryCapacityDesign <= 0) return -1L
 
-        val currentCharge = batteryManager?.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER) ?: Long.MIN_VALUE
-        charge = if (currentCharge == Long.MIN_VALUE) -1 else currentCharge.toInt()
+            val fraction = level / 100.0
+
+            val capacityIfMah = charge / fraction
+            val chargeMahIfMicroAh = charge / 1_000.0
+            val capacityIfMicroAh = chargeMahIfMicroAh / fraction
+
+            val errorIfMah = abs(capacityIfMah - batteryCapacityDesign)
+            val errorIfMicroAh = abs(capacityIfMicroAh - Companion.batteryCapacityDesign)
+
+            return if (errorIfMah < errorIfMicroAh) { charge * 1_000L } else { charge }
+        }
+
+        val rawIntentLevel = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+        val rawIntentLevelScale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+
+        level = if (rawIntentLevel >= 0 && rawIntentLevelScale > 0) rawIntentLevel * 100 / rawIntentLevelScale else -1
+
+        val rawCharge = batteryManager?.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER) ?: Long.MIN_VALUE
+        charge = getChargeMicroAh(context, rawCharge, level)
 
         status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN)
 
@@ -83,18 +125,18 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
 
         health = intent.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN)
 
-        val intentTemperature = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1)
-        temperatureCelsius = if (intentTemperature < 0) -1f else (intentTemperature / 10f)
+        val rawTemperature = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1)
+        temperatureCelsius = if (rawTemperature < 0) -1f else (rawTemperature / 10f)
 
         voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1)
 
-        val consumption = batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) ?: Int.MIN_VALUE
-        currentConsumption = if ((consumption == Int.MIN_VALUE) || (voltage <= 0)) -1 else abs(consumption) * voltage / 1_000_000
+        val rawCurrentConsumption = batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) ?: Int.MIN_VALUE
+        currentConsumption = if ((rawCurrentConsumption == Int.MIN_VALUE) || (voltage <= 0)) -1 else abs(rawCurrentConsumption) * voltage / 1_000_000
 
         present = intent.getBooleanExtra(BatteryManager.EXTRA_PRESENT, false)
 
-        val intentTechnology = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY)
-        technology = if (intentTechnology.isNullOrEmpty()) null else intentTechnology
+        val rawIntentTechnology = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY)
+        technology = if (rawIntentTechnology.isNullOrEmpty()) null else rawIntentTechnology
 
         @SuppressLint("InlinedApi")
         cyclesCount = if (isSupported(BATTERY_CYCLES_COUNT)) intent.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, -1) else -1
@@ -111,7 +153,7 @@ open class BatteryIntentHelper(intent: Intent, batteryManager: BatteryManager?) 
             BATTERY_CHARGE -> {
                 when {
                     charge < 0 -> null
-                    else -> context.getString(R.string.mah_value, charge / 1000)
+                    else -> context.getString(R.string.mah_value, charge / 1_000L)
                 }
             }
             BATTERY_CURRENT_CONSUMPTION -> {

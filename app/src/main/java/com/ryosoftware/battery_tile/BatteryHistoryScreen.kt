@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Paint
 import android.os.BatteryManager
+import android.text.format.DateUtils
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -455,7 +456,7 @@ private fun enrichReadingsWithScreenStates(
                         BatteryReading(
                             timestamp = state.timestamp,
                             batteryLevel = (prev.batteryLevel + (curr.batteryLevel - prev.batteryLevel) * progress).toInt(),
-                            batteryCharge = (prev.batteryCharge + (curr.batteryCharge - prev.batteryCharge) * progress).toInt(),
+                            batteryCharge = (prev.batteryCharge + (curr.batteryCharge - prev.batteryCharge) * progress).toLong(),
                             batteryStatus = prev.batteryStatus,
                             temperatureCelsius = prev.temperatureCelsius + (curr.temperatureCelsius - prev.temperatureCelsius) * progress,
                             voltage = (prev.voltage + (curr.voltage - prev.voltage) * progress).toInt(),
@@ -508,7 +509,7 @@ private fun UnifiedChart(
     @SuppressLint("ConfigurationScreenWidthHeight")
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val timeRangeMs = readings.last().timestamp - readings.first().timestamp
-    val chartWidth = ((timeRangeMs / 3_600_000f) * 40f).dp.coerceAtLeast(screenWidth - leftLabelWidth - rightLabelWidth)
+    val chartWidth = ((timeRangeMs.toFloat() / DateUtils.HOUR_IN_MILLIS) * 40f).dp.coerceAtLeast(screenWidth - leftLabelWidth - rightLabelWidth)
     val horizontalScrollState = rememberScrollState()
 
     LaunchedEffect(readings) {
@@ -936,7 +937,7 @@ private fun DualAxisChart(
 }
 
 private const val FLAKY_BATTERY_THRESHOLD = 85
-private const val FLAKY_CHARGING_PERIOD_GAP_MS = 30 * 60 * 1_000L
+private const val FLAKY_CHARGING_PERIOD_GAP_MS = 30 * DateUtils.MINUTE_IN_MILLIS
 private const val FLAKY_EVENT_THRESHOLD = 2
 
 private data class FlakyResult(
@@ -1135,6 +1136,7 @@ fun CombinedSessionsTab(
         if (flakyResult != null) {
             FlakyConnectionWarningCard(flakyResult, context)
         }
+
         if (completedCharge.isNotEmpty() || completedDischarge.isNotEmpty()) {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
@@ -1153,29 +1155,35 @@ fun CombinedSessionsTab(
                             fontWeight = FontWeight.Bold
                         )
 
-                        Spacer(Modifier.height(4.dp))
+                        if (totalChargePercent != 0) {
+                            Spacer(Modifier.height(4.dp))
 
-                        Text(
-                            text = stringResource(
-                                R.string.label_and_value,
-                                stringResource(R.string.global_stats_charge_total_percent),
-                                stringResource(R.string.percent_value_integer, totalChargePercent)
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                            Text(
+                                text = stringResource(
+                                    R.string.label_and_value,
+                                    stringResource(R.string.global_stats_charge_total_percent),
+                                    stringResource(R.string.percent_value_integer, totalChargePercent)
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
 
-                        Spacer(Modifier.height(4.dp))
+                        val totalChargeDurationMs = totalChargeDuration * DateUtils.MINUTE_IN_MILLIS
 
-                        Text(
-                            text = stringResource(
-                                R.string.label_and_value,
-                                stringResource(R.string.global_stats_charge_total_time),
-                                getStringTimeFromInterval(context, totalChargeDuration * 60_000L)
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        if (!Utils.isImperceptible(totalChargeDurationMs)) {
+                            Spacer(Modifier.height(4.dp))
+
+                            Text(
+                                text = stringResource(
+                                    R.string.label_and_value,
+                                    stringResource(R.string.global_stats_charge_total_time),
+                                    getStringTimeFromInterval(context, totalChargeDurationMs)
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
 
                         if (avgChargeSpeed != null) {
                             Spacer(Modifier.height(4.dp))
@@ -1204,47 +1212,59 @@ fun CombinedSessionsTab(
                             fontWeight = FontWeight.Bold
                         )
 
-                        Spacer(Modifier.height(4.dp))
+                        if (totalDischargePercent != 0) {
+                            Spacer(Modifier.height(4.dp))
 
-                        Text(
-                            text = stringResource(
-                                R.string.label_and_value,
-                                stringResource(R.string.global_stats_discharge_total_percent),
-                                stringResource(R.string.percent_value_integer, totalDischargePercent)
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                            Text(
+                                text = stringResource(
+                                    R.string.label_and_value,
+                                    stringResource(R.string.global_stats_discharge_total_percent),
+                                    stringResource(R.string.percent_value_integer, totalDischargePercent)
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
 
-                        Spacer(Modifier.height(4.dp))
+                        val totalDischargeDurationMs = totalDischargeDuration * DateUtils.MINUTE_IN_MILLIS
 
-                        Text(
-                            text = stringResource(
-                                R.string.label_and_value,
-                                stringResource(R.string.global_stats_discharge_total),
-                                getStringTimeFromInterval(context, totalDischargeDuration * 60_000L)
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        if (!Utils.isImperceptible(totalDischargeDurationMs)) {
+                            Spacer(Modifier.height(4.dp))
 
-                        Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.label_and_value,
+                                    stringResource(R.string.global_stats_discharge_total),
+                                    getStringTimeFromInterval(context, totalDischargeDurationMs)
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
 
-                        Text(
-                            text = stringResource(
-                                R.string.label_and_value,
-                                stringResource(R.string.global_stats_discharge_screen_on),
-                                stringResource(
-                                    R.string.time_and_percent,
-                                    getStringTimeFromInterval(context, totalScreenOnMinutes * 60_000L),
-                                    stringResource(R.string.percent_value_integer, screenOnPercent)
-                                )
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        val totalScreenOnMs = totalScreenOnMinutes * DateUtils.MINUTE_IN_MILLIS
 
-                        if (screenOffMinutes > 0L) {
+                        if (!Utils.isImperceptible(totalScreenOnMs)) {
+                            Spacer(Modifier.height(4.dp))
+
+                            Text(
+                                text = stringResource(
+                                    R.string.label_and_value,
+                                    stringResource(R.string.global_stats_discharge_screen_on),
+                                    stringResource(
+                                        R.string.time_and_percent,
+                                        getStringTimeFromInterval(context, totalScreenOnMs),
+                                        stringResource(R.string.percent_value_integer, screenOnPercent)
+                                    )
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        val screenOffMs = screenOffMinutes * DateUtils.MINUTE_IN_MILLIS
+
+                        if (!Utils.isImperceptible(screenOffMs)) {
                             Spacer(Modifier.height(4.dp))
 
                             Text(
@@ -1253,7 +1273,7 @@ fun CombinedSessionsTab(
                                     stringResource(R.string.global_stats_discharge_screen_off),
                                     stringResource(
                                         R.string.time_and_percent,
-                                        getStringTimeFromInterval(context, screenOffMinutes * 60_000L),
+                                        getStringTimeFromInterval(context, screenOffMs),
                                         stringResource(R.string.percent_value_integer, screenOffPercent)
                                     )
                                 ),
@@ -1413,7 +1433,7 @@ private fun BatteryLevelRow(startLevel: Int, endLevel: Int?) {
 }
 
 @Composable
-private fun BatteryChargeRow(startCharge: Int, endCharge: Int?) {
+private fun BatteryChargeRow(startCharge: Long, endCharge: Long?) {
     if (startCharge > 0) {
         Spacer(Modifier.height(4.dp))
 
@@ -1430,8 +1450,9 @@ private fun BatteryChargeRow(startCharge: Int, endCharge: Int?) {
 
 @Composable
 private fun DurationRow(context: Context, durationMinutes: Long?, labelResId: Int) {
-    if (durationMinutes != null) {
+    if ((durationMinutes != null) && (!Utils.isImperceptible(durationMinutes * DateUtils.MINUTE_IN_MILLIS))) {
         Spacer(Modifier.height(4.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -1440,7 +1461,7 @@ private fun DurationRow(context: Context, durationMinutes: Long?, labelResId: In
                 text = stringResource(
                     R.string.label_and_value,
                     stringResource(labelResId),
-                    getStringTimeFromInterval(context, durationMinutes * 60_000L)
+                    getStringTimeFromInterval(context, durationMinutes * DateUtils.MINUTE_IN_MILLIS)
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1460,6 +1481,7 @@ private fun TemperatureRow(
 ) {
     if (avgTemperatureCelsius != null) {
         Spacer(Modifier.height(4.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -1506,7 +1528,7 @@ private fun ChargingSessionCard(session: ChargingSession, context: Context, appP
             delta.toFloat() / (session.durationMinutes / 60f)
         } else null
 
-        if (speedPerHour != null && speedPerHour > 0f) {
+        if ((speedPerHour != null) && (speedPerHour > 0f)) {
             Spacer(Modifier.height(4.dp))
 
             Row(
@@ -1538,7 +1560,7 @@ private fun ChargingSessionCard(session: ChargingSession, context: Context, appP
     if (session.chargedTimeStamp != null) {
         val endTime = session.endTime ?: System.currentTimeMillis()
         val diffMs = endTime - session.chargedTimeStamp
-        val wastedMin = diffMs / 60_000L
+        val wastedMin = diffMs / DateUtils.MINUTE_IN_MILLIS
         if (wastedMin > 0) {
             Spacer(Modifier.height(4.dp))
 
@@ -1587,7 +1609,7 @@ private fun DischargeSessionCard(
 
     DurationRow(context, session.durationMinutes, R.string.discharge_session_duration)
 
-    if (session.screenOnTimeMinutes != null) {
+    if ((session.screenOnTimeMinutes != null) && (!Utils.isImperceptible(session.screenOnTimeMinutes * DateUtils.MINUTE_IN_MILLIS))) {
         Spacer(Modifier.height(4.dp))
 
         Row(
@@ -1598,7 +1620,7 @@ private fun DischargeSessionCard(
                 text = stringResource(
                     R.string.label_and_value,
                     stringResource(R.string.discharge_session_screen_on_time),
-                    getStringTimeFromInterval(context, session.screenOnTimeMinutes * 60_000L)
+                    getStringTimeFromInterval(context, session.screenOnTimeMinutes * DateUtils.MINUTE_IN_MILLIS)
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1606,7 +1628,7 @@ private fun DischargeSessionCard(
         }
     }
 
-    if (rates?.overallSpeed != null && rates.overallSpeed > 0f) {
+    if ((rates?.overallSpeed != null) && (rates.overallSpeed > 0f)) {
         Spacer(Modifier.height(4.dp))
 
         Row(
@@ -1625,7 +1647,7 @@ private fun DischargeSessionCard(
         }
     }
 
-    if (rates?.screenOnSpeed != null && rates.screenOnSpeed > 0f) {
+    if ((rates?.screenOnSpeed != null) && (rates.screenOnSpeed > 0f)) {
         Spacer(Modifier.height(4.dp))
 
         Row(
@@ -1644,7 +1666,7 @@ private fun DischargeSessionCard(
         }
     }
 
-    if (rates?.screenOffSpeed != null && rates.screenOffSpeed > 0f) {
+    if ((rates?.screenOffSpeed != null) && (rates.screenOffSpeed > 0f)) {
         Spacer(Modifier.height(4.dp))
 
         Row(

@@ -16,6 +16,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
+import android.text.format.DateUtils
 import com.ryosoftware.battery_tile.WhatAppOpens.Companion.getIntent
 import kotlin.getValue
 
@@ -23,7 +24,7 @@ class BatteryTileService : TileService() {
     companion object {
         private const val REQUEST_CODE = 101
 
-        private const val UPDATE_TILE_INTERVAL = 15_000L
+        private const val UPDATE_TILE_INTERVAL = 30 * DateUtils.SECOND_IN_MILLIS
     }
 
     private val receiver = object : BroadcastReceiver() {
@@ -35,6 +36,9 @@ class BatteryTileService : TileService() {
             if (action == Intent.ACTION_BATTERY_CHANGED) {
                 Main.from(context).batteryIntentProvider.update(intent)
                 updateTile(intent)
+            } else if ((action == Intent.ACTION_POWER_CONNECTED) || (action == Intent.ACTION_POWER_DISCONNECTED)) {
+                val batteryIntent = Main.from(context).batteryIntentProvider.get(true)
+                if (batteryIntent != null) updateTile(batteryIntent)
             }
         }
     }
@@ -73,7 +77,11 @@ class BatteryTileService : TileService() {
 
         super.onStartListening()
 
-        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_BATTERY_CHANGED)
+            addAction(Intent.ACTION_POWER_CONNECTED)
+            addAction(Intent.ACTION_POWER_DISCONNECTED)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
@@ -141,8 +149,9 @@ class BatteryTileService : TileService() {
 
         val tile = qsTile ?: return
 
-        val batteryServiceDataSnapshot = batteryService?.getBatteryDataSnapshot()
+        val batteryServiceDataSnapshot = batteryService?.getBatteryDataSnapshot(null)
         val batteryTileUIBuilder = BatteryTileUIBuilder(
+            this,
             batteryIntent,
             batteryServiceDataSnapshot?.lastStatsResetTime ?: -1L,
             batteryServiceDataSnapshot?.deepSleepTimeAtLastStatsReset ?: -1L,

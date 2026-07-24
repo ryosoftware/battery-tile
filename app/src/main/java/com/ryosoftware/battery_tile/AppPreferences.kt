@@ -2,7 +2,10 @@ package com.ryosoftware.battery_tile
 
 import android.content.Context
 import android.content.Intent
+import android.text.format.DateUtils
 import androidx.core.content.edit
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 enum class TemperatureUnit(val key: String, val resIdName: Int, val resIdSymbol: Int, val resIdSymbolMin: Int) {
     CELSIUS("CELSIUS", R.string.celsius_unit_with_name, R.string.celsius_unit, R.string.celsius_unit_min),
@@ -78,7 +81,9 @@ class AppPreferences(context: Context): Preferences(context, FILENAME) {
         const val KEY_FIRST_RUN = "first-run"
 
         const val KEY_BATTERY_CAPACITY_DESIGN = "battery-capacity-design"
-        const val KEY_BATTERY_CAPACITY_CURRENT = "battery-capacity-current"
+        const val KEY_BATTERY_CAPACITY_CURRENT_RECENTS = "battery-capacity-current-recents"
+        private const val MAX_BATTERY_CAPACITY_CURRENT_DAYS = 10
+
         const val KEY_TEMPERATURE_UNIT = "temperature-unit"
 
         const val KEY_WHAT_APP_OPENS = "what-app-opens"
@@ -91,6 +96,12 @@ class AppPreferences(context: Context): Preferences(context, FILENAME) {
         const val KEY_DISCHARGING_HISTORY_WINDOW = "discharging-history-window"
     }
 
+    @Serializable
+    data class BatteryCapacity(
+        val day: Long,
+        val capacity: Int
+    )
+
     private val resources = context.resources
 
     var isFirstRun: Boolean
@@ -102,9 +113,52 @@ class AppPreferences(context: Context): Preferences(context, FILENAME) {
         get() = prefs.getInt(KEY_BATTERY_CAPACITY_DESIGN, -1)
         set(value) { prefs.edit { putInt(KEY_BATTERY_CAPACITY_DESIGN, value) }}
 
+    private fun getCurrentDay(): Long =
+        System.currentTimeMillis() / DateUtils.DAY_IN_MILLIS
+
+    private fun getBatteryCapacityCurrentRecents(): List<BatteryCapacity> {
+        val minimumDay = getCurrentDay() - MAX_BATTERY_CAPACITY_CURRENT_DAYS + 1
+
+        val serialized = prefs.getString(KEY_BATTERY_CAPACITY_CURRENT_RECENTS, null) ?: return emptyList()
+
+        return Json
+            .decodeFromString<List<BatteryCapacity>>(serialized)
+            .filter { it.day >= minimumDay }
+    }
+
+    private fun setBatteryCapacityCurrentRecents(capacities: List<BatteryCapacity>) =
+        prefs.edit { putString(KEY_BATTERY_CAPACITY_CURRENT_RECENTS, Json.encodeToString(capacities)) }
+
+    private fun addBatteryCapacityCurrentRecents(capacities: MutableList<BatteryCapacity>, capacity: Int): Boolean {
+        val day = getCurrentDay()
+        val index = capacities.indexOfFirst { it.day == day }
+
+        return when {
+            index < 0 -> {
+                capacities.add(BatteryCapacity(day = day, capacity = capacity))
+                true
+            }
+
+            capacity > capacities[index].capacity -> {
+                capacities[index] = BatteryCapacity(day = day, capacity = capacity)
+                true
+            }
+
+            else -> false
+        }
+    }
+
     var batteryCapacityCurrent: Int
-        get() = prefs.getInt(KEY_BATTERY_CAPACITY_CURRENT, 0)
-        set(value) { prefs.edit { putInt(KEY_BATTERY_CAPACITY_CURRENT, value) }}
+        get() = getBatteryCapacityCurrentRecents()
+            .maxOfOrNull { it.capacity }
+            ?: 0
+        set(capacity) {
+            val capacities = getBatteryCapacityCurrentRecents().toMutableList()
+
+            if (addBatteryCapacityCurrentRecents(capacities, capacity)) {
+                setBatteryCapacityCurrentRecents(capacities)
+            }
+        }
 
     private fun getTemperatureUnitDefault(): TemperatureUnit {
         val value = resources.getString(R.string.temperature_unit_default)
