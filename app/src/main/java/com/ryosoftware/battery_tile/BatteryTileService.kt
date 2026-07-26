@@ -149,7 +149,7 @@ class BatteryTileService : TileService() {
 
         val tile = qsTile ?: return
 
-        val batteryServiceDataSnapshot = batteryService?.getBatteryDataSnapshot(null)
+        val batteryServiceDataSnapshot = batteryService?.getBatteryDataSnapshot(false)
         val batteryTileUIBuilder = BatteryTileUIBuilder(
             this,
             batteryIntent,

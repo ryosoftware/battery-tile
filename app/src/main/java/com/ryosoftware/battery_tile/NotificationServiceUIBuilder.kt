@@ -71,12 +71,7 @@ class NotificationServiceUIBuilder(
 
     private val recentConsumptionValues:DischargeRateStats? by lazy {
         if ((!isCharging) && (recentReadings.size >= MIN_RECENT_READINGS)) {
-            val updatableRecentReadings = recentReadings as MutableList<BatteryReading>
-            val updatableRecentScreenStates = recentScreenStates as MutableList<ScreenState>
-
-            NotificationService.addToRecentBuffers(updatableRecentReadings, updatableRecentScreenStates, this, screenOn)
-
-            val recentConsumptionNumbers = calculateDischargeRates(updatableRecentReadings, updatableRecentScreenStates)
+            val recentConsumptionNumbers = calculateDischargeRates(recentReadings, recentScreenStates)
             if ((recentConsumptionNumbers != null) && (recentConsumptionNumbers.endTime - recentConsumptionNumbers.startTime > MIN_RECENT_INTERVAL)) {
                 recentConsumptionNumbers
             } else null

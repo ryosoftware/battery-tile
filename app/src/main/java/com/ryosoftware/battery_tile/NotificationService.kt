@@ -54,11 +54,6 @@ data class ScreenOnFields(
 )
 
 interface IBatteryServiceData {
-    enum class RecentReadingsAccessType {
-        RO,
-        RDWR,
-    }
-
     data class BatteryServiceDataSnapshot(
         val screenOnTimeSinceBoot: Long,
         val screenOnTimeSinceLastStatsReset: Long,
@@ -68,7 +63,7 @@ interface IBatteryServiceData {
         val recentScreenStates: List<ScreenState>? = null
     )
 
-    fun getBatteryDataSnapshot(recentReadingsAccessType: RecentReadingsAccessType? = null): BatteryServiceDataSnapshot
+    fun getBatteryDataSnapshot(requiresRecentReadings: Boolean): BatteryServiceDataSnapshot
 }
 
 class NotificationServicePreferences(context: Context): Preferences(context, FILENAME) {
@@ -311,31 +306,6 @@ class NotificationService : Service() {
 
         fun resetStats(context: Context) = resetStats(context, LastStatsResetReason.USER_REQUEST)
 
-        fun addToRecentBuffers(recentReadings: MutableList<BatteryReading>, recentScreenStates: MutableList<ScreenState>, batteryIntentHelper: BatteryIntentHelper?, screenOn: Boolean) {
-            val now = System.currentTimeMillis()
-
-            if (batteryIntentHelper != null) {
-                val index = recentReadings.binarySearchBy(now) { it.timestamp }
-
-                recentReadings.add(
-                    if (index >= 0) index else -index - 1,
-                    BatteryReading(
-                        timestamp = now,
-                        batteryLevel = batteryIntentHelper.level,
-                        batteryCharge = batteryIntentHelper.charge,
-                        batteryStatus = batteryIntentHelper.status,
-                        temperatureCelsius = batteryIntentHelper.temperatureCelsius,
-                        voltage = batteryIntentHelper.voltage,
-                        health = batteryIntentHelper.health,
-                        isCharging = batteryIntentHelper.isCharging,
-                        plugType = batteryIntentHelper.plugType
-                    )
-                )
-            }
-
-            recentScreenStates.add(ScreenState(timestamp = now, screenOn = screenOn))
-        }
-
         fun runOrStop(context: Context, action: String?) {
             val prefs = NotificationPreferences(context)
             val willRun = prefs.isNotificationEnabled
@@ -450,11 +420,19 @@ class NotificationService : Service() {
     private val recentScreenStates = mutableListOf<ScreenState>()
 
     private val binder = object : android.os.Binder(), IBatteryServiceData {
-        override fun getBatteryDataSnapshot(recentReadingsAccessType: IBatteryServiceData.RecentReadingsAccessType?): IBatteryServiceData.BatteryServiceDataSnapshot {
-            val (recentReadings, recentScreenStates) = when (recentReadingsAccessType) {
-                IBatteryServiceData.RecentReadingsAccessType.RO -> this@NotificationService.recentReadings.toList() to this@NotificationService.recentScreenStates.toList()
-                IBatteryServiceData.RecentReadingsAccessType.RDWR -> this@NotificationService.recentReadings.toMutableList() to this@NotificationService.recentScreenStates.toMutableList()
-                else -> null to null
+        override fun getBatteryDataSnapshot(requiresRecentReadings: Boolean): IBatteryServiceData.BatteryServiceDataSnapshot {
+            val (recentReadings, recentScreenStates) = when (requiresRecentReadings) {
+                true -> {
+                    val recentReadings = this@NotificationService.recentReadings.toMutableList()
+                    val recentScreenStates = this@NotificationService.recentScreenStates.toMutableList()
+
+                    val batteryIntent = Main.from(this@NotificationService).batteryIntentProvider.get(false)
+                    val batteryIntentHelper = if (batteryIntent != null) BatteryIntentHelper(this@NotificationService, batteryIntent, batteryManager) else null
+                    addToRecentBuffers(recentReadings, recentScreenStates, batteryIntentHelper, isScreenOn)
+
+                    recentReadings to recentScreenStates
+                }
+                false -> null to null
             }
 
             return IBatteryServiceData.BatteryServiceDataSnapshot(
@@ -633,23 +611,51 @@ class NotificationService : Service() {
         return ScreenOnFields(screenOnTimeSinceBoot + interval, screenOnTimeSinceLastStatsReset + interval)
     }
 
+    private fun addToRecentBuffers(recentReadings: MutableList<BatteryReading>, recentScreenStates: MutableList<ScreenState>, batteryIntentHelper: BatteryIntentHelper?, screenOn: Boolean) {
+        val now = System.currentTimeMillis()
+
+        if (batteryIntentHelper != null) {
+            val index = recentReadings.binarySearchBy(now) { it.timestamp }
+
+            recentReadings.add(
+                if (index >= 0) index else -index - 1,
+                BatteryReading(
+                    timestamp = now,
+                    batteryLevel = batteryIntentHelper.level,
+                    batteryCharge = batteryIntentHelper.charge,
+                    batteryStatus = batteryIntentHelper.status,
+                    temperatureCelsius = batteryIntentHelper.temperatureCelsius,
+                    voltage = batteryIntentHelper.voltage,
+                    health = batteryIntentHelper.health,
+                    isCharging = batteryIntentHelper.isCharging,
+                    plugType = batteryIntentHelper.plugType
+                )
+            )
+
+            while (recentReadings.size > MAX_RECENT_ITEMS) { recentReadings.removeAt(0) }
+        }
+
+        recentReadings.removeAll { it.timestamp < now - MAX_RECENT_INTERVAL }
+
+        recentScreenStates.add(ScreenState(timestamp = now, screenOn = screenOn))
+
+        recentScreenStates.removeAll { it.timestamp < now - MAX_RECENT_INTERVAL * 1.5 }
+        while (recentScreenStates.size > MAX_RECENT_ITEMS) { recentScreenStates.removeAt(0) }
+    }
+
     private fun clearRecentBuffers() {
         recentReadings.clear()
         recentScreenStates.clear()
+
+        val batteryIntent = Main.from(this).batteryIntentProvider.get(false)
+        val batteryIntentHelper = if (batteryIntent != null) BatteryIntentHelper(this, batteryIntent, batteryManager) else null
+        addToRecentBuffers(recentReadings, recentScreenStates, batteryIntentHelper, isScreenOn)
     }
 
     private fun addToRecentBuffers(batteryIntentHelper: BatteryIntentHelper? = null) {
         addToRecentBuffers(recentReadings, recentScreenStates, batteryIntentHelper, isScreenOn)
 
-        val now = System.currentTimeMillis()
-
-        recentReadings.removeAll { it.timestamp < now - MAX_RECENT_INTERVAL }
-        while (recentReadings.size > MAX_RECENT_ITEMS) { recentReadings.removeAt(0) }
-
-        recentScreenStates.removeAll { it.timestamp < now - MAX_RECENT_INTERVAL * 1.5 }
-        while (recentScreenStates.size > MAX_RECENT_ITEMS) { recentScreenStates.removeAt(0) }
-
-        logger.log("Recent buffers size changed: recentReadings=${recentReadings.size}, recentScreenStates=${recentScreenStates.size}")
+        logger.log("Recent buffers updated. RecentReadings size is ${recentReadings.size}, RecentScreenStates size is ${recentScreenStates.size}")
     }
 
     private fun onScreenTurnedOn() {
@@ -1072,7 +1078,7 @@ class NotificationService : Service() {
         }
         else {
             val screenOnFields = getScreenOnTime()
-            val snapshot = binder.getBatteryDataSnapshot(IBatteryServiceData.RecentReadingsAccessType.RDWR)
+            val snapshot = binder.getBatteryDataSnapshot(true)
             val notificationServiceUIBuilder = NotificationServiceUIBuilder(
                 context = this,
                 intent = batteryIntent,
