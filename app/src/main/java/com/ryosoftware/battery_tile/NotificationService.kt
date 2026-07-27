@@ -27,6 +27,7 @@ import com.ryosoftware.battery_tile.data.BatteryRepository
 import com.ryosoftware.battery_tile.data.ChargingSession
 import com.ryosoftware.battery_tile.data.DischargeSession
 import com.ryosoftware.battery_tile.data.ScreenState
+import com.ryosoftware.battery_tile.data.ScreenStateDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -497,6 +498,7 @@ class NotificationService : Service() {
     }
 
     private fun loadPersistedDataOrReset() {
+        val dataHasBeenReset: Boolean
         val now = System.currentTimeMillis()
         val millisSinceBoot = SystemClock.elapsedRealtime()
 
@@ -510,7 +512,11 @@ class NotificationService : Service() {
         screenOnTimeSinceBoot = 0L
         screenOnTimeSinceLastStatsReset = 0L
 
-        if (intervalWithoutEvents in 0..DATA_PERSISTENCE_THRESHOLD_TOLERANCE) {
+        dataHasBeenReset = intervalWithoutEvents !in 0..DATA_PERSISTENCE_THRESHOLD_TOLERANCE
+
+        if (dataHasBeenReset) {
+            resetStats(LastStatsResetReason.EXPIRED_DATA)
+        } else {
             logger.log("Loading persisted data")
 
             lastStatsResetTime = servicePersistentData.getLong(NotificationServicePreferences.KEY_LAST_STATS_RESET_TIME, lastStatsResetTime)
@@ -519,8 +525,6 @@ class NotificationService : Service() {
             screenOnTimeSinceBootIsValid = servicePersistentData.getBoolean(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_BOOT_IS_VALID, screenOnTimeSinceBootIsValid)
             screenOnTimeSinceBoot = servicePersistentData.getLong(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_BOOT, screenOnTimeSinceBoot)
             screenOnTimeSinceLastStatsReset = servicePersistentData.getLong(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_LAST_STATS_RESET, screenOnTimeSinceLastStatsReset)
-        } else {
-            resetStats(LastStatsResetReason.EXPIRED_DATA)
         }
 
         disablePersistData = false
@@ -528,7 +532,8 @@ class NotificationService : Service() {
         lastScreenEventTime = millisSinceBoot
         isScreenOn = isScreenOn()
 
-        clearRecentBuffers()
+        if (dataHasBeenReset) clearRecentBuffers()
+        else loadRecentBuffers()
     }
 
     private fun initializeService() {
@@ -643,6 +648,28 @@ class NotificationService : Service() {
 
         recentScreenStates.removeAll { it.timestamp < now - MAX_RECENT_SCREEN_STATES_INTERVAL }
         while (recentScreenStates.size > MAX_RECENT_SCREEN_STATES) { recentScreenStates.removeAt(0) }
+    }
+
+    private fun loadRecentBuffers() {
+        val minimumTimestamp = lastStatsResetTime
+        val now = System.currentTimeMillis()
+
+        serviceScope.launch {
+            val readingsAfterMiniumTimestamp = repository.getBatteryReadingsBetween(minimumTimestamp, now)
+            recentReadings.clear()
+            recentReadings.addAll(readingsAfterMiniumTimestamp)
+
+            val screenStatesAfterMiniumTimestamp = repository.getScreenStatesBetween(minimumTimestamp, now)
+            recentScreenStates.clear()
+            recentScreenStates.addAll(screenStatesAfterMiniumTimestamp)
+
+            val latestBeforeMiniumTimestamp = repository.getLatestScreenStateBefore(minimumTimestamp - 1)
+            latestBeforeMiniumTimestamp?.let {
+                if (recentScreenStates.isEmpty() || (recentScreenStates[0].timestamp != it.timestamp)) {
+                    recentScreenStates.add(0, it)
+                }
+            }
+        }
     }
 
     private fun clearRecentBuffers() {
