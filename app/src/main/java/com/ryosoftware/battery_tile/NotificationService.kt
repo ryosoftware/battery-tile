@@ -618,33 +618,9 @@ class NotificationService : Service() {
         return ScreenOnFields(screenOnTimeSinceBoot + interval, screenOnTimeSinceLastStatsReset + interval)
     }
 
-    private fun addToRecentBuffers(recentReadings: MutableList<BatteryReading>, recentScreenStates: MutableList<ScreenState>, batteryIntentHelper: BatteryIntentHelper?, screenOn: Boolean) {
-        val now = System.currentTimeMillis()
-
-        if (batteryIntentHelper != null) {
-            val index = recentReadings.binarySearchBy(now) { it.timestamp }
-
-            recentReadings.add(
-                if (index >= 0) index else -index - 1,
-                BatteryReading(
-                    timestamp = now,
-                    batteryLevel = batteryIntentHelper.level,
-                    batteryCharge = batteryIntentHelper.charge,
-                    batteryStatus = batteryIntentHelper.status,
-                    temperatureCelsius = batteryIntentHelper.temperatureCelsius,
-                    voltage = batteryIntentHelper.voltage,
-                    health = batteryIntentHelper.health,
-                    isCharging = batteryIntentHelper.isCharging,
-                    plugType = batteryIntentHelper.plugType
-                )
-            )
-
-            while (recentReadings.size > MAX_RECENT_READINGS) { recentReadings.removeAt(0) }
-        }
-
+    private fun removeRecentSurpluses(now: Long) {
+        while (recentReadings.size > MAX_RECENT_READINGS) { recentReadings.removeAt(0) }
         recentReadings.removeAll { it.timestamp < now - MAX_RECENT_READINGS_INTERVAL }
-
-        recentScreenStates.add(ScreenState(timestamp = now, screenOn = screenOn))
 
         recentScreenStates.removeAll { it.timestamp < now - MAX_RECENT_SCREEN_STATES_INTERVAL }
         while (recentScreenStates.size > MAX_RECENT_SCREEN_STATES) { recentScreenStates.removeAt(0) }
@@ -669,6 +645,8 @@ class NotificationService : Service() {
                     recentScreenStates.add(0, it)
                 }
             }
+
+            removeRecentSurpluses(now)
         }
     }
 
@@ -679,6 +657,33 @@ class NotificationService : Service() {
         val batteryIntent = Main.from(this).batteryIntentProvider.get(false)
         val batteryIntentHelper = if (batteryIntent != null) BatteryIntentHelper(this, batteryIntent, batteryManager) else null
         addToRecentBuffers(recentReadings, recentScreenStates, batteryIntentHelper, isScreenOn)
+    }
+
+    private fun addToRecentBuffers(recentReadings: MutableList<BatteryReading>, recentScreenStates: MutableList<ScreenState>, batteryIntentHelper: BatteryIntentHelper?, screenOn: Boolean) {
+        val now = System.currentTimeMillis()
+
+        if (batteryIntentHelper != null) {
+            val index = recentReadings.binarySearchBy(now) { it.timestamp }
+
+            recentReadings.add(
+                if (index >= 0) index else -index - 1,
+                BatteryReading(
+                    timestamp = now,
+                    batteryLevel = batteryIntentHelper.level,
+                    batteryCharge = batteryIntentHelper.charge,
+                    batteryStatus = batteryIntentHelper.status,
+                    temperatureCelsius = batteryIntentHelper.temperatureCelsius,
+                    voltage = batteryIntentHelper.voltage,
+                    health = batteryIntentHelper.health,
+                    isCharging = batteryIntentHelper.isCharging,
+                    plugType = batteryIntentHelper.plugType
+                )
+            )
+        }
+
+        recentScreenStates.add(ScreenState(timestamp = now, screenOn = screenOn))
+
+        removeRecentSurpluses(now)
     }
 
     private fun addToRecentBuffers(batteryIntentHelper: BatteryIntentHelper? = null) {
