@@ -5,7 +5,7 @@ import android.content.Intent
 import android.os.BatteryManager
 import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
-import com.ryosoftware.battery_tile.NotificationService.Companion.MIN_RECENT_INTERVAL
+import com.ryosoftware.battery_tile.NotificationService.Companion.MIN_RECENT_READINGS_INTERVAL
 import com.ryosoftware.battery_tile.NotificationService.Companion.MIN_RECENT_READINGS
 import com.ryosoftware.battery_tile.NotificationServiceUIBuilder.NotificationField.Companion.getLabel
 import com.ryosoftware.battery_tile.Utils.Companion.getStringPercent
@@ -72,7 +72,7 @@ class NotificationServiceUIBuilder(
     private val recentConsumptionValues:DischargeRateStats? by lazy {
         if ((!isCharging) && (recentReadings.size >= MIN_RECENT_READINGS)) {
             val recentConsumptionNumbers = calculateDischargeRates(recentReadings, recentScreenStates)
-            if ((recentConsumptionNumbers != null) && (recentConsumptionNumbers.endTime - recentConsumptionNumbers.startTime > MIN_RECENT_INTERVAL)) {
+            if ((recentConsumptionNumbers != null) && (recentConsumptionNumbers.endTime - recentConsumptionNumbers.startTime > MIN_RECENT_READINGS_INTERVAL)) {
                 recentConsumptionNumbers
             } else null
         } else null

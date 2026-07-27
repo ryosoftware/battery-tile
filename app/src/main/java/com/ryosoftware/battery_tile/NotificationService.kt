@@ -129,9 +129,11 @@ class NotificationService : Service() {
         private const val EXTRA_TEMPERATURE = "temperature"
         private const val SAVE_READINGS_BATTERY_LEVEL_THRESHOLD = 1
         private const val SAVE_READINGS_BATTERY_TEMPERATURE_THRESHOLD = 0.5f
-        const val MAX_RECENT_INTERVAL = 2.5 * DateUtils.DAY_IN_MILLIS
-        const val MAX_RECENT_ITEMS = 1000
-        const val MIN_RECENT_INTERVAL = 15 * DateUtils.MINUTE_IN_MILLIS
+        const val MAX_RECENT_READINGS_INTERVAL = 2.5 * DateUtils.DAY_IN_MILLIS
+        const val MAX_RECENT_READINGS = 800
+        const val MAX_RECENT_SCREEN_STATES_INTERVAL = MAX_RECENT_READINGS_INTERVAL
+        const val MAX_RECENT_SCREEN_STATES = 1000
+        const val MIN_RECENT_READINGS_INTERVAL = 15 * DateUtils.MINUTE_IN_MILLIS
         const val MIN_RECENT_READINGS = 5
 
         private var _isRunning = MutableStateFlow(false)
@@ -632,15 +634,15 @@ class NotificationService : Service() {
                 )
             )
 
-            while (recentReadings.size > MAX_RECENT_ITEMS) { recentReadings.removeAt(0) }
+            while (recentReadings.size > MAX_RECENT_READINGS) { recentReadings.removeAt(0) }
         }
 
-        recentReadings.removeAll { it.timestamp < now - MAX_RECENT_INTERVAL }
+        recentReadings.removeAll { it.timestamp < now - MAX_RECENT_READINGS_INTERVAL }
 
         recentScreenStates.add(ScreenState(timestamp = now, screenOn = screenOn))
 
-        recentScreenStates.removeAll { it.timestamp < now - MAX_RECENT_INTERVAL * 1.5 }
-        while (recentScreenStates.size > MAX_RECENT_ITEMS) { recentScreenStates.removeAt(0) }
+        recentScreenStates.removeAll { it.timestamp < now - MAX_RECENT_SCREEN_STATES_INTERVAL }
+        while (recentScreenStates.size > MAX_RECENT_SCREEN_STATES) { recentScreenStates.removeAt(0) }
     }
 
     private fun clearRecentBuffers() {

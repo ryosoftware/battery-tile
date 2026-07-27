@@ -171,8 +171,6 @@
     <string name="consumption_value_integer">%1$d%%/h</string>
     <string name="consumption_value_float">%.1f%%/h</string>
 
-    <string name="days_and_hours_and_minutes">%1$dd %2$dh %3$dm</string>
-    <string name="hours_and_minutes">%1$dh %2$dm</string>
     <string name="minutes">%1$dm</string>
 
     <string name="time_and_percent">%1$s (%2$s)</string>
@@ -310,6 +308,26 @@
         <item quantity="many">las %1$s</item>
     </plurals>
 
+    <plurals name="days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="other">%1$d días</item>
+        <item quantity="many">%1$d días</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="other">%1$d horas</item>
+        <item quantity="many">%1$d horas</item>
+    </plurals>
+
+    <plurals name="minutes">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="other">%1$d minutos</item>
+        <item quantity="many">%1$d minutos</item>
+    </plurals>
+
+    <string name="middle_time_separator">,&#160;</string>
+    <string name="last_time_separator">&#160;y&#160;</string>
     <string name="from_date_to_date">Del %1$s al %2$s</string>
     <string name="from_time_to_time_on_date">De %1$s a %2$s del %3$s</string>
     <string name="share_history">Compartir Historial</string>

@@ -33,12 +33,20 @@ class Utils {
             val hours = (totalMinutes % (24 * 60)) / 60
             val minutes = totalMinutes % 60
 
-            return if (days > 0) {
-                context.getString(R.string.days_and_hours_and_minutes, days, hours, minutes)
-            } else if (hours > 0) {
-                context.getString(R.string.hours_and_minutes, hours, minutes)
-            } else {
-                context.getString(R.string.minutes, minutes)
+            val resources = context.resources
+            val parts = mutableListOf<String>()
+
+            if (days > 0) parts.add(resources.getQuantityString(R.plurals.days, days.toInt(), days))
+            if (hours > 0) parts.add(resources.getQuantityString(R.plurals.hours, hours.toInt(), hours))
+            if ((minutes > 0) || (parts.isEmpty())) parts.add(resources.getQuantityString(R.plurals.minutes, minutes.toInt(), minutes))
+
+            val middleSeparator = resources.getString(R.string.middle_time_separator)
+            val finalSeparator = resources.getString(R.string.last_time_separator)
+
+            return when (parts.size) {
+                1 -> parts[0]
+                2 -> parts.joinToString(finalSeparator)
+                else -> parts.dropLast(1).joinToString(middleSeparator) + finalSeparator + parts.last()
             }
         }
 
