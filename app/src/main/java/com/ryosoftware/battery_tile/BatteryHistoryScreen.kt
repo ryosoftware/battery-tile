@@ -82,6 +82,9 @@ import java.util.Calendar
 import androidx.core.content.edit
 import com.ryosoftware.battery_tile.Utils.Companion.getStringPercent
 import com.ryosoftware.battery_tile.Utils.Companion.getStringTimeFromInterval
+import com.ryosoftware.battery_tile.ui.components.GlassCard
+import com.ryosoftware.battery_tile.ui.components.GlassGradientBackground
+import com.ryosoftware.battery_tile.ui.components.GlassSurface
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.math.roundToInt
@@ -141,7 +144,12 @@ fun BatteryHistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.battery_history)) },
+                title = {
+                    Text(
+                        stringResource(R.string.battery_history),
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -207,11 +215,22 @@ fun BatteryHistoryScreen(
             )
         }
     ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
+            GlassGradientBackground(
+                colors = listOf(
+                    MaterialTheme.colorScheme.background,
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.12f),
+                ),
+            )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(Modifier.height(16.dp))
@@ -332,7 +351,7 @@ fun BatteryHistoryScreen(
                                     getStringDateTime(context, oldest.timestamp),
                                     getStringDateTime(context, newest.timestamp)
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
@@ -345,7 +364,7 @@ fun BatteryHistoryScreen(
                                     appPrefs.batteryHistoryWindow,
                                     appPrefs.batteryHistoryWindow
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.outline
                             )
                         }
@@ -365,6 +384,7 @@ fun BatteryHistoryScreen(
             }
 
             Spacer(Modifier.height(32.dp))
+        }
         }
     }
 }
@@ -986,15 +1006,16 @@ private fun analyzeFlakyConnection(
 
 @Composable
 private fun FlakyConnectionWarningCard(result: FlakyResult, context: Context) {
-    Card(
+    GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+        vibrant = true,
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
                 text = stringResource(R.string.anomaly_flaky_connection_title),
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onErrorContainer
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error,
             )
             Spacer(Modifier.height(4.dp))
             val body = if (result.affectedPeriodCount >= 2) {
@@ -1004,8 +1025,8 @@ private fun FlakyConnectionWarningCard(result: FlakyResult, context: Context) {
             }
             Text(
                 text = body,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
             )
         }
     }
@@ -1138,19 +1159,20 @@ fun CombinedSessionsTab(
         }
 
         if (completedCharge.isNotEmpty() || completedDischarge.isNotEmpty()) {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(12.dp)) {
+            GlassCard(modifier = Modifier.fillMaxWidth(), vibrant = true) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.global_stats_title),
                         style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(Modifier.height(8.dp))
 
                     if (completedCharge.isNotEmpty()) {
                         Text(
                             text = stringResource(R.string.global_stats_charge_sessions_count, completedCharge.size),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold
                         )
@@ -1164,7 +1186,7 @@ fun CombinedSessionsTab(
                                     stringResource(R.string.global_stats_charge_total_percent),
                                     stringResource(R.string.percent_value_integer, totalChargePercent)
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1180,7 +1202,7 @@ fun CombinedSessionsTab(
                                     stringResource(R.string.global_stats_charge_total_time),
                                     getStringTimeFromInterval(context, totalChargeDurationMs)
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1194,7 +1216,7 @@ fun CombinedSessionsTab(
                                     stringResource(R.string.global_stats_charge_avg_speed),
                                     stringResource(R.string.percent_per_hour, getStringPercent(context, avgChargeSpeed))
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1207,7 +1229,7 @@ fun CombinedSessionsTab(
                     if (completedDischarge.isNotEmpty()) {
                         Text(
                             text = stringResource(R.string.global_stats_discharge_sessions_count, completedDischarge.size),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold
                         )
@@ -1221,7 +1243,7 @@ fun CombinedSessionsTab(
                                     stringResource(R.string.global_stats_discharge_total_percent),
                                     stringResource(R.string.percent_value_integer, totalDischargePercent)
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1237,7 +1259,7 @@ fun CombinedSessionsTab(
                                     stringResource(R.string.global_stats_discharge_total),
                                     getStringTimeFromInterval(context, totalDischargeDurationMs)
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1257,7 +1279,7 @@ fun CombinedSessionsTab(
                                         stringResource(R.string.percent_value_integer, screenOnPercent)
                                     )
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1277,7 +1299,7 @@ fun CombinedSessionsTab(
                                         stringResource(R.string.percent_value_integer, screenOffPercent)
                                     )
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1291,7 +1313,7 @@ fun CombinedSessionsTab(
                                     stringResource(R.string.global_stats_discharge_speed),
                                     stringResource(R.string.percent_per_hour, getStringPercent(context, avgDischargeSpeed))
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1305,7 +1327,7 @@ fun CombinedSessionsTab(
                                     stringResource(R.string.global_stats_discharge_screen_on_speed),
                                     stringResource(R.string.percent_per_hour, getStringPercent(context, avgScreenOnSpeed))
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1319,7 +1341,7 @@ fun CombinedSessionsTab(
                                     stringResource(R.string.global_stats_discharge_screen_off_speed),
                                     stringResource(R.string.percent_per_hour, getStringPercent(context, avgScreenOffSpeed))
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1331,8 +1353,8 @@ fun CombinedSessionsTab(
         val flakyIds = flakyResult?.flakyDischargeIds ?: emptySet()
 
         combined.forEach { item ->
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(12.dp)) {
+            GlassCard(modifier = Modifier.fillMaxWidth(), vibrant = true) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     when (item) {
                         is SessionItem.Charging -> ChargingSessionCard(item.session, context, appPrefs)
                         is SessionItem.Discharge -> DischargeSessionCard(
@@ -1369,12 +1391,12 @@ private fun SessionHeaderRow(
             Canvas(modifier = Modifier.size(10.dp)) {
                 drawCircle(color = dotColor, radius = size.minDimension / 2f)
             }
-            Text(text = label, style = MaterialTheme.typography.labelSmall, color = labelColor)
+            Text(text = label, style = MaterialTheme.typography.bodyMedium, color = labelColor)
         }
         if (isOngoing) {
             Text(
                 text = ongoingLabel,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary
             )
         }
@@ -1414,7 +1436,7 @@ private fun DateTimeRow(context: Context, startTime: Long, endTime: Long?) {
         text = if ((endTime != null) && (isSameDay(startTime, endTime))) getIntervalAtSameDayString(context, startTime, endTime)
                else if (endTime != null) getIntervalAtDifferentDayString(context, startTime, endTime)
                else getStringDateTime(context, startTime),
-        style = MaterialTheme.typography.bodyMedium
+        style = MaterialTheme.typography.bodyLarge
     )
 }
 
@@ -1443,7 +1465,7 @@ private fun BatteryChargeRow(startCharge: Long, endCharge: Long?) {
                 stringResource(R.string.mah_value, startCharge / 1000),
                 endCharge?.let { stringResource(R.string.mah_value, it / 1000) } ?: stringResource(R.string.battery_level_unknown)
             ),
-            style = MaterialTheme.typography.titleSmall
+            style = MaterialTheme.typography.titleMedium
         )
     }
 }
@@ -1463,7 +1485,7 @@ private fun DurationRow(context: Context, durationMinutes: Long?, labelResId: In
                     stringResource(labelResId),
                     getStringTimeFromInterval(context, durationMinutes * DateUtils.MINUTE_IN_MILLIS)
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -1497,7 +1519,7 @@ private fun TemperatureRow(
                         tempUnit.toString(context, tempUnit.fromCelsius(avgTemperatureCelsius), false)
                     )
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -1541,7 +1563,7 @@ private fun ChargingSessionCard(session: ChargingSession, context: Context, appP
                         stringResource(R.string.charging_session_speed),
                         stringResource(R.string.percent_per_hour, getStringPercent(context, speedPerHour))
                     ),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -1570,7 +1592,7 @@ private fun ChargingSessionCard(session: ChargingSession, context: Context, appP
                     getStringDateTime(context, session.chargedTimeStamp),
                     getStringTimeFromInterval(context, diffMs)
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.tertiary
             )
         }
@@ -1622,7 +1644,7 @@ private fun DischargeSessionCard(
                     stringResource(R.string.discharge_session_screen_on_time),
                     getStringTimeFromInterval(context, session.screenOnTimeMinutes * DateUtils.MINUTE_IN_MILLIS)
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -1641,7 +1663,7 @@ private fun DischargeSessionCard(
                     stringResource(R.string.discharge_session_speed),
                     stringResource(R.string.percent_per_hour, getStringPercent(context, rates.overallSpeed))
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -1660,7 +1682,7 @@ private fun DischargeSessionCard(
                     stringResource(R.string.discharge_session_screen_on_speed),
                     stringResource(R.string.percent_per_hour, getStringPercent(context, rates.screenOnSpeed))
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -1679,7 +1701,7 @@ private fun DischargeSessionCard(
                     stringResource(R.string.discharge_session_screen_off_speed),
                     stringResource(R.string.percent_per_hour, getStringPercent(context, rates.screenOffSpeed))
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -1699,7 +1721,7 @@ private fun DischargeSessionCard(
 
         Text(
             text = stringResource(R.string.anomaly_flaky_connection_body_single),
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error
         )
     }

@@ -3,6 +3,8 @@ package com.ryosoftware.battery_tile
 import android.content.Context
 import android.text.format.DateUtils
 import androidx.annotation.StringRes
+import java.text.DateFormat
+import java.util.Calendar
 
 class Utils {
     companion object {
@@ -68,5 +70,16 @@ class Utils {
             } else {
                 context.getString(resource, getStringTimeFromInterval(context, interval), getStringPercentFromInterval(context, interval, total))
             }
+        }
     }
+
+fun getStringDateTime(context: Context, timeMillis: Long): String {
+    val calendar = Calendar.getInstance().apply { timeInMillis = timeMillis }
+    val dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM)
+    val timeFormat = DateFormat.getTimeInstance(DateFormat.MEDIUM)
+    val date = dateFormat.format(calendar.time)
+    val time = timeFormat.format(calendar.time)
+    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+
+    return context.resources.getQuantityString(R.plurals.date_time, hour, date, time)
 }

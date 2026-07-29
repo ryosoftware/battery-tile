@@ -204,7 +204,7 @@
 
     <!-- Battery history window (older recordings will be automatically removed) -->
 
-    <integer name="battery_history_window_in_days_default">15</integer>
+    <integer name="battery_history_window_in_days_default">30</integer>
 
     <!-- Charging sessions history window (older sessions will be automatically removed) -->
 
@@ -212,6 +212,6 @@
 
     <!-- Discharging sessions history window (older sessions will be automatically removed) -->
 
-    <integer name="discharging_history_window_in_days_default">100</integer>
+    <integer name="discharging_history_window_in_days_default">@integer/charging_history_window_in_days_default</integer>
 
 </resources>

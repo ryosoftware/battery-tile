@@ -7,6 +7,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +44,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val appPrefs = AppPreferences(this)
+
+        BatteryTileTheme.glassEnabled = appPrefs.uiGlassEnabled
+        BatteryTileTheme.themeMode = try {
+            ExpressiveThemeMode.valueOf(appPrefs.uiThemeMode)
+        } catch (_: IllegalArgumentException) {
+            ExpressiveThemeMode.DYNAMIC
+        }
+
         screen = if (!appPrefs.isFirstRun) Screen.Selector else Screen.Main
 
         if (appPrefs.batteryCapacityDesign == -1) appPrefs.batteryCapacityDesign = BatteryIntentHelper.getBatteryCapacityDesign(this)
@@ -54,8 +64,9 @@ class MainActivity : ComponentActivity() {
                     val notifPrefs = remember { NotificationPreferences(context) }
                     val appPrefs = remember { AppPreferences(context) }
 
-                    when (screen) {
-                        Screen.Main -> {
+                    Crossfade(targetState = screen, animationSpec = tween(300)) {
+                        when (it) {
+                            Screen.Main -> {
                             MainScreen(
                                 onSettings = {
                                     appPrefs.isFirstRun = false
@@ -124,6 +135,7 @@ class MainActivity : ComponentActivity() {
                                 appPrefs = appPrefs,
                                 onBack = { screen = Screen.Selector }
                             )
+                        }
                         }
                     }
                 }

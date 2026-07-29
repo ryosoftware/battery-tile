@@ -14,8 +14,8 @@ android {
     defaultConfig {
         applicationId = namespace
 
-        versionCode = 21
-        versionName = "2.19"
+        versionCode = 22
+        versionName = "2.20"
 
         minSdk = 29
         targetSdk = compileSdk
@@ -58,6 +58,7 @@ kotlin {
 dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.ui.text)
+    implementation(libs.androidx.compose.ui.unit)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))

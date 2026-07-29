@@ -91,6 +91,9 @@ class AppPreferences(context: Context): Preferences(context, FILENAME) {
         const val KEY_LOG_TO_FILE = "log-to-file"
         const val KEY_LOG_ONLY_WHILE_CHARGING = "log-only-while-charging"
 
+        const val KEY_UI_GLASS_ENABLED = "ui-glass-enabled"
+        const val KEY_UI_THEME_MODE = "ui-theme-mode"
+
         const val KEY_BATTERY_HISTORY_WINDOW = "battery-history-window"
         const val KEY_CHARGING_HISTORY_WINDOW = "charging-history-window"
         const val KEY_DISCHARGING_HISTORY_WINDOW = "discharging-history-window"
@@ -193,6 +196,14 @@ class AppPreferences(context: Context): Preferences(context, FILENAME) {
     var isLoggingOnlyWhileCharging: Boolean
         get() = prefs.getBoolean(KEY_LOG_ONLY_WHILE_CHARGING, resources.getBoolean(R.bool.logging_only_while_charging_default))
         set(value) { prefs.edit { putBoolean(KEY_LOG_ONLY_WHILE_CHARGING, value) } }
+
+    var uiGlassEnabled: Boolean
+        get() = prefs.getBoolean(KEY_UI_GLASS_ENABLED, true)
+        set(value) { prefs.edit { putBoolean(KEY_UI_GLASS_ENABLED, value) } }
+
+    var uiThemeMode: String
+        get() = prefs.getString(KEY_UI_THEME_MODE, "DYNAMIC") ?: "DYNAMIC"
+        set(value) { prefs.edit { putString(KEY_UI_THEME_MODE, value) } }
 
     var batteryHistoryWindow: Int
         get() = prefs.getInt(KEY_BATTERY_HISTORY_WINDOW, resources.getInteger(R.integer.battery_history_window_in_days_default))

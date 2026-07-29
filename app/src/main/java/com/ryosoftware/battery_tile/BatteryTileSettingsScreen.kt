@@ -2,6 +2,7 @@ package com.ryosoftware.battery_tile
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,10 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,21 +42,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ryosoftware.battery_tile.BatteryTileUIBuilder.BatteryTileField.Companion.getComments
 import com.ryosoftware.battery_tile.BatteryTileUIBuilder.BatteryTileField.Companion.getLabel
+import com.ryosoftware.battery_tile.ui.components.GlassCard
+import com.ryosoftware.battery_tile.ui.components.GlassGradientBackground
+import com.ryosoftware.battery_tile.ui.components.SectionHeader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TileSettingsScreen(
     prefs: BatteryTilePreferences,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val fields = remember {
-        BatteryTileUIBuilder.BatteryTileField.entries.sortedWith(compareBy< BatteryTileUIBuilder.BatteryTileField> { !prefs.isFieldVisible(it) }.thenBy { prefs.getFieldPosition(it) }).toMutableStateList()
+        BatteryTileUIBuilder.BatteryTileField.entries.sortedWith(compareBy<BatteryTileUIBuilder.BatteryTileField> { !prefs.isFieldVisible(it) }.thenBy { prefs.getFieldPosition(it) }).toMutableStateList()
     }
 
     val fieldVisibility = remember {
@@ -83,185 +88,189 @@ fun TileSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.tile_settings_title)) },
+                title = {
+                    Text(
+                        stringResource(R.string.tile_settings_title),
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+                            contentDescription = stringResource(R.string.back),
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
             )
-        }
+        },
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState())
+                .padding(padding),
         ) {
-            Spacer(Modifier.height(16.dp))
+            GlassGradientBackground(
+                colors = listOf(
+                    MaterialTheme.colorScheme.background,
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.12f),
+                ),
+            )
 
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp)
+                    .verticalScroll(rememberScrollState()),
             ) {
-                Text(
-                    text = stringResource(R.string.tile_general),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
+                Spacer(Modifier.height(8.dp))
 
-            Spacer(Modifier.height(16.dp))
-
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = stringResource(R.string.tile_icon_title),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = iconDropdownExpanded,
-                onExpandedChange = { iconDropdownExpanded = !iconDropdownExpanded }
-            ) {
-                OutlinedTextField(
-                    value = " ",
-                    onValueChange = {},
-                    readOnly = true,
-                    singleLine = false,
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = iconDropdownExpanded)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.Transparent,
-                        unfocusedTextColor = Color.Transparent,
-                        disabledTextColor = Color.Transparent,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
-                )
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 48.dp, top = 12.dp, bottom = 12.dp),
-                    verticalArrangement = Arrangement.Center
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        text = iconField.getLabel(context),
-                        style = MaterialTheme.typography.bodyLarge
+                        text = stringResource(R.string.tile_general),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                SectionHeader(
+                    title = stringResource(R.string.tile_icon_title),
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                ExposedDropdownMenuBox(
+                    expanded = iconDropdownExpanded,
+                    onExpandedChange = { iconDropdownExpanded = !iconDropdownExpanded },
+                ) {
+                    OutlinedTextField(
+                        value = " ",
+                        onValueChange = {},
+                        readOnly = true,
+                        singleLine = false,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = iconDropdownExpanded)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Transparent,
+                            unfocusedTextColor = Color.Transparent,
+                            disabledTextColor = Color.Transparent,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        ),
                     )
 
-                    val comments = iconField.getComments(context)
-                    if (comments != null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 48.dp, top = 12.dp, bottom = 12.dp),
+                        verticalArrangement = Arrangement.Center,
+                    ) {
                         Text(
-                            text = comments,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = iconField.getLabel(context),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
                         )
-                    }
-                }
 
-                ExposedDropdownMenu(
-                    expanded = iconDropdownExpanded,
-                    onDismissRequest = { iconDropdownExpanded = false }
-                ) {
-                    val iconizableFields = BatteryTileUIBuilder.BatteryTileField.entries.filter { it.iconizable && it.isSupported }
-
-                    iconizableFields.forEach { field ->
-                        DropdownMenuItem(
-                            text = {
-                                Column {
-                                    Text(
-                                        text = field.getLabel(context),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    val comments = field.getComments(context)
-                                    if (comments != null) {
-                                        Text(
-                                            text = comments,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            },
-                            onClick = {
-                                iconField = field
-                                prefs.iconField = field
-                                iconDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = stringResource(R.string.tile_lines_title),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            val textualizableFields = BatteryTileUIBuilder.BatteryTileField.entries.filter { it.textualizable && it.isSupported }
-
-            textualizableFields.sortedBy{prefs.getFieldPosition(it)}.forEach { field ->
-                val visible = fieldVisibility[field] ?: false
-                val line = fieldLine[field] ?: 1
-
-                FieldRow(
-                    label = field.getLabel(context),
-                    comments = field.getComments(context),
-                    checked = visible,
-                    line = line,
-                    onCheckedChange = { newVisible ->
-                        fieldVisibility[field] = newVisible
-                        prefs.setFieldVisible(field, newVisible)
-                        if (newVisible) {
-                            fields.filter { it != field }.forEach {
-                                prefs.setFieldPosition(it, prefs.getFieldPosition(it) + 1)
-                            }
-                            prefs.setFieldPosition(field, 1)
-                        } else {
-                            val maxPos = fields.maxOf { prefs.getFieldPosition(it) }
-                            prefs.setFieldPosition(field, maxPos + 1)
+                        val comments = iconField.getComments(context)
+                        if (comments != null) {
+                            Text(
+                                text = comments,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
-                        updateOrder()
-                    },
-                    onLineChange = { newLine ->
-                        fieldLine[field] = newLine
-                        prefs.setFieldLine(field, newLine)
                     }
-                )
-            }
 
-            Spacer(Modifier.height(32.dp))
+                    ExposedDropdownMenu(
+                        expanded = iconDropdownExpanded,
+                        onDismissRequest = { iconDropdownExpanded = false },
+                    ) {
+                        val iconizableFields = BatteryTileUIBuilder.BatteryTileField.entries.filter { it.iconizable && it.isSupported }
+
+                        iconizableFields.forEach { field ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(
+                                            text = field.getLabel(context),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                        )
+                                        val comments = field.getComments(context)
+                                        if (comments != null) {
+                                            Text(
+                                                text = comments,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    iconField = field
+                                    prefs.iconField = field
+                                    iconDropdownExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                SectionHeader(
+                    title = stringResource(R.string.tile_lines_title),
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                val textualizableFields = BatteryTileUIBuilder.BatteryTileField.entries.filter { it.textualizable && it.isSupported }
+
+                textualizableFields.sortedBy { prefs.getFieldPosition(it) }.forEach { field ->
+                    val visible = fieldVisibility[field] ?: false
+                    val line = fieldLine[field] ?: 1
+
+                    FieldRow(
+                        label = field.getLabel(context),
+                        comments = field.getComments(context),
+                        checked = visible,
+                        line = line,
+                        onCheckedChange = { newVisible ->
+                            fieldVisibility[field] = newVisible
+                            prefs.setFieldVisible(field, newVisible)
+                            if (newVisible) {
+                                fields.filter { it != field }.forEach {
+                                    prefs.setFieldPosition(it, prefs.getFieldPosition(it) + 1)
+                                }
+                                prefs.setFieldPosition(field, 1)
+                            } else {
+                                val maxPos = fields.maxOf { prefs.getFieldPosition(it) }
+                                prefs.setFieldPosition(field, maxPos + 1)
+                            }
+                            updateOrder()
+                        },
+                        onLineChange = { newLine ->
+                            fieldLine[field] = newLine
+                            prefs.setFieldLine(field, newLine)
+                        },
+                    )
+                }
+
+                Spacer(Modifier.height(32.dp))
+            }
         }
     }
 }
@@ -276,60 +285,67 @@ private fun FieldRow(
     onCheckedChange: (Boolean) -> Unit,
     onLineChange: (Int) -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .clickable { onCheckedChange(!checked) }
-        ) {
-            Checkbox(
-                checked = checked,
-                onCheckedChange = null,
+    GlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (checked) 1f else 0.85f),
+        vibrant = true,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(
                 modifier = Modifier
-                    .align(Alignment.Top)
-                    .padding(top = 2.dp)
-            )
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 8.dp)
+                    .fillMaxWidth()
+                    .clickable { onCheckedChange(!checked) },
+                verticalAlignment = if (comments == null) Alignment.CenterVertically else Alignment.Top,
             ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyLarge
+                Checkbox(
+                    checked = checked,
+                    onCheckedChange = null,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
 
-                if (comments != null) {
-                    Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.width(6.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = comments,
-                        style = MaterialTheme.typography.bodySmall
+                        text = label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
                     )
+
+                    if (comments != null) {
+                        Text(
+                            text = comments,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
-        }
 
-        if (checked) {
-            SingleChoiceSegmentedButtonRow(
-                modifier = Modifier.padding(start = 56.dp, bottom = 16.dp)
-            ) {
-                SegmentedButton(
-                    selected = line == 1,
-                    onClick = { onLineChange(1) },
-                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+            if (checked) {
+                SingleChoiceSegmentedButtonRow(
+                    modifier = Modifier.padding(start = 56.dp),
                 ) {
-                    Text(stringResource(R.string.line_1))
-                }
-                SegmentedButton(
-                    selected = line == 2,
-                    onClick = { onLineChange(2) },
-                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                ) {
-                    Text(stringResource(R.string.line_2))
+                    SegmentedButton(
+                        selected = line == 1,
+                        onClick = { onLineChange(1) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                    ) {
+                        Text(stringResource(R.string.line_1))
+                    }
+
+                    SegmentedButton(
+                        selected = line == 2,
+                        onClick = { onLineChange(2) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                    ) {
+                        Text(stringResource(R.string.line_2))
+                    }
                 }
             }
         }
     }
+
+    Spacer(Modifier.height(8.dp))
 }

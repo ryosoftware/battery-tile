@@ -109,8 +109,8 @@
 
     <string name="battery_technology">Technology</string>
 
-    <string name="battery_capacity_design">Nominal capacity (factory specs)</string>
-    <string name="battery_capacity_current">Current capacity (calculated)</string>
+    <string name="battery_capacity_specs">Capacity (factory specs)</string>
+    <string name="battery_capacity_specs_vs_calculated">Capacity (factory specs vs calculated)</string>
 
     <string name="remaining_charge">Remaining capacity</string>
 

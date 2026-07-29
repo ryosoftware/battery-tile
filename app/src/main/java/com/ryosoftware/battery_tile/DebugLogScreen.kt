@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,7 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -43,14 +43,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.ryosoftware.battery_tile.Main.Companion.logAppVersion
-import java.io.File
+import com.ryosoftware.battery_tile.ui.components.ExpressiveSwitch
+import com.ryosoftware.battery_tile.ui.components.GlassCard
+import com.ryosoftware.battery_tile.ui.components.GlassGradientBackground
 import kotlinx.coroutines.launch
+import java.io.File
+
 @SuppressLint("LocalContextResourcesRead")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +76,7 @@ fun DebugLogScreen(onBack: () -> Unit) {
     val logFileTime by app.logger.logFileTime.collectAsState()
 
     val saveLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/plain")
+        contract = ActivityResultContracts.CreateDocument("text/plain"),
     ) { uri ->
         if (uri != null) {
             scope.launch {
@@ -104,12 +110,17 @@ fun DebugLogScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.log_to_file)) },
+                title = {
+                    Text(
+                        stringResource(R.string.log_to_file),
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+                            contentDescription = stringResource(R.string.back),
                         )
                     }
                 },
@@ -143,7 +154,7 @@ fun DebugLogScreen(onBack: () -> Unit) {
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Share,
-                                contentDescription = stringResource(R.string.share_log)
+                                contentDescription = stringResource(R.string.share_log),
                             )
                         }
                         IconButton(onClick = {
@@ -151,7 +162,7 @@ fun DebugLogScreen(onBack: () -> Unit) {
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.Save,
-                                contentDescription = stringResource(R.string.save_log)
+                                contentDescription = stringResource(R.string.save_log),
                             )
                         }
                     }
@@ -160,100 +171,131 @@ fun DebugLogScreen(onBack: () -> Unit) {
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
             )
-        }
+        },
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(padding),
         ) {
-            Spacer(Modifier.height(16.dp))
+            GlassGradientBackground(
+                colors = listOf(
+                    MaterialTheme.colorScheme.background,
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.12f),
+                ),
+            )
 
-            Row(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        loggingEnabled = !loggingEnabled
-                        appPrefs.isLoggingToFile = loggingEnabled
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp),
+            ) {
+                Spacer(Modifier.height(16.dp))
 
-                        val logFile = app.logger.getLogFile()
-                        if (loggingEnabled && logFile.length() > 0) {
-                            showStartLoggingDialog = true
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    vibrant = true,
+                ) {
+                    Column(modifier = Modifier.padding(4.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    loggingEnabled = !loggingEnabled
+                                    appPrefs.isLoggingToFile = loggingEnabled
+
+                                    val logFile = app.logger.getLogFile()
+                                    if (loggingEnabled && logFile.length() > 0) {
+                                        showStartLoggingDialog = true
+                                    }
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.log_to_file),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                                Spacer(Modifier.height(4.dp))
+
+                                val linesCount = logContents?.lines()?.size ?: 0
+
+                                Text(
+                                    text = context.resources.getQuantityString(R.plurals.log_file_messages_count, linesCount, linesCount),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            ExpressiveSwitch(
+                                checked = loggingEnabled,
+                                onCheckedChange = null,
+                            )
                         }
-                    },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = stringResource(R.string.log_to_file),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Spacer(Modifier.height(4.dp))
 
-                    val linesCount = logContents?.lines()?.size ?: 0
+                        Spacer(Modifier.height(4.dp))
 
-                    Text(
-                        text = context.resources.getQuantityString(R.plurals.log_file_messages_count, linesCount, linesCount),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    loggingOnlyWhenCharging = !loggingOnlyWhenCharging
+                                    appPrefs.isLoggingOnlyWhileCharging = loggingOnlyWhenCharging
+                                }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.log_only_while_charging),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                            ExpressiveSwitch(
+                                checked = loggingOnlyWhenCharging,
+                                onCheckedChange = null,
+                                enabled = loggingEnabled,
+                            )
+                        }
+                    }
                 }
-                Switch(
-                    checked = loggingEnabled,
-                    onCheckedChange = null
-                )
-            }
 
-            Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        loggingOnlyWhenCharging = !loggingOnlyWhenCharging
-                        appPrefs.isLoggingOnlyWhileCharging = loggingOnlyWhenCharging
-                    },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = stringResource(R.string.log_only_while_charging),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                }
-                Switch(
-                    checked = loggingOnlyWhenCharging,
-                    onCheckedChange = null,
-                    enabled = loggingEnabled
-                )
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .horizontalScroll(horizontalScroll)
-                        .verticalScroll(verticalScroll)
-                        .padding(8.dp)
+                        .clip(MaterialTheme.shapes.medium),
                 ) {
-                    Text(
-                        text = logContents ?: stringResource(R.string.no_log_data),
-                        softWrap = false,
-                        fontFamily = FontFamily.Monospace,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = if (BatteryTileTheme.glassEnabled) 0.3f else 1f),
+                        shape = MaterialTheme.shapes.medium,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .horizontalScroll(horizontalScroll)
+                                .verticalScroll(verticalScroll)
+                                .padding(12.dp),
+                        ) {
+                            Text(
+                                text = logContents ?: stringResource(R.string.no_log_data),
+                                softWrap = false,
+                                fontFamily = FontFamily.Monospace,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -261,7 +303,6 @@ fun DebugLogScreen(onBack: () -> Unit) {
 
     val closeStartLoggingDialog = {
         context.logAppVersion()
-
         showStartLoggingDialog = false
     }
 
@@ -273,7 +314,6 @@ fun DebugLogScreen(onBack: () -> Unit) {
             confirmButton = {
                 TextButton(onClick = {
                     app.logger.getLogFile().delete()
-
                     closeStartLoggingDialog()
                 }) {
                     Text(stringResource(R.string.yes))
@@ -283,7 +323,7 @@ fun DebugLogScreen(onBack: () -> Unit) {
                 TextButton(onClick = closeStartLoggingDialog) {
                     Text(stringResource(R.string.no))
                 }
-            }
+            },
         )
     }
 
@@ -307,7 +347,7 @@ fun DebugLogScreen(onBack: () -> Unit) {
                 TextButton(onClick = { showStopLoggingDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
-            }
+            },
         )
     }
 }
