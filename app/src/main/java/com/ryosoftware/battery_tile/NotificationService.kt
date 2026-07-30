@@ -416,6 +416,7 @@ class NotificationService : Service() {
     private var lastSavedBatteryFullCharged = false
     private var lastSavedTemperature = -1f
     private var lastSavedIsCharging = false
+    private var lastSavedIsPlugged = false
 
     private var healthNotificationShown = false
 
@@ -739,6 +740,8 @@ class NotificationService : Service() {
 
         hideBatteryLowChargedNotification()
 
+        if (batteryIntentHelper != null) saveBatteryDataToDB(batteryIntentHelper)
+
         updateNotificationTask.executeNow()
     }
 
@@ -771,6 +774,8 @@ class NotificationService : Service() {
         lastBatteryEventTime = millisSinceBoot
 
         hideChargedNotification()
+
+        if (batteryIntentHelper != null) saveBatteryDataToDB(batteryIntentHelper)
 
         updateNotificationTask.executeNow()
     }
@@ -932,18 +937,21 @@ class NotificationService : Service() {
         val temperature = batteryIntentHelper.temperatureCelsius
         val isCharging = batteryIntentHelper.isCharging
         val isFullCharged = batteryIntentHelper.isFullCharged
+        val isPlugged = batteryIntentHelper.isPlugged
 
         val levelChanged = if (lastSavedBatteryLevel < 0) { level >= 0 } else { abs(level - lastSavedBatteryLevel) >= SAVE_READINGS_BATTERY_LEVEL_THRESHOLD }
         val fullChargedChanged = lastSavedBatteryFullCharged != isFullCharged
         val tempChanged = if (lastSavedTemperature < 0f) { temperature >= 0f } else { abs(temperature - lastSavedTemperature) >= SAVE_READINGS_BATTERY_TEMPERATURE_THRESHOLD }
         val chargingChanged = isCharging != lastSavedIsCharging
+        val pluggedChanged = isPlugged != lastSavedIsPlugged
 
-        if ((!levelChanged) && (!fullChargedChanged) && (!tempChanged) && (!chargingChanged)) return
+        if ((!levelChanged) && (!fullChargedChanged) && (!tempChanged) && (!chargingChanged) && (!pluggedChanged)) return
 
         lastSavedBatteryLevel = level
         lastSavedBatteryFullCharged = isFullCharged
         lastSavedTemperature = temperature
         lastSavedIsCharging = isCharging
+        lastSavedIsPlugged = isPlugged
 
         val charge = batteryIntentHelper.charge
         
@@ -1040,7 +1048,7 @@ class NotificationService : Service() {
 
                             repository.deleteDischargeSessionsOlderThan(dischargingHistoryCutOffTime)
                         }
-                    } else {
+                    } else if (!isPlugged) {
                         val existingOpenDischarge = repository.getOpenDischargeSession()
                         if (existingOpenDischarge != null) {
                             repository.deleteDischargeSession(existingOpenDischarge.id)
