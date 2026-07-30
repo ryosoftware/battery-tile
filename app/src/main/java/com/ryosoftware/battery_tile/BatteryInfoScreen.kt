@@ -51,8 +51,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ryosoftware.battery_tile.Utils.Companion.getStringPercent
 import com.ryosoftware.battery_tile.ui.components.BatteryProgressCircle
+import com.ryosoftware.battery_tile.ui.components.DynamicBatteryBackground
 import com.ryosoftware.battery_tile.ui.components.GlassCard
-import com.ryosoftware.battery_tile.ui.components.GlassGradientBackground
 import com.ryosoftware.battery_tile.ui.components.MetricRow
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
@@ -67,6 +67,17 @@ fun BatteryInfoScreen(
     appPrefs: AppPreferences,
     onBack: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val batteryManager = context.getSystemService(BATTERY_SERVICE) as BatteryManager
+    var bgBatteryHelper by remember { mutableStateOf(getBatteryHelper(context, batteryManager)) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            bgBatteryHelper = getBatteryHelper(context, batteryManager)
+            delay(5000.milliseconds)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -97,11 +108,10 @@ fun BatteryInfoScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            GlassGradientBackground(
-                colors = listOf(
-                    MaterialTheme.colorScheme.background,
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.12f),
-                ),
+            DynamicBatteryBackground(
+                batteryLevel = bgBatteryHelper?.level ?: 50,
+                isCharging = bgBatteryHelper?.isCharging ?: false,
+                temperatureCelsius = bgBatteryHelper?.temperatureCelsius ?: 25f,
             )
 
             BatteryInfoContent(
