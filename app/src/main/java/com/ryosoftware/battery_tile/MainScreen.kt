@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import com.ryosoftware.battery_tile.ui.theme.Spacing
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -197,8 +198,8 @@ fun SettingsSelector(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(Spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Spacing.md),
             ) {
                 SettingsCard(
                     icon = Icons.Filled.BatteryChargingFull,
@@ -232,7 +233,7 @@ fun SettingsSelector(
                                 }
                                 NotificationService.runOrStop(context)
                             }
-                            .padding(20.dp),
+                                .padding(Spacing.xl),
                         verticalAlignment = Alignment.Top,
                     ) {
                         Surface(
@@ -250,7 +251,7 @@ fun SettingsSelector(
                             }
                         }
 
-                        Spacer(Modifier.width(12.dp))
+                        Spacer(Modifier.width(Spacing.md))
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -299,7 +300,7 @@ fun SettingsSelector(
                     GlassCard(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(Spacing.lg)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Surface(
                                     shape = MaterialTheme.shapes.extraSmall,
@@ -316,16 +317,15 @@ fun SettingsSelector(
                                     }
                                 }
 
-                                Spacer(Modifier.width(12.dp))
+                                Spacer(Modifier.width(Spacing.md))
 
                                 Text(
                                     text = stringResource(R.string.permissions_title),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.titleMedium,
                                 )
                             }
 
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Spacing.sm))
 
                             Text(
                                 text = stringResource(R.string.permissions_body),
@@ -333,7 +333,7 @@ fun SettingsSelector(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
 
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(Spacing.md))
 
                             OutlinedButton(
                                 onClick = {
@@ -346,7 +346,7 @@ fun SettingsSelector(
                                 Text(stringResource(R.string.request_notification_permission))
                             }
 
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Spacing.sm))
 
                             OutlinedButton(
                                 onClick = {
@@ -360,7 +360,7 @@ fun SettingsSelector(
                             }
 
                             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(Spacing.sm))
 
                                 OutlinedButton(
                                     onClick = { context.requestPostExactAlarmPermission() },
@@ -377,7 +377,7 @@ fun SettingsSelector(
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(Spacing.lg)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(
                                 shape = MaterialTheme.shapes.extraSmall,
@@ -394,23 +394,22 @@ fun SettingsSelector(
                                 }
                             }
 
-                            Spacer(Modifier.width(12.dp))
+                            Spacer(Modifier.width(Spacing.md))
 
                             Text(
                                 text = stringResource(R.string.other_settings),
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
                             )
                         }
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(Spacing.lg))
 
                         Text(
                             text = stringResource(R.string.temperature_unit),
                             style = MaterialTheme.typography.titleSmall,
                         )
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(Spacing.sm))
 
                         TemperatureUnit.entries.forEach { unit ->
                             Row(
@@ -435,14 +434,14 @@ fun SettingsSelector(
                             }
                         }
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(Spacing.lg))
 
                         Text(
                             text = stringResource(R.string.what_opens_when_user_clicks_tile_or_notification),
                             style = MaterialTheme.typography.titleSmall,
                         )
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(Spacing.sm))
 
                         var whatAppOpens by remember { mutableStateOf(appPrefs.whatAppOpensWhenUserClicksTileOrNotification) }
 
@@ -511,7 +510,7 @@ fun SettingsSelector(
                 val uriHandler = LocalUriHandler.current
                 val githubRepo = stringResource(R.string.github_repo)
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Spacing.sm))
 
                 Text(
                     text = stringResource(R.string.app_version, BuildConfig.VERSION_NAME),
@@ -523,7 +522,7 @@ fun SettingsSelector(
                     color = MaterialTheme.colorScheme.primary,
                 )
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Spacing.lg))
             }
         }
     }
@@ -544,7 +543,7 @@ private fun SettingsCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                    .padding(Spacing.lg),
             verticalAlignment = Alignment.Top,
         ) {
             Surface(
@@ -562,13 +561,12 @@ private fun SettingsCard(
                 }
             }
 
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(Spacing.md))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.titleMedium,
                 )
 
                 Text(

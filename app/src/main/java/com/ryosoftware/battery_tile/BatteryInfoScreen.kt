@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.ryosoftware.battery_tile.ui.theme.Spacing
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -106,7 +107,7 @@ fun BatteryInfoScreen(
             BatteryInfoContent(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = Spacing.xl),
                 prefs = prefs,
                 appPrefs = appPrefs,
             )
@@ -140,7 +141,7 @@ fun BatteryInfoContent(
         ) {
             val currentBatteryIntentHelper = batteryIntentHelper
 
-            Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(Spacing.lg))
 
             if (currentBatteryIntentHelper == null) {
                 Text(
@@ -162,7 +163,7 @@ fun BatteryInfoContent(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
+                            .padding(Spacing.xxl),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         BatteryProgressCircle(
@@ -170,12 +171,11 @@ fun BatteryInfoContent(
                             isCharging = currentBatteryIntentHelper.isCharging,
                         )
 
-                        Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(Spacing.lg))
 
                         Text(
                             text = currentBatteryIntentHelper.toString(context, BatteryIntentHelper.BATTERY_STATUS, appPrefs, small = false) ?: stringResource(R.string.unknown_value),
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -232,7 +232,7 @@ fun BatteryInfoContent(
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Spacing.xxl))
         }
     }
 }

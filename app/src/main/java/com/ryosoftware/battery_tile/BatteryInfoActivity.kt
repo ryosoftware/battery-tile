@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import com.ryosoftware.battery_tile.ui.theme.Spacing
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.remember
@@ -32,7 +33,7 @@ class BatteryInfoActivity : ComponentActivity() {
                     sheetState = sheetState
                 ) {
                     BatteryInfoContent(
-                        modifier = Modifier.padding(horizontal = 24.dp),
+                        modifier = Modifier.padding(horizontal = Spacing.xxl),
                         prefs = prefs,
                         appPrefs = appPrefs
                     )

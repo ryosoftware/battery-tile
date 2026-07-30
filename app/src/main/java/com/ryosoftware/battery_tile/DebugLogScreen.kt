@@ -54,6 +54,7 @@ import com.ryosoftware.battery_tile.Main.Companion.logAppVersion
 import com.ryosoftware.battery_tile.ui.components.ExpressiveSwitch
 import com.ryosoftware.battery_tile.ui.components.GlassCard
 import com.ryosoftware.battery_tile.ui.components.GlassGradientBackground
+import com.ryosoftware.battery_tile.ui.theme.Spacing
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -191,9 +192,9 @@ fun DebugLogScreen(onBack: () -> Unit) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = Spacing.xl),
             ) {
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Spacing.lg))
 
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -223,7 +224,7 @@ fun DebugLogScreen(onBack: () -> Unit) {
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.Medium,
                                 )
-                                Spacer(Modifier.height(4.dp))
+                                Spacer(Modifier.height(Spacing.xs))
 
                                 val linesCount = logContents?.lines()?.size ?: 0
 
@@ -239,7 +240,7 @@ fun DebugLogScreen(onBack: () -> Unit) {
                             )
                         }
 
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(Spacing.xs))
 
                         Row(
                             modifier = Modifier
@@ -248,7 +249,7 @@ fun DebugLogScreen(onBack: () -> Unit) {
                                     loggingOnlyWhenCharging = !loggingOnlyWhenCharging
                                     appPrefs.isLoggingOnlyWhileCharging = loggingOnlyWhenCharging
                                 }
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(
@@ -269,7 +270,7 @@ fun DebugLogScreen(onBack: () -> Unit) {
                     }
                 }
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Spacing.sm))
 
                 Box(
                     modifier = Modifier
@@ -278,7 +279,7 @@ fun DebugLogScreen(onBack: () -> Unit) {
                 ) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = if (BatteryTileTheme.glassEnabled) 0.3f else 1f),
+                        color = if (BatteryTileTheme.glassEnabled) MaterialTheme.colorScheme.surface.copy(alpha = 0.7f) else MaterialTheme.colorScheme.surface,
                         shape = MaterialTheme.shapes.medium,
                     ) {
                         Box(

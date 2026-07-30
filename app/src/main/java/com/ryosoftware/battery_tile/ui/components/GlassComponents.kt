@@ -9,14 +9,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,23 +28,6 @@ import androidx.compose.ui.unit.dp
 import com.ryosoftware.battery_tile.BatteryTileTheme
 import com.ryosoftware.battery_tile.ui.theme.AccentColors
 
-private const val glassAlpha = 0.65f
-private const val glassAlphaVibrant = 0.78f
-
-@Composable
-fun Modifier.glassBackground(
-    tintColor: Color = MaterialTheme.colorScheme.surface,
-    vibrant: Boolean = false,
-): Modifier {
-    if (!BatteryTileTheme.glassEnabled) {
-        return this.then(Modifier.background(tintColor))
-    }
-    val alpha = if (vibrant) glassAlphaVibrant else glassAlpha
-    val baseColor = tintColor.copy(alpha = alpha)
-
-    return this.then(Modifier.background(baseColor))
-}
-
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
@@ -55,19 +35,18 @@ fun GlassCard(
     shape: RoundedCornerShape = MaterialTheme.shapes.medium as RoundedCornerShape,
     vibrant: Boolean = false,
     colors: CardColors = CardDefaults.cardColors(containerColor = Color.Transparent),
-    elevation: Dp = if (BatteryTileTheme.glassEnabled) { 6.dp } else { 2.dp },
+    elevation: Dp = 2.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val glassMod = if (BatteryTileTheme.glassEnabled) {
-        val tintColor = MaterialTheme.colorScheme.surface
-
-        Modifier.glassBackground(
-            tintColor = tintColor,
-            vibrant = vibrant,
-        )
+    val bgColor = if (BatteryTileTheme.glassEnabled) {
+        MaterialTheme.colorScheme.surface.copy(alpha = if (vibrant) 0.88f else 0.82f)
     } else {
-        Modifier
+        MaterialTheme.colorScheme.surface
     }
+
+    val cardColors = CardDefaults.cardColors(
+        containerColor = bgColor,
+    )
 
     val interactionSource = remember {
         MutableInteractionSource()
@@ -85,17 +64,12 @@ fun GlassCard(
         onClick = onClick ?: {},
         enabled = onClick != null,
         modifier = modifier
-            .then(glassMod)
             .scale(scale),
         shape = shape,
-        colors = colors,
+        colors = cardColors,
         elevation = CardDefaults.cardElevation(defaultElevation = elevation),
         interactionSource = interactionSource,
     ) {
-        if (onClick != null) {
-            Spacer(Modifier.height(elevation * 2))
-        }
-
         content()
     }
 }
@@ -107,16 +81,16 @@ fun GlassSurface(
     vibrant: Boolean = false,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val glassMod = if (BatteryTileTheme.glassEnabled) {
-        Modifier.glassBackground(vibrant = vibrant)
+    val bgColor = if (BatteryTileTheme.glassEnabled) {
+        MaterialTheme.colorScheme.surface.copy(alpha = if (vibrant) 0.88f else 0.82f)
     } else {
-        Modifier
+        MaterialTheme.colorScheme.surface
     }
 
     Box(
         modifier = modifier
             .clip(shape)
-            .then(glassMod)
+            .background(bgColor)
             .padding(16.dp),
         content = content,
     )

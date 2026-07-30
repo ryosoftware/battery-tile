@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Card
+import com.ryosoftware.battery_tile.ui.theme.Spacing
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -230,10 +231,10 @@ fun BatteryHistoryScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp)
+                    .padding(horizontal = Spacing.xl)
                 .verticalScroll(rememberScrollState())
         ) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(Spacing.lg))
 
             Row(
                 modifier = Modifier
@@ -255,7 +256,7 @@ fun BatteryHistoryScreen(
 
             when (selectedTab) {
                 0 if readings.size < 2 -> {
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(Spacing.lg))
 
                     Text(
                         text = stringResource(R.string.no_history_data),
@@ -265,7 +266,7 @@ fun BatteryHistoryScreen(
                     )
                 }
                 1 if chargingSessions.isEmpty() && dischargeSessions.isEmpty() -> {
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(Spacing.lg))
 
                     Text(
                         text = stringResource(R.string.no_sessions),
@@ -275,7 +276,7 @@ fun BatteryHistoryScreen(
                     )
                 }
                 else -> {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Spacing.sm))
 
                     when (selectedTab) {
                         0 -> {
@@ -302,7 +303,7 @@ fun BatteryHistoryScreen(
                                 )
                             }
 
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(Spacing.lg))
 
                             val displayReadings = readings.reversed()
                             if (showLevel && showTemperature) {
@@ -337,7 +338,7 @@ fun BatteryHistoryScreen(
                                 )
                             }
 
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(Spacing.lg))
 
                             val oldest = readings.last()
                             val newest = readings.first()
@@ -355,7 +356,7 @@ fun BatteryHistoryScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Spacing.xs))
 
                             @SuppressLint("LocalContextResourcesRead")
                             Text(
@@ -383,7 +384,7 @@ fun BatteryHistoryScreen(
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(Spacing.xxxl))
         }
         }
     }
@@ -1017,7 +1018,7 @@ private fun FlakyConnectionWarningCard(result: FlakyResult, context: Context) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.error,
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(Spacing.xs))
             val body = if (result.affectedPeriodCount >= 2) {
                 stringResource(R.string.anomaly_flaky_connection_body)
             } else {
@@ -1160,14 +1161,14 @@ fun CombinedSessionsTab(
 
         if (completedCharge.isNotEmpty() || completedDischarge.isNotEmpty()) {
             GlassCard(modifier = Modifier.fillMaxWidth(), vibrant = true) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(Spacing.lg)) {
                     Text(
                         text = stringResource(R.string.global_stats_title),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Spacing.sm))
 
                     if (completedCharge.isNotEmpty()) {
                         Text(
@@ -1178,7 +1179,7 @@ fun CombinedSessionsTab(
                         )
 
                         if (totalChargePercent != 0) {
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Spacing.xs))
 
                             Text(
                                 text = stringResource(
@@ -1194,7 +1195,7 @@ fun CombinedSessionsTab(
                         val totalChargeDurationMs = totalChargeDuration * DateUtils.MINUTE_IN_MILLIS
 
                         if (!Utils.isImperceptible(totalChargeDurationMs)) {
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Spacing.xs))
 
                             Text(
                                 text = stringResource(
@@ -1208,7 +1209,7 @@ fun CombinedSessionsTab(
                         }
 
                         if (avgChargeSpeed != null) {
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Spacing.xs))
 
                             Text(
                                 text = stringResource(
@@ -1223,7 +1224,7 @@ fun CombinedSessionsTab(
                     }
 
                     if (completedCharge.isNotEmpty() && completedDischarge.isNotEmpty()) {
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(Spacing.md))
                     }
 
                     if (completedDischarge.isNotEmpty()) {
@@ -1235,7 +1236,7 @@ fun CombinedSessionsTab(
                         )
 
                         if (totalDischargePercent != 0) {
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Spacing.xs))
 
                             Text(
                                 text = stringResource(
@@ -1251,7 +1252,7 @@ fun CombinedSessionsTab(
                         val totalDischargeDurationMs = totalDischargeDuration * DateUtils.MINUTE_IN_MILLIS
 
                         if (!Utils.isImperceptible(totalDischargeDurationMs)) {
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Spacing.xs))
 
                             Text(
                                 text = stringResource(
@@ -1267,7 +1268,7 @@ fun CombinedSessionsTab(
                         val totalScreenOnMs = totalScreenOnMinutes * DateUtils.MINUTE_IN_MILLIS
 
                         if (!Utils.isImperceptible(totalScreenOnMs)) {
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Spacing.xs))
 
                             Text(
                                 text = stringResource(
@@ -1287,7 +1288,7 @@ fun CombinedSessionsTab(
                         val screenOffMs = screenOffMinutes * DateUtils.MINUTE_IN_MILLIS
 
                         if (!Utils.isImperceptible(screenOffMs)) {
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Spacing.xs))
 
                             Text(
                                 text = stringResource(
@@ -1305,7 +1306,7 @@ fun CombinedSessionsTab(
                         }
 
                         if (avgDischargeSpeed != null) {
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Spacing.xs))
 
                             Text(
                                 text = stringResource(
@@ -1319,7 +1320,7 @@ fun CombinedSessionsTab(
                         }
 
                         if (avgScreenOnSpeed != null) {
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Spacing.xs))
 
                             Text(
                                 text = stringResource(
@@ -1333,7 +1334,7 @@ fun CombinedSessionsTab(
                         }
 
                         if (avgScreenOffSpeed != null) {
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(Spacing.xs))
 
                             Text(
                                 text = stringResource(
@@ -1354,7 +1355,7 @@ fun CombinedSessionsTab(
 
         combined.forEach { item ->
             GlassCard(modifier = Modifier.fillMaxWidth(), vibrant = true) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(Spacing.lg)) {
                     when (item) {
                         is SessionItem.Charging -> ChargingSessionCard(item.session, context, appPrefs)
                         is SessionItem.Discharge -> DischargeSessionCard(
@@ -1430,7 +1431,7 @@ private fun DateTimeRow(context: Context, startTime: Long, endTime: Long?) {
     fun getIntervalAtDifferentDayString(context: Context, startTimeInMillis: Long, endTimeInMillis: Long): String =
         context.getString(R.string.from_date_to_date, getStringDateTime(context, startTimeInMillis), getStringDateTime(context, endTimeInMillis))
 
-    Spacer(Modifier.height(4.dp))
+    Spacer(Modifier.height(Spacing.xs))
 
     Text(
         text = if ((endTime != null) && (isSameDay(startTime, endTime))) getIntervalAtSameDayString(context, startTime, endTime)
@@ -1442,7 +1443,7 @@ private fun DateTimeRow(context: Context, startTime: Long, endTime: Long?) {
 
 @Composable
 private fun BatteryLevelRow(startLevel: Int, endLevel: Int?) {
-    Spacer(Modifier.height(4.dp))
+    Spacer(Modifier.height(Spacing.xs))
 
     Text(
         text = stringResource(
@@ -1457,7 +1458,7 @@ private fun BatteryLevelRow(startLevel: Int, endLevel: Int?) {
 @Composable
 private fun BatteryChargeRow(startCharge: Long, endCharge: Long?) {
     if (startCharge > 0) {
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Spacing.xs))
 
         Text(
             text = stringResource(
@@ -1473,7 +1474,7 @@ private fun BatteryChargeRow(startCharge: Long, endCharge: Long?) {
 @Composable
 private fun DurationRow(context: Context, durationMinutes: Long?, labelResId: Int) {
     if ((durationMinutes != null) && (!Utils.isImperceptible(durationMinutes * DateUtils.MINUTE_IN_MILLIS))) {
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Spacing.xs))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1502,7 +1503,7 @@ private fun TemperatureRow(
     labelResId: Int
 ) {
     if (avgTemperatureCelsius != null) {
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Spacing.xs))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1551,7 +1552,7 @@ private fun ChargingSessionCard(session: ChargingSession, context: Context, appP
         } else null
 
         if ((speedPerHour != null) && (speedPerHour > 0f)) {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(Spacing.xs))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1584,7 +1585,7 @@ private fun ChargingSessionCard(session: ChargingSession, context: Context, appP
         val diffMs = endTime - session.chargedTimeStamp
         val wastedMin = diffMs / DateUtils.MINUTE_IN_MILLIS
         if (wastedMin > 0) {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(Spacing.xs))
 
             Text(
                 text = stringResource(
@@ -1632,7 +1633,7 @@ private fun DischargeSessionCard(
     DurationRow(context, session.durationMinutes, R.string.discharge_session_duration)
 
     if ((session.screenOnTimeMinutes != null) && (!Utils.isImperceptible(session.screenOnTimeMinutes * DateUtils.MINUTE_IN_MILLIS))) {
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Spacing.xs))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1651,7 +1652,7 @@ private fun DischargeSessionCard(
     }
 
     if ((rates?.overallSpeed != null) && (rates.overallSpeed > 0f)) {
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Spacing.xs))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1670,7 +1671,7 @@ private fun DischargeSessionCard(
     }
 
     if ((rates?.screenOnSpeed != null) && (rates.screenOnSpeed > 0f)) {
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Spacing.xs))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1689,7 +1690,7 @@ private fun DischargeSessionCard(
     }
 
     if ((rates?.screenOffSpeed != null) && (rates.screenOffSpeed > 0f)) {
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Spacing.xs))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1717,7 +1718,7 @@ private fun DischargeSessionCard(
     )
 
     if (isFlaky) {
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Spacing.sm))
 
         Text(
             text = stringResource(R.string.anomaly_flaky_connection_body_single),

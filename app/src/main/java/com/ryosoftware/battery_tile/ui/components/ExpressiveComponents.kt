@@ -107,13 +107,31 @@ fun GradientOutlinedButton(
     ),
     content: @Composable () -> Unit,
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier,
-        enabled = enabled,
-        shape = MaterialTheme.shapes.medium,
+    val shape = MaterialTheme.shapes.medium
+
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(
+                brush = Brush.horizontalGradient(gradient),
+                shape = shape,
+            ),
     ) {
-        content()
+        OutlinedButton(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(1.5.dp)
+                .clip(shape),
+            enabled = enabled,
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+            shape = shape,
+            border = null,
+        ) {
+            content()
+        }
     }
 }
 

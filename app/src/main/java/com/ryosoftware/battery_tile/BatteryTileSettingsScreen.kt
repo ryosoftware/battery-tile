@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import com.ryosoftware.battery_tile.ui.theme.Spacing
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
@@ -125,10 +126,10 @@ fun TileSettingsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = Spacing.xl)
                     .verticalScroll(rememberScrollState()),
             ) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Spacing.sm))
 
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -136,18 +137,17 @@ fun TileSettingsScreen(
                     Text(
                         text = stringResource(R.string.tile_general),
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(Spacing.lg),
                     )
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Spacing.lg))
 
                 SectionHeader(
                     title = stringResource(R.string.tile_icon_title),
                 )
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Spacing.lg))
 
                 ExposedDropdownMenuBox(
                     expanded = iconDropdownExpanded,
@@ -229,13 +229,13 @@ fun TileSettingsScreen(
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Spacing.lg))
 
                 SectionHeader(
                     title = stringResource(R.string.tile_lines_title),
                 )
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Spacing.sm))
 
                 val textualizableFields = BatteryTileUIBuilder.BatteryTileField.entries.filter { it.textualizable && it.isSupported }
 
@@ -269,7 +269,7 @@ fun TileSettingsScreen(
                     )
                 }
 
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(Spacing.xxxl))
             }
         }
     }
@@ -291,7 +291,7 @@ private fun FieldRow(
             .alpha(if (checked) 1f else 0.85f),
         vibrant = true,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(Spacing.lg)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -304,13 +304,12 @@ private fun FieldRow(
                     modifier = Modifier.padding(top = 2.dp),
                 )
 
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(Spacing.sm))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = label,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
                     )
 
                     if (comments != null) {
@@ -347,5 +346,5 @@ private fun FieldRow(
         }
     }
 
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Spacing.sm))
 }

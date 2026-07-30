@@ -64,6 +64,7 @@ import com.ryosoftware.battery_tile.ui.components.GlassSurface
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import com.ryosoftware.battery_tile.ui.components.SectionHeader
+import com.ryosoftware.battery_tile.ui.theme.Spacing
 import kotlin.math.roundToInt
 import java.text.DateFormat
 import java.util.Calendar
@@ -172,10 +173,10 @@ fun NotificationSettingsScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = Spacing.xl),
             ) {
                 item {
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(Spacing.lg))
 
                     var lastResetInfo by remember { mutableStateOf(readLastResetInfo()) }
 
@@ -201,7 +202,7 @@ fun NotificationSettingsScreen(
                         expanded = expandedCharged,
                         onToggle = { expandedCharged = !expandedCharged },
                     ) {
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(Spacing.md))
 
                         SliderRow(
                             label = stringResource(R.string.battery_charged_threshold),
@@ -213,7 +214,7 @@ fun NotificationSettingsScreen(
                             displayValue = stringResource(R.string.percent_value_integer, chargedPercent),
                         )
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(Spacing.sm))
 
                         SliderRow(
                             label = stringResource(R.string.battery_charged_interval),
@@ -225,7 +226,7 @@ fun NotificationSettingsScreen(
                             displayValue = if (chargedInterval == 0) stringResource(R.string.no_delay) else stringResource(R.string.minutes, chargedInterval),
                         )
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(Spacing.sm))
 
                         SliderRow(
                             label = stringResource(R.string.battery_charged_repeat_interval),
@@ -238,7 +239,7 @@ fun NotificationSettingsScreen(
                         )
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(Spacing.md))
 
                     ExpandableSection(
                         title = stringResource(R.string.battery_low_section_title),
@@ -246,7 +247,7 @@ fun NotificationSettingsScreen(
                         expanded = expandedLow,
                         onToggle = { expandedLow = !expandedLow },
                     ) {
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(Spacing.md))
 
                         SliderRow(
                             label = stringResource(R.string.battery_low_threshold),
@@ -258,7 +259,7 @@ fun NotificationSettingsScreen(
                             displayValue = stringResource(R.string.percent_value_integer, lowChargePercent),
                         )
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(Spacing.sm))
 
                         SliderRow(
                             label = stringResource(R.string.battery_low_repeat_interval),
@@ -271,7 +272,7 @@ fun NotificationSettingsScreen(
                         )
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(Spacing.md))
 
                     ExpandableSection(
                         title = stringResource(R.string.power_connected_or_disconnected_section_title),
@@ -279,7 +280,7 @@ fun NotificationSettingsScreen(
                         expanded = expandedPower,
                         onToggle = { expandedPower = !expandedPower },
                     ) {
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(Spacing.md))
 
                         Row(
                             modifier = Modifier
@@ -303,7 +304,7 @@ fun NotificationSettingsScreen(
                         }
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(Spacing.md))
 
                     ExpandableSection(
                         title = stringResource(R.string.battery_temperature_section_title),
@@ -311,7 +312,7 @@ fun NotificationSettingsScreen(
                         expanded = expandedTemp,
                         onToggle = { expandedTemp = !expandedTemp },
                     ) {
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(Spacing.md))
 
                         val tempThresholdMin = tempUnit.fromCelsius(28f)
                         val tempThresholdMax = tempUnit.fromCelsius(50f)
@@ -330,7 +331,7 @@ fun NotificationSettingsScreen(
                         )
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(Spacing.md))
 
                     ExpandableSection(
                         title = stringResource(R.string.stats_reset_threshold_section_title),
@@ -339,7 +340,7 @@ fun NotificationSettingsScreen(
                         enabled = autoResetEnabled,
                         onToggle = { expandedReset = !expandedReset },
                     ) {
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(Spacing.md))
 
                         Row(
                             modifier = Modifier
@@ -362,7 +363,7 @@ fun NotificationSettingsScreen(
                             )
                         }
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(Spacing.sm))
 
                         SliderRow(
                             label = stringResource(R.string.minimum_load_required),
@@ -375,7 +376,7 @@ fun NotificationSettingsScreen(
                             enabled = autoResetEnabled,
                         )
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(Spacing.sm))
 
                         SliderRow(
                             label = stringResource(R.string.minimum_time_required),
@@ -388,7 +389,7 @@ fun NotificationSettingsScreen(
                             enabled = autoResetEnabled,
                         )
 
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(Spacing.md))
 
                         Button(
                             onClick = { showResetDialog = true },
@@ -418,7 +419,7 @@ fun NotificationSettingsScreen(
                             )
                         }
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(Spacing.sm))
 
                         val lastStatsResetTimeString = getStringDateTime(context, lastResetInfo.time)
                         val lastStatsResetReasonString = when (lastResetInfo.reason) {
@@ -442,14 +443,14 @@ fun NotificationSettingsScreen(
                         )
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(Spacing.md))
 
                     SectionHeader(
                         title = stringResource(R.string.notification_fields_section_title),
                         subtitle = stringResource(R.string.notification_fields_section_body, stringResource(R.string.since_boot), stringResource(R.string.since_last_stats_reset), ""),
                     )
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(Spacing.md))
                 }
 
                 itemsIndexed(fields) { index, field ->
@@ -491,7 +492,7 @@ fun NotificationSettingsScreen(
                 }
 
                 item {
-                    Spacer(Modifier.height(32.dp))
+                    Spacer(Modifier.height(Spacing.xxxl))
                 }
             }
         }
@@ -516,7 +517,7 @@ private fun FieldRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(Spacing.lg)
                 .clickable(enabled = !batteryLevelIsLastVisible) { onCheckedChange(!checked) },
             verticalAlignment = if (comments == null) Alignment.CenterVertically else Alignment.Top,
         ) {
@@ -526,7 +527,7 @@ private fun FieldRow(
                 enabled = !batteryLevelIsLastVisible,
             )
 
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(Spacing.sm))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -546,7 +547,7 @@ private fun FieldRow(
         }
     }
 
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(Spacing.sm))
 }
 
 
@@ -564,7 +565,7 @@ private fun ExpandableSection(
         vibrant = true,
         onClick = onToggle,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(Spacing.lg)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -573,13 +574,12 @@ private fun ExpandableSection(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
                         color = if (enabled) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.then(if (!enabled) Modifier.alpha(0.4f) else Modifier),
                     )
                     if (subtitle.isNotEmpty()) {
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(Spacing.xs))
                         Text(
                             text = subtitle,
                             style = MaterialTheme.typography.bodySmall,

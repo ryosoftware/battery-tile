@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.ryosoftware.battery_tile.ui.theme.Spacing
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -58,7 +59,7 @@ fun MainScreen(onSettings: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(Spacing.xxl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(
@@ -99,7 +100,7 @@ fun MainScreen(onSettings: () -> Unit) {
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(Spacing.xxl))
 
                 AnimatedVisibility(
                     visible = visible,
@@ -113,12 +114,12 @@ fun MainScreen(onSettings: () -> Unit) {
                         Text(
                             text = stringResource(R.string.app_name),
                             style = MaterialTheme.typography.displayMedium,
-                            fontWeight = FontWeight.Black,
+
                             color = Color.White,
                             textAlign = TextAlign.Center,
                         )
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(Spacing.lg))
 
                         Text(
                             text = stringResource(R.string.general_information),
@@ -150,7 +151,7 @@ fun MainScreen(onSettings: () -> Unit) {
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Spacing.xxl))
         }
     }
 }
