@@ -957,8 +957,8 @@ private fun DualAxisChart(
     )
 }
 
-private const val FLAKY_BATTERY_THRESHOLD = 85
-private const val FLAKY_CHARGING_PERIOD_GAP_MS = 30 * DateUtils.MINUTE_IN_MILLIS
+private const val FLAKY_BATTERY_THRESHOLD = 0
+private const val FLAKY_CHARGING_PERIOD_GAP_MS = 3 * DateUtils.MINUTE_IN_MILLIS
 private const val FLAKY_EVENT_THRESHOLD = 2
 
 private data class FlakyResult(
@@ -974,7 +974,8 @@ private fun analyzeFlakyConnection(
         val dur = it.durationMinutes ?: return@filter false
         it.endTime != null &&
         dur < 2 &&
-        (it.startLevel) >= FLAKY_BATTERY_THRESHOLD
+        (it.startLevel) >= FLAKY_BATTERY_THRESHOLD &&
+        (it.startCharge) <= (it.endCharge ?: it.startCharge)
     }
     if (briefDischarges.size < 2) return null
 
