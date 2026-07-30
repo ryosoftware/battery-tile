@@ -31,6 +31,13 @@ internal fun calculateDischargeRates(readings: List<BatteryReading>, screenState
         return DischargeRateStats(analysisStartTime, endTime, null, null, null, null, null, null, null)
     }
 
+    val firstLevel = sortedReadings.first().batteryLevel
+    val lastLevel = sortedReadings.last().batteryLevel
+    val firstCharge = sortedReadings.first().batteryCharge
+    val lastCharge = sortedReadings.last().batteryCharge
+    val overallDischargePercent = (firstLevel - lastLevel).coerceAtLeast(0)
+    val overallDischargeMaH = ((firstCharge - lastCharge).coerceAtLeast(0)) / 1000f
+
     var wasScreenOn = sortedScreenStates.lastOrNull { it.timestamp < startTime }?.screenOn ?: false
 
     var screenStateIndex = sortedScreenStates.indexOfFirst { it.timestamp >= startTime }
@@ -120,7 +127,7 @@ internal fun calculateDischargeRates(readings: List<BatteryReading>, screenState
         screenOffDischargePercent / (screenOffDurationMs.toFloat() / DateUtils.HOUR_IN_MILLIS)
     } else null
 
-    return DischargeRateStats(analysisStartTime, endTime, overallSpeed, screenOnSpeed, screenOffSpeed, totalDischargePercent, totalDischargeMicroAh / 1_000L, screenOnDischargePercent, screenOffDischargePercent)
+    return DischargeRateStats(analysisStartTime, endTime, overallSpeed, screenOnSpeed, screenOffSpeed, overallDischargePercent.toFloat(), overallDischargeMaH, screenOnDischargePercent, screenOffDischargePercent)
 }
 
 internal fun calculateDischargeRates(readings: List<BatteryReading>, screenStates: List<ScreenState>): DischargeRateStats? =
