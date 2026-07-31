@@ -632,7 +632,10 @@ class NotificationService : Service() {
         val now = System.currentTimeMillis()
 
         serviceScope.launch {
-            val readingsAfterMiniumTimestamp = repository.getBatteryReadingsBetween(minimumTimestamp, now)
+            val readingsAfterMiniumTimestamp = repository
+                .getBatteryReadingsBetween(minimumTimestamp, now).dropWhile { it.batteryCharge <= 0 }
+                .asReversed().dropWhile { it.batteryCharge <= 0 }
+                .asReversed()
             recentReadings.clear()
             recentReadings.addAll(readingsAfterMiniumTimestamp)
 

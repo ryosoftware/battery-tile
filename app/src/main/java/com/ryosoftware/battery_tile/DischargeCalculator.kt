@@ -26,8 +26,7 @@ internal fun calculateDischargeRates(readings: List<BatteryReading>, screenState
         .filter { it.timestamp in analysisStartTime..endTime }
         .sortedBy { it.timestamp }
 
-    if (sortedReadings.size < 2) return DischargeRateStats(analysisStartTime, endTime, null, null, null, null, null, null, null)
-    if (sortedReadings.any { it.batteryCharge <= 0 }) {
+    if ((sortedReadings.size < 2) || (sortedReadings.any { it.batteryCharge <= 0 })) {
         return DischargeRateStats(analysisStartTime, endTime, null, null, null, null, null, null, null)
     }
 
