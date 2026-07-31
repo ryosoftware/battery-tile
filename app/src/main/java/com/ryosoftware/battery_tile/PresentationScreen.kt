@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,13 +32,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.ryosoftware.battery_tile.ui.components.GlassGradientBackground
-import com.ryosoftware.battery_tile.ui.components.GradientButton
 
 @Composable
 fun MainScreen(onSettings: () -> Unit) {
@@ -48,14 +46,6 @@ fun MainScreen(onSettings: () -> Unit) {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        GlassGradientBackground(
-            colors = listOf(
-                MaterialTheme.colorScheme.primary,
-                MaterialTheme.colorScheme.tertiary,
-                MaterialTheme.colorScheme.surface,
-            ),
-        )
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -83,8 +73,8 @@ fun MainScreen(onSettings: () -> Unit) {
                             .background(
                                 brush = Brush.verticalGradient(
                                     listOf(
-                                        Color.White.copy(alpha = 0.3f),
-                                        Color.White.copy(alpha = 0.1f),
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                                     ),
                                 ),
                                 shape = MaterialTheme.shapes.large,
@@ -94,7 +84,6 @@ fun MainScreen(onSettings: () -> Unit) {
                         Icon(
                             imageVector = Icons.Filled.Bolt,
                             contentDescription = null,
-                            tint = Color.White,
                             modifier = Modifier.size(44.dp),
                         )
                     }
@@ -114,8 +103,6 @@ fun MainScreen(onSettings: () -> Unit) {
                         Text(
                             text = stringResource(R.string.app_name),
                             style = MaterialTheme.typography.displayMedium,
-
-                            color = Color.White,
                             textAlign = TextAlign.Center,
                         )
 
@@ -124,7 +111,6 @@ fun MainScreen(onSettings: () -> Unit) {
                         Text(
                             text = stringResource(R.string.general_information),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.85f),
                             textAlign = TextAlign.Center,
                         )
                     }
@@ -135,17 +121,12 @@ fun MainScreen(onSettings: () -> Unit) {
                 visible = visible,
                 enter = fadeIn(animationSpec = tween(400, delayMillis = 400)),
             ) {
-                GradientButton(
+                Button(
                     onClick = onSettings,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.25f),
-                        Color.White.copy(alpha = 0.10f),
-                    ),
                 ) {
                     Text(
                         text = stringResource(R.string.settings),
-                        color = Color.White,
                         fontWeight = FontWeight.SemiBold,
                     )
                 }

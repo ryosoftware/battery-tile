@@ -14,8 +14,8 @@ android {
     defaultConfig {
         applicationId = namespace
 
-        versionCode = 22
-        versionName = "2.20"
+        versionCode = 23
+        versionName = "2.21"
 
         minSdk = 29
         targetSdk = compileSdk

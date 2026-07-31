@@ -52,7 +52,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.ryosoftware.battery_tile.BatteryTileTheme
 import com.ryosoftware.battery_tile.R
 import com.ryosoftware.battery_tile.ui.theme.AccentColors
 
@@ -67,29 +66,26 @@ fun GradientButton(
     ),
     content: @Composable () -> Unit,
 ) {
-    Button(
-        onClick = onClick,
-        modifier = modifier,
-        enabled = enabled,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            disabledContainerColor = Color.Transparent,
-        ),
-        shape = MaterialTheme.shapes.medium,
+    val shape = MaterialTheme.shapes.medium
+
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(
+                brush = Brush.horizontalGradient(colors),
+                shape = shape,
+            ),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.horizontalGradient(colors),
-                    shape = MaterialTheme.shapes.medium,
-                )
-                .then(
-                    if (BatteryTileTheme.glassEnabled) {
-                        Modifier.padding(0.dp)
-                    } else Modifier
-                ),
-            contentAlignment = Alignment.Center,
+        Button(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+            ),
+            shape = shape,
         ) {
             content()
         }
