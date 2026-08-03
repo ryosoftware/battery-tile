@@ -90,10 +90,26 @@ class BackupManager(private val context: Context) {
         return BackupData(
             version = BackupData.CURRENT_VERSION,
             prefs = prefsData,
-            batteryReadings = repository.getAllBatteryReadings().first().map { it.copy(id = 0) },
-            chargingSessions = repository.getAllChargingSessions().first().map { it.copy(id = 0) },
-            dischargeSessions = repository.getAllDischargeSessions().first().map { it.copy(id = 0) },
-            screenStates = repository.getAllScreenStates().first().map { it.copy(id = 0) }
+            batteryReadings = repository.getAllBatteryReadings().first().map {
+                it.copy(id = 0, timestampString = getStringDateTime(context, it.timestamp))
+            },
+            chargingSessions = repository.getAllChargingSessions().first().map {
+                it.copy(
+                    id = 0,
+                    startTimeString = getStringDateTime(context, it.startTime),
+                    endTimeString = it.endTime?.let { time -> getStringDateTime(context, time) }
+                )
+            },
+            dischargeSessions = repository.getAllDischargeSessions().first().map {
+                it.copy(
+                    id = 0,
+                    startTimeString = getStringDateTime(context, it.startTime),
+                    endTimeString = it.endTime?.let { time -> getStringDateTime(context, time) }
+                )
+            },
+            screenStates = repository.getAllScreenStates().first().map {
+                it.copy(id = 0, timestampString = getStringDateTime(context, it.timestamp))
+            }
         )
     }
 
