@@ -742,8 +742,6 @@ class NotificationService : Service() {
 
         hideBatteryLowChargedNotification()
 
-        if (batteryIntentHelper != null) saveBatteryDataToDB(batteryIntentHelper)
-
         updateNotificationTask.executeNow()
     }
 
@@ -776,8 +774,6 @@ class NotificationService : Service() {
         lastBatteryEventTime = millisSinceBoot
 
         hideChargedNotification()
-
-        if (batteryIntentHelper != null) saveBatteryDataToDB(batteryIntentHelper)
 
         updateNotificationTask.executeNow()
     }
