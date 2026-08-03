@@ -1867,8 +1867,8 @@ private fun buildExcel(
             if (session.maxTemperatureCelsius != null) chargingSessionsBodyRow.createCell(9).setCellValue(temperatureUnit.fromCelsius(session.maxTemperatureCelsius).toDouble())
             if (session.avgTemperatureCelsius != null) chargingSessionsBodyRow.createCell(10).setCellValue(temperatureUnit.fromCelsius(session.avgTemperatureCelsius).toDouble())
 
-            chargingSessionsBodyRow.createCell(9).setCellValue(formatPlugType(session.plugType))
-            if (session.chargedTimeStamp != null) chargingSessionsBodyRow.createCell(11).apply { setCellValue(Date(session.chargedTimeStamp)); cellStyle = dateTimeStyle }
+            chargingSessionsBodyRow.createCell(11).setCellValue(formatPlugType(session.plugType))
+            if (session.chargedTimeStamp != null) chargingSessionsBodyRow.createCell(12).apply { setCellValue(Date(session.chargedTimeStamp)); cellStyle = dateTimeStyle }
         }
 
         val dischargeSessionsSheet = workbook.createSheet(context.getString(R.string.excel_discharge_sessions_tab))
