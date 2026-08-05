@@ -277,8 +277,10 @@
     <string name="global_stats_discharge_screen_off_speed">Battery discharge speed (screen off)</string>
     <string name="could_have_unplugged_before">You could have unplugged %2$s earlier</string>
     <string name="anomaly_flaky_connection_title">Possible cable or charger issue detected</string>
-    <string name="anomaly_flaky_connection_body">During multiple charges, the device repeatedly disconnected and reconnected in a short period. This may indicate a faulty cable or charger.</string>
-    <string name="anomaly_flaky_connection_body_single">During this charge, the device disconnected and reconnected in a short period. This may indicate a faulty cable or charger.</string>
+    <string name="anomaly_flaky_connection_body_multiple">Brief interruptions have been detected in several charging sessions where the charging level does not drop, which may indicate quick disconnections and reconnections or an issue with the cable or charger.</string>
+    <string name="anomaly_flaky_connection_body_multiple_single">Brief interruptions have been detected in one charging session where the charging level does not drop, which may indicate quick disconnections and reconnections or an issue with the cable or charger.</string>
+    <string name="anomaly_flaky_connection_body_single">This charging session includes a brief interruption where the charging level does not drop, which may indicate a quick disconnection and reconnection or an issue with the cable or charger.</string>
+    <string name="anomaly_flaky_connection_body_single_multiple">This charging session includes several brief interruptions where the charging level does not drop, which may indicate quick disconnections and reconnections or an issue with the cable or charger.</string>
     <string name="chart_scroll_hint">Swipe on the graph to see all the information</string>
     <string name="no_history_data">No history data yet.\nData will be collected from time to time while the background process is running.</string>
     <string name="clear_history">Clear history</string>

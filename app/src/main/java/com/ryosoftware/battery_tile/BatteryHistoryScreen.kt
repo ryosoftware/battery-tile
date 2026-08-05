@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.Card
 import com.ryosoftware.battery_tile.ui.theme.Spacing
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,7 +30,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -85,7 +83,6 @@ import com.ryosoftware.battery_tile.Utils.Companion.getStringPercent
 import com.ryosoftware.battery_tile.Utils.Companion.getStringTimeFromInterval
 import com.ryosoftware.battery_tile.ui.components.GlassCard
 import com.ryosoftware.battery_tile.ui.components.GlassGradientBackground
-import com.ryosoftware.battery_tile.ui.components.GlassSurface
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.math.roundToInt
@@ -98,6 +95,88 @@ private sealed interface SessionItem {
     data class Discharge(val session: DischargeSession) : SessionItem {
         override val startTime get() = session.startTime
     }
+}
+
+private fun DischargeSession.isFalseDischarge(): Boolean =
+    endCharge != null && endCharge > 0 && startCharge > 0 && endCharge >= startCharge
+
+private fun DischargeSession.toChargingSession(): ChargingSession =
+    ChargingSession(
+        id = -id,
+        startTime = startTime,
+        endTime = endTime,
+        startLevel = startLevel,
+        endLevel = endLevel,
+        startCharge = startCharge,
+        endCharge = endCharge,
+        plugType = 0,
+        durationMinutes = durationMinutes,
+        avgTemperatureCelsius = avgTemperatureCelsius,
+        maxTemperatureCelsius = maxTemperatureCelsius,
+        minTemperatureCelsius = minTemperatureCelsius,
+        chargedTimeStamp = null
+    )
+
+private fun List<ChargingSession>.mergeConsecutiveChargeSessions(): List<ChargingSession> {
+    if (size < 2) return this
+
+    val sorted = sortedBy { it.startTime }
+    val groups = mutableListOf<List<ChargingSession>>()
+    var group = mutableListOf(sorted.first())
+
+    for (next in sorted.drop(1)) {
+        val last = group.last()
+        if (last.endTime != null && next.startTime <= last.endTime) {
+            group.add(next)
+        } else {
+            groups.add(group)
+            group = mutableListOf(next)
+        }
+    }
+    groups.add(group)
+
+    return groups.map { it.mergeChargeGroup() }
+}
+
+private fun List<ChargingSession>.mergeChargeGroup(): ChargingSession {
+    val first = first()
+    val last = last()
+    val startTime = first.startTime
+    val endTime = last.endTime
+    val durationMinutes = if (endTime != null) (endTime - startTime) / DateUtils.MINUTE_IN_MILLIS else null
+
+    var weightedTempSum = 0.0
+    var totalTempWeight = 0.0
+    for (session in this) {
+        val avg = session.avgTemperatureCelsius
+        val duration = session.durationMinutes
+        if (avg != null && duration != null && duration > 0) {
+            weightedTempSum += avg.toDouble() * duration.toDouble()
+            totalTempWeight += duration.toDouble()
+        }
+    }
+    val avgTemps = mapNotNull { it.avgTemperatureCelsius }
+    val avgTemperature = when {
+        totalTempWeight > 0 -> (weightedTempSum / totalTempWeight).toFloat()
+        avgTemps.isNotEmpty() -> avgTemps.average().toFloat()
+        else -> null
+    }
+
+    return ChargingSession(
+        id = first.id,
+        startTime = startTime,
+        endTime = endTime,
+        startLevel = first.startLevel,
+        endLevel = last.endLevel,
+        startCharge = first.startCharge,
+        endCharge = last.endCharge,
+        plugType = lastOrNull { it.plugType != 0 }?.plugType ?: first.plugType,
+        durationMinutes = durationMinutes,
+        avgTemperatureCelsius = avgTemperature,
+        maxTemperatureCelsius = mapNotNull { it.maxTemperatureCelsius }.maxOrNull(),
+        minTemperatureCelsius = mapNotNull { it.minTemperatureCelsius }.minOrNull(),
+        chargedTimeStamp = mapNotNull { it.chargedTimeStamp }.lastOrNull()
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -118,6 +197,33 @@ fun BatteryHistoryScreen(
     var showLevel by remember { mutableStateOf(prefs.getBoolean("show-level", true)) }
     var showTemperature by remember { mutableStateOf(prefs.getBoolean("show-temperature", true)) }
 
+    val falseDischarges = remember(dischargeSessions) {
+        dischargeSessions.filter { it.isFalseDischarge() }
+    }
+    val effectiveChargingSessions = remember(chargingSessions, falseDischarges) {
+        (chargingSessions + falseDischarges.map { it.toChargingSession() })
+            .mergeConsecutiveChargeSessions()
+    }
+    val effectiveDischargeSessions = remember(dischargeSessions, falseDischarges) {
+        dischargeSessions.filterNot { it.isFalseDischarge() }
+    }
+    val flakyChargeGapCounts = remember(effectiveChargingSessions, falseDischarges) {
+        val counts = mutableMapOf<Long, Int>()
+        falseDischarges.forEach { falseDischarge ->
+            val falseDischargeStartTime = falseDischarge.startTime
+            val falseDischargeEndTime = falseDischarge.endTime
+            if (falseDischargeEndTime != null) {
+                val mergedSession = effectiveChargingSessions.firstOrNull { chargingSession ->
+                    chargingSession.startTime <= falseDischargeStartTime && chargingSession.endTime != null && falseDischargeEndTime <= chargingSession.endTime!!
+                }
+                if (mergedSession != null) {
+                    counts[mergedSession.id] = (counts[mergedSession.id] ?: 0) + 1
+                }
+            }
+        }
+        counts
+    }
+
     LaunchedEffect(selectedTab) {
         prefs.edit { putInt("selected-tab", selectedTab) }
     }
@@ -134,7 +240,7 @@ fun BatteryHistoryScreen(
         if (uri != null) {
             try {
                 context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    buildExcel(context, readings, chargingSessions, dischargeSessions, screenStates, appPrefs, outputStream)
+                    buildExcel(context, readings, effectiveChargingSessions, effectiveDischargeSessions, screenStates, appPrefs, outputStream)
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, R.string.error_exporting_history, Toast.LENGTH_LONG).show()
@@ -166,7 +272,7 @@ fun BatteryHistoryScreen(
                                 try {
                                     val tempFile = File(context.cacheDir, "battery_history.xlsx")
                                     tempFile.outputStream().use { os ->
-                                        buildExcel(context, readings, chargingSessions, dischargeSessions, screenStates, appPrefs, os)
+                                        buildExcel(context, readings, effectiveChargingSessions, effectiveDischargeSessions, screenStates, appPrefs, os)
                                     }
 
                                     val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.file_provider", tempFile)
@@ -265,7 +371,7 @@ fun BatteryHistoryScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                1 if chargingSessions.isEmpty() && dischargeSessions.isEmpty() -> {
+                1 if effectiveChargingSessions.isEmpty() && effectiveDischargeSessions.isEmpty() -> {
                     Spacer(Modifier.height(Spacing.lg))
 
                     Text(
@@ -373,11 +479,12 @@ fun BatteryHistoryScreen(
                         1 -> {
                             CombinedSessionsTab(
                                 context = context,
-                                chargingSessions = chargingSessions,
-                                dischargeSessions = dischargeSessions,
+                                chargingSessions = effectiveChargingSessions,
+                                dischargeSessions = effectiveDischargeSessions,
                                 readings = readings,
                                 screenStates = screenStates,
-                                appPrefs = appPrefs
+                                appPrefs = appPrefs,
+                                flakyChargeGapCounts = flakyChargeGapCounts
                             )
                         }
                     }
@@ -1021,9 +1128,9 @@ private fun FlakyConnectionWarningCard(result: FlakyResult, context: Context) {
             )
             Spacer(Modifier.height(Spacing.xs))
             val body = if (result.affectedPeriodCount >= 2) {
-                stringResource(R.string.anomaly_flaky_connection_body)
+                stringResource(R.string.anomaly_flaky_connection_body_multiple)
             } else {
-                stringResource(R.string.anomaly_flaky_connection_body_single)
+                stringResource(R.string.anomaly_flaky_connection_body_multiple_single)
             }
             Text(
                 text = body,
@@ -1041,7 +1148,8 @@ fun CombinedSessionsTab(
     dischargeSessions: List<DischargeSession>,
     readings: List<BatteryReading>,
     screenStates: List<ScreenState>,
-    appPrefs: AppPreferences
+    appPrefs: AppPreferences,
+    flakyChargeGapCounts: Map<Long, Int>
 ) {
     val completedCharge = remember(chargingSessions) {
         chargingSessions.filter { it.endTime != null }
@@ -1358,14 +1466,18 @@ fun CombinedSessionsTab(
             GlassCard(modifier = Modifier.fillMaxWidth(), vibrant = true) {
                 Column(modifier = Modifier.padding(Spacing.lg)) {
                     when (item) {
-                        is SessionItem.Charging -> ChargingSessionCard(item.session, context, appPrefs)
+                        is SessionItem.Charging -> ChargingSessionCard(
+                            session = item.session,
+                            context = context,
+                            appPrefs = appPrefs,
+                            flakyGapCount = flakyChargeGapCounts[item.session.id] ?: 0
+                        )
                         is SessionItem.Discharge -> DischargeSessionCard(
                             session = item.session,
                             readings = readings,
                             screenStates = screenStates,
                             context = context,
                             appPrefs = appPrefs,
-                            isFlaky = item.session.id in flakyIds
                         )
                     }
                 }
@@ -1444,28 +1556,30 @@ private fun DateTimeRow(context: Context, startTime: Long, endTime: Long?) {
 
 @Composable
 private fun BatteryLevelRow(startLevel: Int, endLevel: Int?) {
-    Spacer(Modifier.height(Spacing.xs))
+    if ((startLevel >= 0) && (endLevel != null) && (endLevel >= 0)) {
+        Spacer(Modifier.height(Spacing.xs))
 
-    Text(
-        text = stringResource(
-            R.string.value_from_to,
-            stringResource(R.string.percent_value_integer, startLevel),
-            endLevel?.let { stringResource(R.string.percent_value_integer, it) } ?: stringResource(R.string.battery_level_unknown)
-        ),
-        style = MaterialTheme.typography.titleMedium
-    )
+        Text(
+            text = stringResource(
+                R.string.value_from_to,
+                stringResource(R.string.percent_value_integer, startLevel),
+                endLevel.let { stringResource(R.string.percent_value_integer, it) } ?: stringResource(R.string.battery_level_unknown)
+            ),
+            style = MaterialTheme.typography.titleMedium
+        )
+    }
 }
 
 @Composable
 private fun BatteryChargeRow(startCharge: Long, endCharge: Long?) {
-    if (startCharge > 0) {
+    if ((startCharge > 0) && (endCharge != null) && (endCharge > 0)) {
         Spacer(Modifier.height(Spacing.xs))
 
         Text(
             text = stringResource(
                 R.string.value_from_to,
                 stringResource(R.string.mah_value, startCharge / 1000),
-                endCharge?.let { stringResource(R.string.mah_value, it / 1000) } ?: stringResource(R.string.battery_level_unknown)
+                endCharge.let { stringResource(R.string.mah_value, it / 1000) } ?: stringResource(R.string.battery_level_unknown)
             ),
             style = MaterialTheme.typography.titleMedium
         )
@@ -1529,7 +1643,12 @@ private fun TemperatureRow(
 }
 
 @Composable
-private fun ChargingSessionCard(session: ChargingSession, context: Context, appPrefs: AppPreferences) {
+private fun ChargingSessionCard(
+    session: ChargingSession,
+    context: Context,
+    appPrefs: AppPreferences,
+    flakyGapCount: Int = 0
+) {
     SessionHeaderRow(
         dotColor = Color(0xFF4CAF50),
         label = stringResource(R.string.session_charging_label),
@@ -1600,6 +1719,30 @@ private fun ChargingSessionCard(session: ChargingSession, context: Context, appP
         }
     }
 
+    if (flakyGapCount > 0) {
+        Spacer(Modifier.height(Spacing.sm))
+
+        Text(
+            text = stringResource(R.string.anomaly_flaky_connection_title),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.error,
+        )
+
+        Spacer(Modifier.height(Spacing.xs))
+
+        Text(
+            text = stringResource(
+                if (flakyGapCount >= 2) {
+                    R.string.anomaly_flaky_connection_body_single_multiple
+                } else {
+                    R.string.anomaly_flaky_connection_body_single
+                }
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+        )
+    }
 }
 
 @Composable
@@ -1609,7 +1752,6 @@ private fun DischargeSessionCard(
     screenStates: List<ScreenState>,
     context: Context,
     appPrefs: AppPreferences,
-    isFlaky: Boolean = false
 ) {
     val rates = remember(session.id, readings, screenStates) {
         if (session.endTime != null) {
@@ -1717,16 +1859,6 @@ private fun DischargeSessionCard(
         appPrefs.temperatureUnit,
         R.string.discharge_session_temperature
     )
-
-    if (isFlaky) {
-        Spacer(Modifier.height(Spacing.sm))
-
-        Text(
-            text = stringResource(R.string.anomaly_flaky_connection_body_single),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error
-        )
-    }
 }
 
 private fun buildExcel(
