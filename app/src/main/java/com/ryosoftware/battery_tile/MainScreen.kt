@@ -39,7 +39,6 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -50,7 +49,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -63,8 +61,10 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.ryosoftware.battery_tile.Main.Companion.findActivity
 import com.ryosoftware.battery_tile.Main.Companion.hasBatteryOptimizationBypassPermission
 import com.ryosoftware.battery_tile.Main.Companion.hasExactAlarmPermission
+import com.ryosoftware.battery_tile.Main.Companion.hasOverlayPermission
 import com.ryosoftware.battery_tile.Main.Companion.hasPostNotificationsPermission
 import com.ryosoftware.battery_tile.Main.Companion.requestBypassBatteryOptimizationPermission
+import com.ryosoftware.battery_tile.Main.Companion.requestOverlayPermission
 import com.ryosoftware.battery_tile.Main.Companion.requestPostExactAlarmPermission
 import com.ryosoftware.battery_tile.Main.Companion.requestPostNotificationsPermission
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
@@ -73,10 +73,9 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.filled.Autorenew
-import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.CheckCircleOutline
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material3.Card
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.HorizontalRule
+import androidx.compose.material.icons.filled.RemoveCircleOutline
 import com.ryosoftware.battery_tile.ui.components.ExpressiveSwitch
 import com.ryosoftware.battery_tile.ui.components.GlassCard
 import com.ryosoftware.battery_tile.ui.components.GlassGradientBackground
@@ -89,8 +88,10 @@ import kotlin.system.exitProcess
 fun SettingsSelector(
     appPrefs: AppPreferences,
     notifPrefs: NotificationPreferences,
+    overlayPrefs: BatteryOverlayPreferences,
     onTileSettings: () -> Unit,
     onNotificationSettings: () -> Unit,
+    onBarOverlaySettings: () -> Unit,
     onDebugLog: () -> Unit,
     onBatteryInfo: () -> Unit,
     onBatteryHistory: () -> Unit,
@@ -282,15 +283,96 @@ fun SettingsSelector(
                     icon = Icons.Filled.Notifications,
                     title = stringResource(R.string.notification_settings_title),
                     subtitle = if (notificationEnabled) stringResource(R.string.notification_settings_body)
-                               else stringResource(R.string.notification_settings_body) + "\n" + stringResource(R.string.requires_background_running),
+                               else stringResource(R.string.notification_settings_body) + "\n\n" + stringResource(R.string.requires_background_running),
                     onClick = onNotificationSettings,
                 )
+
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    vibrant = true,
+                ) {
+                    val hasOverlayPermission = remember { mutableStateOf(context.hasOverlayPermission()) }
+                    var barOverlayEnabled by remember { mutableStateOf(overlayPrefs.batteryOverlayEnabled) }
+
+                    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+                        hasOverlayPermission.value = context.hasOverlayPermission()
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (hasOverlayPermission.value) {
+                                    onBarOverlaySettings()
+                                } else {
+                                    context.requestOverlayPermission()
+                                }
+                            }
+                            .padding(Spacing.xl),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Surface(
+                            shape = MaterialTheme.shapes.extraSmall,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                            modifier = Modifier.size(40.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Filled.Circle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(22.dp),
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.width(Spacing.md))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.battery_overlay_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+
+                            Text(
+                                text = if (!hasOverlayPermission.value) {
+                                    stringResource(R.string.battery_overlay_permission_missing)
+                                } else {
+                                    if (notificationEnabled) stringResource(R.string.battery_overlay_subtitle)
+                                    else stringResource(R.string.battery_overlay_subtitle) + "\n\n" + stringResource(R.string.requires_background_running)
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (!hasOverlayPermission.value) MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        ExpressiveSwitch(
+                            checked = barOverlayEnabled,
+                            enabled = notificationEnabled,
+                            onCheckedChange = {
+                                if (barOverlayEnabled) {
+                                    barOverlayEnabled = false
+                                    overlayPrefs.batteryOverlayEnabled = false
+                                } else {
+                                    if (hasOverlayPermission.value) {
+                                        barOverlayEnabled = true
+                                        overlayPrefs.batteryOverlayEnabled = true
+                                    } else {
+                                        context.requestOverlayPermission()
+                                    }
+                                }
+                            },
+                        )
+                    }
+                }
 
                 SettingsCard(
                     icon = Icons.Filled.History,
                     title = stringResource(R.string.battery_history),
                     subtitle = if (notificationEnabled) stringResource(R.string.shows_historical_data)
-                               else stringResource(R.string.shows_historical_data) + "\n" + stringResource(R.string.requires_background_running),
+                               else stringResource(R.string.shows_historical_data) + "\n\n" + stringResource(R.string.requires_background_running),
                     onClick = onBatteryHistory,
                 )
 
@@ -300,7 +382,7 @@ fun SettingsSelector(
                     GlassCard(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-            Column(modifier = Modifier.padding(Spacing.lg)) {
+                        Column(modifier = Modifier.padding(Spacing.lg)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Surface(
                                     shape = MaterialTheme.shapes.extraSmall,

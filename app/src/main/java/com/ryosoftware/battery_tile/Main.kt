@@ -90,6 +90,18 @@ class Main : Application() {
             startActivity(intent)
         }
 
+        fun Context.hasOverlayPermission(): Boolean =
+            Settings.canDrawOverlays(this)
+
+        fun Context.requestOverlayPermission() {
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                data = "package:$packageName".toUri()
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            startActivity(intent)
+        }
+
         fun Context.isScreenOn(): Boolean = (getSystemService(POWER_SERVICE) as PowerManager).isInteractive
 
         fun Context.findActivity(): Activity? = when (this) {

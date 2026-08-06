@@ -27,7 +27,6 @@ import com.ryosoftware.battery_tile.data.BatteryRepository
 import com.ryosoftware.battery_tile.data.ChargingSession
 import com.ryosoftware.battery_tile.data.DischargeSession
 import com.ryosoftware.battery_tile.data.ScreenState
-import com.ryosoftware.battery_tile.data.ScreenStateDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -372,10 +371,12 @@ class NotificationService : Service() {
     private val servicePersistentData by lazy { NotificationServicePreferences(this).prefs }
     private val prefs by lazy { NotificationPreferences(this) }
     private val appPrefs by lazy { AppPreferences(this) }
-
     private val handler = Handler(Looper.getMainLooper())
     private val repository by lazy { BatteryRepository(this) }
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val overlayPrefs by lazy { BatteryOverlayPreferences(this) }
+    private val batteryOverlay by lazy { BatteryOverlay(this, overlayPrefs) }
 
     private val updateNotificationTask by lazy {
         RepeatingTask(handler, "Update Notification Task", logger) {
@@ -475,6 +476,8 @@ class NotificationService : Service() {
             @SuppressLint("UnspecifiedRegisterReceiverFlag")
             registerReceiver(receiver, filter)
         }
+
+        batteryOverlay.setOverlayAttachStatus()
     }
 
     override fun onDestroy() {
@@ -493,6 +496,8 @@ class NotificationService : Service() {
         hideBatteryLowChargedNotification()
 
         hideTemperatureNotification()
+
+        batteryOverlay.dispose()
 
         super.onDestroy()
     }

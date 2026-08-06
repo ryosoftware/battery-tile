@@ -214,4 +214,60 @@
 
     <integer name="discharging_history_window_in_days_default">@integer/charging_history_window_in_days_default</integer>
 
+    <!-- Enable or not the battery overlay at screen top -->
+
+    <bool name="overlay_enabled_default">true</bool>
+
+    <!-- Overlay mode (BAR or RING) -->
+
+    <string name="overlay_mode_default">RING</string>
+
+    <!-- Bar Height Px -->
+
+    <integer name="bar_overlay_height_default">3</integer>
+
+    <!-- Ring around notch overlay defaults -->
+
+    <integer name="ring_overlay_radius_default">20</integer>
+    <integer name="ring_overlay_thickness_default">3</integer>
+    <integer name="ring_overlay_offset_x_default">0</integer>
+    <integer name="ring_overlay_offset_y_default">0</integer>
+
+    <!-- Overlay segments percents and colors -->
+
+    <integer-array name="bar_overlay_battery_high_default">
+        <item>80</item>
+        <item>@color/battery_overlay_preset_color_1</item>
+    </integer-array>
+
+    <integer-array name="bar_overlay_battery_good_default">
+        <item>50</item>
+        <item>@color/battery_overlay_preset_color_1</item>
+    </integer-array>
+
+    <integer-array name="bar_overlay_battery_low_default">
+        <item>20</item>
+        <item>@color/battery_overlay_preset_color_3</item>
+    </integer-array>
+
+    <!-- Battery overlay preset colors -->
+
+    <integer-array name="battery_bar_overlay_color_presets">
+        <item>@color/battery_overlay_preset_color_1</item>
+        <item>@color/battery_overlay_preset_color_2</item>
+        <item>@color/battery_overlay_preset_color_3</item>
+        <item>@color/battery_overlay_preset_color_4</item>
+        <item>@color/battery_overlay_preset_color_5</item>
+        <item>@color/battery_overlay_preset_color_6</item>
+        <item>@color/battery_overlay_preset_color_7</item>
+        <item>@color/battery_overlay_preset_color_8</item>
+        <item>@color/battery_overlay_preset_color_9</item>
+        <item>@color/battery_overlay_preset_color_10</item>
+        <item>@color/battery_overlay_preset_color_11</item>
+        <item>@color/battery_overlay_preset_color_12</item>
+        <item>@color/battery_overlay_preset_color_13</item>
+        <item>@color/battery_overlay_preset_color_14</item>
+        <item>@color/battery_overlay_preset_color_15</item>
+    </integer-array>
+
 </resources>

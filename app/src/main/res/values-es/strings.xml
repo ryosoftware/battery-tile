@@ -286,6 +286,26 @@
     <string name="no_history_data">Sin datos históricos.\nLos datos se recopilan periódicamente mientras el proceso en segundo plano está activo.</string>
     <string name="clear_history">Borrar Historial</string>
 
+    <string name="battery_overlay_title">Indicador de nivel de batería</string>
+    <string name="battery_overlay_subtitle">Muestra una barra fina en el borde superior de la pantalla o un anillo alrededor del notch representando el nivel de batería restante.</string>
+    <string name="battery_overlay_permission_missing">Concede \"Mostrar sobre otras apps\" para activar esta función</string>
+    <string name="battery_overlay_settings">@string/battery_overlay_title</string>
+    <string name="battery_overlay_segments_and_colors">Segmentos y colores</string>
+    <string name="battery_overlay_segment_percent">Nivel de batería mínimo</string>
+    <string name="battery_overlay_segment_always_zero">Nivel de batería mínimo: 0%</string>
+    <string name="battery_overlay_charging_color">Color al cargar</string>
+    <string name="battery_overlay_bar_height">Altura</string>
+    <string name="battery_overlay_bar_height_value">%1$d px</string>
+    <string name="battery_overlay_mode_bar">Barra</string>
+    <string name="battery_overlay_mode_ring">Anillo</string>
+    <string name="battery_overlay_ring_radius">Radio</string>
+    <string name="battery_overlay_ring_thickness">Grosor</string>
+    <string name="battery_overlay_ring_offset_x">Desplazamiento horizontal</string>
+    <string name="battery_overlay_ring_offset_y">Desplazamiento vertical</string>
+    <string name="battery_overlay_pick_color">Elige un color</string>
+    <string name="battery_overlay_color_hex">Color (hex)</string>
+    <string name="battery_overlay_value">Valor</string>
+
     <plurals name="history_retention_days">
         <item quantity="one">Se guardan los datos del último día; los datos anteriores se borran automáticamente.</item>
         <item quantity="other">Se guardan datos de los últimos %1$d días; los datos anteriores se borran automáticamente.</item>
@@ -366,7 +386,6 @@
     <string name="excel_header_charge_counter">Carga (µAh)</string>
     <string name="screen_states_tab">Estados de pantalla</string>
     <string name="value_from_to">%1$s → %2$s</string>
-    <string name="battery_level_unknown">\?</string>
 
     <string name="data_is_not_available">No hay datos disponibles</string>
     <string name="not_available">-</string>

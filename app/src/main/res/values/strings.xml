@@ -285,6 +285,26 @@
     <string name="no_history_data">No history data yet.\nData will be collected from time to time while the background process is running.</string>
     <string name="clear_history">Clear history</string>
 
+    <string name="battery_overlay_title">Battery level indicator</string>
+    <string name="battery_overlay_subtitle">Show a thin bar at the top edge of the screen or a ring around the notch representing the battery level.</string>
+    <string name="battery_overlay_permission_missing">Grant \"Display over other apps\" to enable this feature</string>
+    <string name="battery_overlay_settings">@string/battery_overlay_title</string>
+    <string name="battery_overlay_segments_and_colors">Segments and colors</string>
+    <string name="battery_overlay_segment_percent">Minimal battery level</string>
+    <string name="battery_overlay_segment_always_zero">Minimal battery level: 0%</string>
+    <string name="battery_overlay_charging_color">Battery charging color</string>
+    <string name="battery_overlay_bar_height">Height</string>
+    <string name="battery_overlay_bar_height_value">%1$d px</string>
+    <string name="battery_overlay_mode_bar">Bar</string>
+    <string name="battery_overlay_mode_ring">Ring</string>
+    <string name="battery_overlay_ring_radius">Radius</string>
+    <string name="battery_overlay_ring_thickness">Thickness</string>
+    <string name="battery_overlay_ring_offset_x">Horizontal offset</string>
+    <string name="battery_overlay_ring_offset_y">Vertical offset</string>
+    <string name="battery_overlay_pick_color">Pick a color</string>
+    <string name="battery_overlay_color_hex">Color (hex)</string>
+    <string name="battery_overlay_value">Value</string>
+
     <plurals name="history_retention_days">
         <item quantity="one">Data kept for the last day; previous data is automatically deleted.</item>
         <item quantity="other">Data kept for the last %1$d days; previous data is automatically deleted.</item>
@@ -358,7 +378,6 @@
     <string name="excel_header_charge_counter">Charge (µAh)</string>
     <string name="screen_states_tab">Screen states</string>
     <string name="value_from_to">%1$s → %2$s</string>
-    <string name="battery_level_unknown">\?</string>
 
     <string name="data_is_not_available">Data is not available</string>
     <string name="not_available">-</string>

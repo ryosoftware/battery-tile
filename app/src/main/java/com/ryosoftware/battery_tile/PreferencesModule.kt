@@ -8,6 +8,7 @@ class PreferencesModule(context: Context) {
             AppPreferences(context),
             BatteryTilePreferences(context),
             NotificationPreferences(context),
+            BatteryOverlayPreferences(context),
             NotificationServicePreferences(context)
         )
     }
