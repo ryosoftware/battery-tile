@@ -212,7 +212,7 @@ class NotificationService : Service() {
             logger: Logger,
             channelId: String,
             notificationId: Int,
-            title: String,
+            title: String? = "",
             body: String? = "",
             icon: Int,
             clickRequestCode: Int,
@@ -259,7 +259,7 @@ class NotificationService : Service() {
                 logger = logger,
                 channelId = LAST_STATS_RESET_CHANNEL_ID,
                 notificationId = LAST_STATS_RESET_NOTIFICATION_ID,
-                title = context.getString(R.string.last_stats_reset_notification_title, context.getString(reasonResId)),
+                body = context.getString(R.string.last_stats_reset_notification_title, context.getString(reasonResId)),
                 icon = R.drawable.ic_statusbar_notification_last_stats_reset,
                 clickRequestCode = LAST_STATS_RESET_NOTIFICATION_CLICK_REQUEST_CODE,
                 logMessagePrefix = "Data reset",
@@ -1177,7 +1177,7 @@ class NotificationService : Service() {
     private fun showPowerConnectedNotification(batteryIntentHelper: BatteryIntentHelper?) {
         val level = batteryIntentHelper?.level ?: -1
 
-        val title = if (level < 0) getString(R.string.power_connected_notification_title)
+        val text = if (level < 0) getString(R.string.power_connected_notification_title)
                    else getString(R.string.power_connected_notification_title_with_charge_value, level)
 
         postNotification(
@@ -1185,7 +1185,7 @@ class NotificationService : Service() {
             logger = logger,
             channelId = POWER_CONNECTED_CHANNEL_ID,
             notificationId = POWER_CONNECTED_NOTIFICATION_ID,
-            title = title,
+            body = text,
             icon = R.drawable.ic_statusbar_notification_power_connected,
             clickRequestCode = POWER_CONNECTED_NOTIFICATION_CLICK_REQUEST_CODE,
             logMessagePrefix = "Charging",
@@ -1196,7 +1196,7 @@ class NotificationService : Service() {
     private fun showPowerDisconnectedNotification(batteryIntentHelper: BatteryIntentHelper?) {
         val level = batteryIntentHelper?.level ?: -1
 
-        val title = if (level < 0) getString(R.string.power_disconnected_notification_title)
+        val text = if (level < 0) getString(R.string.power_disconnected_notification_title)
                    else getString(R.string.power_disconnected_notification_title_with_charge_value, level)
 
         postNotification(
@@ -1204,7 +1204,7 @@ class NotificationService : Service() {
             logger = logger,
             channelId = POWER_DISCONNECTED_CHANNEL_ID,
             notificationId = POWER_DISCONNECTED_NOTIFICATION_ID,
-            title = title,
+            body = text,
             icon = R.drawable.ic_statusbar_notification_power_disconnected,
             clickRequestCode = POWER_DISCONNECTED_NOTIFICATION_CLICK_REQUEST_CODE,
             logMessagePrefix = "Discharging",
@@ -1213,7 +1213,7 @@ class NotificationService : Service() {
     }
 
     private fun showTemperatureNotification(batteryIntentHelper: BatteryIntentHelper) {
-        val title = getString(R.string.temperature_alert_with_temperature_value, batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_TEMPERATURE, appPrefs, false))
+        val text = getString(R.string.temperature_alert_with_temperature_value, batteryIntentHelper.toString(this, BatteryIntentHelper.BATTERY_TEMPERATURE, appPrefs, false))
 
         val deleteIntent = Intent(ACTION_TEMPERATURE_NOTIFICATION_DELETED).apply {
             putExtra(EXTRA_TEMPERATURE, batteryIntentHelper.temperatureCelsius)
@@ -1225,7 +1225,7 @@ class NotificationService : Service() {
             logger = logger,
             channelId = BATTERY_TEMPERATURE_WARNING_CHANNEL_ID,
             notificationId = TEMPERATURE_WARNING_NOTIFICATION_ID,
-            title = title,
+            body = text,
             icon = R.drawable.ic_statusbar_notification_battery_temperature,
             clickRequestCode = TEMPERATURE_WARNING_NOTIFICATION_CLICK_REQUEST_CODE,
             logMessagePrefix = "Temperature Warning",
@@ -1250,7 +1250,7 @@ class NotificationService : Service() {
             logger = logger,
             channelId = BATTERY_HEALTH_WARNING_CHANNEL_ID,
             notificationId = HEALTH_WARNING_NOTIFICATION_ID,
-            title = title,
+            body = title,
             icon = R.drawable.ic_statusbar_notification_battery_health,
             clickRequestCode = HEALTH_WARNING_NOTIFICATION_CLICK_REQUEST_CODE,
             logMessagePrefix = "Health Warning",
@@ -1262,7 +1262,7 @@ class NotificationService : Service() {
         NotificationManagerCompat.from(this).cancel(HEALTH_WARNING_NOTIFICATION_ID)
 
     private fun showChargedNotification(batteryIntentHelper: BatteryIntentHelper) {
-        val title = getString(R.string.battery_charged_with_charge_value, batteryIntentHelper.level)
+        val text = getString(R.string.battery_charged_with_charge_value, batteryIntentHelper.level)
 
         val deleteIntent = Intent(ACTION_CHARGED_NOTIFICATION_DELETED).setPackage(packageName)
 
@@ -1271,7 +1271,7 @@ class NotificationService : Service() {
             logger = logger,
             channelId = BATTERY_CHARGED_CHANNEL_ID,
             notificationId = CHARGED_NOTIFICATION_ID,
-            title = title,
+            body = text,
             icon = R.drawable.ic_statusbar_notification_battery_charged,
             clickRequestCode = CHARGED_NOTIFICATION_CLICK_REQUEST_CODE,
             logMessagePrefix = "Charged",
@@ -1339,7 +1339,7 @@ class NotificationService : Service() {
     private fun onChargedNotificationDeleted() = cancelChargedNotificationAlarm()
 
     private fun showBatteryLowChargedNotification(batteryIntentHelper: BatteryIntentHelper) {
-        val title = getString(R.string.battery_low_with_charge_value, batteryIntentHelper.level)
+        val text = getString(R.string.battery_low_with_charge_value, batteryIntentHelper.level)
 
         val deleteIntent = Intent(ACTION_LOW_CHARGE_NOTIFICATION_DELETED).setPackage(packageName)
 
@@ -1348,7 +1348,7 @@ class NotificationService : Service() {
             logger = logger,
             channelId = BATTERY_LOW_CHANNEL_ID,
             notificationId = LOW_CHARGE_NOTIFICATION_ID,
-            title = title,
+            body = text,
             icon = R.drawable.ic_statusbar_notification_battery_low,
             clickRequestCode = LOW_CHARGE_NOTIFICATION_CLICK_REQUEST_CODE,
             logMessagePrefix = "Battery low",

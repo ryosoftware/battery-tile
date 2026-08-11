@@ -214,7 +214,7 @@ fun BatteryHistoryScreen(
             val falseDischargeEndTime = falseDischarge.endTime
             if (falseDischargeEndTime != null) {
                 val mergedSession = effectiveChargingSessions.firstOrNull { chargingSession ->
-                    chargingSession.startTime <= falseDischargeStartTime && chargingSession.endTime != null && falseDischargeEndTime <= chargingSession.endTime!!
+                    chargingSession.startTime <= falseDischargeStartTime && chargingSession.endTime != null && falseDischargeEndTime <= chargingSession.endTime
                 }
                 if (mergedSession != null) {
                     counts[mergedSession.id] = (counts[mergedSession.id] ?: 0) + 1
@@ -1563,7 +1563,7 @@ private fun BatteryLevelRow(startLevel: Int, endLevel: Int?) {
             text = stringResource(
                 R.string.value_from_to,
                 stringResource(R.string.percent_value_integer, startLevel),
-                endLevel.let { stringResource(R.string.percent_value_integer, it) } ?: stringResource(R.string.battery_level_unknown)
+                stringResource(R.string.percent_value_integer, endLevel)
             ),
             style = MaterialTheme.typography.titleMedium
         )
@@ -1579,7 +1579,7 @@ private fun BatteryChargeRow(startCharge: Long, endCharge: Long?) {
             text = stringResource(
                 R.string.value_from_to,
                 stringResource(R.string.mah_value, startCharge / 1000),
-                endCharge.let { stringResource(R.string.mah_value, it / 1000) } ?: stringResource(R.string.battery_level_unknown)
+                stringResource(R.string.mah_value, endCharge / 1000)
             ),
             style = MaterialTheme.typography.titleMedium
         )

@@ -165,6 +165,8 @@
     <string name="time_charging_long">@string/time_charging</string>
     <string name="time_charging_notification_comments">Cuando el dispositivo está conectado a la corriente, muestra el tiempo transcurrido desde que se conectó</string>
 
+    <string name="show_time_in_hours_and_minutes">Mostrar tiempos en horas y minutos</string>
+
     <string name="percent_value_integer">%1$d%%</string>
     <string name="percent_value_float">%.1f%%</string>
 

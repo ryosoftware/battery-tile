@@ -1,5 +1,6 @@
 package com.ryosoftware.battery_tile.ui.components
 
+import android.content.Context
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -52,6 +53,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.ryosoftware.battery_tile.BatteryOverlay
+import com.ryosoftware.battery_tile.BatteryOverlayPreferences
 import com.ryosoftware.battery_tile.R
 import com.ryosoftware.battery_tile.ui.theme.AccentColors
 
@@ -179,7 +182,9 @@ fun MetricRow(
 
 @Composable
 fun BatteryProgressCircle(
+    context: Context,
     percentage: Int,
+    batteryOverlayPrefs: BatteryOverlayPreferences,
     modifier: Modifier = Modifier,
     size: Dp = 120.dp,
     strokeWidth: Dp = 10.dp,
@@ -207,12 +212,7 @@ fun BatteryProgressCircle(
         label = "pulseAlpha",
     )
 
-    val progressColor = when {
-        percentage <= 15 -> AccentColors.temperatureRed
-        percentage <= 30 -> AccentColors.warningAmber
-        percentage <= 80 -> AccentColors.batteryGreen
-        else -> Color(0xFF4CAF50)
-    }
+    val progressColor = BatteryOverlay.getColor(percentage, isCharging, context, batteryOverlayPrefs)
 
     val backgroundColor = MaterialTheme.colorScheme.surfaceVariant
     val arcAlpha = if (isCharging) pulseAlpha else 1f
@@ -232,6 +232,8 @@ fun BatteryProgressCircle(
                 style = stroke,
             )
 
+            val sweepAngle = 360f * (percentage / 100f)
+
             drawArc(
                 brush = Brush.sweepGradient(
                     colors = listOf(
@@ -240,8 +242,8 @@ fun BatteryProgressCircle(
                         progressColor.copy(alpha = arcAlpha),
                     ),
                 ),
-                startAngle = -90f,
-                sweepAngle = animatedProgress * 360f,
+                startAngle = 270f - sweepAngle.coerceIn(0f, 360f),
+                sweepAngle = sweepAngle,
                 useCenter = false,
                 style = stroke,
                 topLeft = Offset(

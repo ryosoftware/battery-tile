@@ -60,15 +60,11 @@ import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toString
 import com.ryosoftware.battery_tile.ui.components.ExpressiveSwitch
 import com.ryosoftware.battery_tile.ui.components.GlassCard
 import com.ryosoftware.battery_tile.ui.components.GlassGradientBackground
-import com.ryosoftware.battery_tile.ui.components.GlassSurface
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import com.ryosoftware.battery_tile.ui.components.SectionHeader
 import com.ryosoftware.battery_tile.ui.theme.Spacing
 import kotlin.math.roundToInt
-import java.text.DateFormat
-import java.util.Calendar
-import java.util.Date
 
 data class PrintableLastResetStatsData(
     val time: Long,
@@ -115,6 +111,12 @@ fun NotificationSettingsScreen(
     val fieldVisibility = remember {
         mutableStateMapOf<NotificationServiceUIBuilder.NotificationField, Boolean>().apply {
             NotificationServiceUIBuilder.NotificationField.entries.forEach { put(it, notifPrefs.isFieldVisible(it)) }
+        }
+    }
+
+    val showFieldTimeInHoursAndMinutes = remember {
+        mutableStateMapOf<NotificationServiceUIBuilder.NotificationField, Boolean>().apply {
+            NotificationServiceUIBuilder.NotificationField.entries.forEach { put(it, notifPrefs.areHoursLargestTimeUnits(it)) }
         }
     }
 
@@ -463,6 +465,12 @@ fun NotificationSettingsScreen(
                             comments = comments,
                             checked = fieldVisibility[field] ?: false,
                             batteryLevelIsLastVisible = batteryLevelIsLastVisible,
+                            showTimeInHoursAndMinutesSupported = field.isTimeMeasure,
+                            showTimeInHoursAndMinutes = showFieldTimeInHoursAndMinutes[field] ?: notifPrefs.areHoursLargestTimeUnits(field),
+                            onShowTimeInHoursAndMinutesChange = {
+                                showFieldTimeInHoursAndMinutes[field] = it
+                                notifPrefs.setHoursAreLargestTimeUnits(field, it)
+                            },
                             onCheckedChange = {
                                 val newVisible = !(fieldVisibility[field] ?: false)
                                 if (!newVisible && field != NotificationServiceUIBuilder.NotificationField.BATTERY_LEVEL) {
@@ -506,6 +514,9 @@ private fun FieldRow(
     comments: String?,
     checked: Boolean,
     batteryLevelIsLastVisible: Boolean,
+    showTimeInHoursAndMinutesSupported: Boolean = false,
+    showTimeInHoursAndMinutes: Boolean = false,
+    onShowTimeInHoursAndMinutesChange: (Boolean) -> Unit = {},
     onCheckedChange: (Boolean) -> Unit
 ) {
     GlassCard(
@@ -514,31 +525,62 @@ private fun FieldRow(
             .alpha(if (checked) 1f else 0.85f),
         vibrant = true,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Spacing.lg)
-                .clickable(enabled = !batteryLevelIsLastVisible) { onCheckedChange(!checked) },
-            verticalAlignment = if (comments == null) Alignment.CenterVertically else Alignment.Top,
-        ) {
-            Checkbox(
-                checked = checked,
-                onCheckedChange = null,
-                enabled = !batteryLevelIsLastVisible,
-            )
-
-            Spacer(Modifier.width(Spacing.sm))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Spacing.lg)
+                    .clickable(enabled = !batteryLevelIsLastVisible) { onCheckedChange(!checked) },
+                verticalAlignment = if (comments == null) Alignment.CenterVertically else Alignment.Top,
+            ) {
+                Checkbox(
+                    checked = checked,
+                    onCheckedChange = null,
+                    enabled = !batteryLevelIsLastVisible,
                 )
 
-                if (comments != null) {
+                Spacer(Modifier.width(Spacing.sm))
+
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = comments,
+                        text = label,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                    )
+
+                    if (comments != null) {
+                        Text(
+                            text = comments,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            AnimatedVisibility(
+                visible = checked && showTimeInHoursAndMinutesSupported,
+                enter = expandVertically(),
+                exit = shrinkVertically(),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = Spacing.lg, end = Spacing.lg, bottom = Spacing.md)
+                        .clickable { onShowTimeInHoursAndMinutesChange(!showTimeInHoursAndMinutes) },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Spacer(Modifier.width(Spacing.lg))
+
+                    Checkbox(
+                        checked = showTimeInHoursAndMinutes,
+                        onCheckedChange = null,
+                    )
+
+                    Spacer(Modifier.width(Spacing.sm))
+
+                    Text(
+                        text = stringResource(R.string.show_time_in_hours_and_minutes),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

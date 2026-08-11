@@ -63,7 +63,8 @@ const val BATTERY_PROPERTY_ENERGY_COUNTER = "battery-energy-counter"
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BatteryInfoScreen(
-    prefs: BatteryTilePreferences,
+    batteryTilePreferences: BatteryTilePreferences,
+    batteryOverlayPreferences: BatteryOverlayPreferences,
     appPrefs: AppPreferences,
     onBack: () -> Unit,
 ) {
@@ -118,7 +119,8 @@ fun BatteryInfoScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = Spacing.xl),
-                prefs = prefs,
+                batteryTilePreferences = batteryTilePreferences,
+                batteryOverlayPreferences = batteryOverlayPreferences,
                 appPrefs = appPrefs,
             )
         }
@@ -128,7 +130,8 @@ fun BatteryInfoScreen(
 @Composable
 fun BatteryInfoContent(
     modifier: Modifier = Modifier,
-    prefs: BatteryTilePreferences,
+    batteryTilePreferences: BatteryTilePreferences,
+    batteryOverlayPreferences: BatteryOverlayPreferences,
     appPrefs: AppPreferences,
 ) {
     val context = LocalContext.current
@@ -151,7 +154,7 @@ fun BatteryInfoContent(
         ) {
             val currentBatteryIntentHelper = batteryIntentHelper
 
-                        Spacer(Modifier.height(Spacing.lg))
+            Spacer(Modifier.height(Spacing.lg))
 
             if (currentBatteryIntentHelper == null) {
                 Text(
@@ -177,8 +180,10 @@ fun BatteryInfoContent(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         BatteryProgressCircle(
+                            context = context,
                             percentage = batteryLevel,
                             isCharging = currentBatteryIntentHelper.isCharging,
+                            batteryOverlayPrefs = batteryOverlayPreferences,
                         )
 
             Spacer(Modifier.height(Spacing.lg))

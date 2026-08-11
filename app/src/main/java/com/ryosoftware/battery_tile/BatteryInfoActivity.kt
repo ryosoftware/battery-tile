@@ -1,6 +1,5 @@
 package com.ryosoftware.battery_tile
 
-import android.content.Context.BATTERY_SERVICE
 import android.os.BatteryManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -24,7 +23,6 @@ import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
 class BatteryInfoActivity : ComponentActivity() {
-
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +32,8 @@ class BatteryInfoActivity : ComponentActivity() {
                 val context = LocalContext.current
                 val batteryManager = remember { context.getSystemService(BATTERY_SERVICE) as BatteryManager }
 
-                val prefs = remember { BatteryTilePreferences(context) }
+                val batteryTilePreferences = remember { BatteryTilePreferences(context) }
+                val batteryOverlayPreferences = remember { BatteryOverlayPreferences(context) }
                 val appPrefs = remember { AppPreferences(context) }
 
                 var bgBatteryHelper by remember { mutableStateOf(
@@ -63,7 +62,8 @@ class BatteryInfoActivity : ComponentActivity() {
 
                         BatteryInfoContent(
                             modifier = Modifier.padding(horizontal = Spacing.xxl),
-                            prefs = prefs,
+                            batteryTilePreferences = batteryTilePreferences,
+                            batteryOverlayPreferences = batteryOverlayPreferences,
                             appPrefs = appPrefs
                         )
                     }

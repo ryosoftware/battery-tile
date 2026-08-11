@@ -60,15 +60,9 @@ val DarkExpressiveColors = darkColorScheme(
 
 object AccentColors {
     val batteryGreen = Color(0xFF4CAF50)
-    val batteryGreenContainer = Color(0xFFC8E6C9)
+
     val temperatureRed = Color(0xFFE53935)
-    val temperatureRedContainer = Color(0xFFFFCDD2)
-    val infoBlue = Color(0xFF1E88E5)
-    val infoBlueContainer = Color(0xFFBBDEFB)
     val warningAmber = Color(0xFFFFA000)
-    val warningAmberContainer = Color(0xFFFFECB3)
     val charging = Color(0xFF66BB6A)
-    val discharging = Color(0xFF42A5F5)
-    val glassBorder = Color.White.copy(alpha = 0.20f)
     val glassScrim = Color.Black.copy(alpha = 0.15f)
 }

@@ -165,6 +165,8 @@
     <string name="time_charging_long">@string/time_charging</string>
     <string name="time_charging_notification_comments">When the device is connected to a power source, shows the elapsed time since it was connected.</string>
 
+    <string name="show_time_in_hours_and_minutes">Show times in hours and minutes</string>
+
     <string name="percent_value_integer">%1$d%%</string>
     <string name="percent_value_float">%.1f%%</string>
 

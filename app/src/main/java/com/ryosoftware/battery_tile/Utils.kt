@@ -29,10 +29,10 @@ class Utils {
         fun getStringPercentFromInterval(context: Context, interval: Long, total: Long): String =
             getStringPercentFromInterval(context, interval, total, R.string.percent_value_float, R.string.percent_value_integer)
 
-        fun getStringTimeFromInterval(context: Context, interval: Long): String {
+        fun getStringTimeFromInterval(context: Context, interval: Long, hoursIsLargestUnitOfTime: Boolean? = false): String {
             val totalMinutes = interval / DateUtils.MINUTE_IN_MILLIS
-            val days = totalMinutes / (24 * 60)
-            val hours = (totalMinutes % (24 * 60)) / 60
+            val days = if (hoursIsLargestUnitOfTime == true) 0 else totalMinutes / (24 * 60)
+            val hours = if (hoursIsLargestUnitOfTime == true) totalMinutes / 60 else (totalMinutes % (24 * 60)) / 60
             val minutes = totalMinutes % 60
 
             val resources = context.resources
@@ -64,11 +64,11 @@ class Utils {
         fun isImperceptible(interval: Long) =
             isImperceptible(interval, 0, checkTime = true, checkPercent = false)
 
-        fun getStringTimeAndPercentFromInterval(context: Context, interval: Long, total: Long, excludeImperceptibleValues: Boolean = false, @StringRes resource: Int = R.string.time_and_percent): String =
+        fun getStringTimeAndPercentFromInterval(context: Context, interval: Long, total: Long, excludeImperceptibleValues: Boolean = false, hoursIsLargestUnitOfTime: Boolean? = false, @StringRes resource: Int = R.string.time_and_percent): String =
             if (excludeImperceptibleValues && isImperceptible(interval, total, checkTime = true, checkPercent = false)) {
                 getStringPercentFromInterval(context, interval, total)
             } else {
-                context.getString(resource, getStringTimeFromInterval(context, interval), getStringPercentFromInterval(context, interval, total))
+                context.getString(resource, getStringTimeFromInterval(context, interval, hoursIsLargestUnitOfTime), getStringPercentFromInterval(context, interval, total))
             }
         }
     }

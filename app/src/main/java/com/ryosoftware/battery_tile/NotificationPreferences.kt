@@ -1,7 +1,6 @@
 package com.ryosoftware.battery_tile
 
 import android.content.Context
-import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.fromCelsius
 import com.ryosoftware.battery_tile.TemperatureUnit.Companion.toCelsius
@@ -12,6 +11,7 @@ class NotificationPreferences(context: Context): Preferences(context, FILENAME) 
         const val KEY_NOTIFICATION_ENABLED = "notification-enabled"
         const val KEY_FIELD_POSITION_PREFIX = "notification-field-position-"
         const val KEY_FIELD_VISIBLE_PREFIX = "notification-field-visible-"
+        const val KEY_FIELD_HOURS_ARE_LARGEST_TIME_UNITS_PREFIX = "notification-field-hours-are-largest-time-units-"
         const val KEY_BATTERY_CHARGED_PERCENT = "battery-charged-percent"
         const val KEY_BATTERY_CHARGED_INTERVAL_MINUTES = "battery-charged-minutes"
         const val KEY_BATTERY_CHARGED_REPEAT_INTERVAL_MINUTES = "battery-charged-repeat-minutes"
@@ -55,6 +55,19 @@ class NotificationPreferences(context: Context): Preferences(context, FILENAME) 
 
     fun setFieldPosition(notificationField: NotificationServiceUIBuilder.NotificationField, position: Int) =
         prefs.edit { putInt(getKey(KEY_FIELD_POSITION_PREFIX, notificationField), position) }
+
+
+    fun areHoursLargestTimeUnitsDefault(notificationField: NotificationServiceUIBuilder.NotificationField): Boolean {
+        val defaultValue = getStringFromNotificationField(notificationField, 2)
+
+        return defaultValue?.toBoolean() ?: false
+    }
+
+    fun areHoursLargestTimeUnits(notificationField: NotificationServiceUIBuilder.NotificationField): Boolean =
+        prefs.getBoolean(getKey(KEY_FIELD_HOURS_ARE_LARGEST_TIME_UNITS_PREFIX, notificationField), areHoursLargestTimeUnitsDefault(notificationField))
+
+    fun setHoursAreLargestTimeUnits(notificationField: NotificationServiceUIBuilder.NotificationField, showInMinutes: Boolean) =
+        prefs.edit { putBoolean(getKey(KEY_FIELD_HOURS_ARE_LARGEST_TIME_UNITS_PREFIX, notificationField), showInMinutes) }
 
     var isNotificationEnabled: Boolean
         get() = prefs.getBoolean(KEY_NOTIFICATION_ENABLED, resources.getBoolean(R.bool.notification_enabled_default))
