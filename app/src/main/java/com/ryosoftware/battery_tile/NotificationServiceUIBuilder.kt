@@ -37,6 +37,7 @@ class NotificationServiceUIBuilder(
     screenOnTimeSinceLastStatsReset,
     batteryManager) {
     enum class NotificationField(val key: String, val isSupported: Boolean, @param:StringRes val label: Int = 0, @param:StringRes val labelLong: Int = 0, @param:StringRes val labelModifier: Int = 0, @param:StringRes val comments: Int = 0, @param:ArrayRes val defaultsRes: Int, val isTimeMeasure: Boolean = false) {
+        BATTERY_STATUS_AND_LEVEL(key = "BATTERY-STATUS-AND-LEVEL", isSupported = true, label = R.string.battery_status_and_level, comments = R.string.battery_status_and_level_comments, defaultsRes = R.array.status_and_level_data_for_notification_default),
         BATTERY_LEVEL(key = BatteryIntentHelper.BATTERY_LEVEL, isSupported = isSupported(BatteryIntentHelper.BATTERY_LEVEL), comments = R.string.battery_level_notification_comments, defaultsRes = R.array.level_data_for_notification_default),
         BATTERY_CURRENT_CONSUMPTION(key = BatteryIntentHelper.BATTERY_CURRENT_CONSUMPTION, isSupported = isSupported(BatteryIntentHelper.BATTERY_CURRENT_CONSUMPTION), label = R.string.current_consumption, labelLong = R.string.current_consumption_long, defaultsRes = R.array.current_consumption_data_for_notification_default),
         BATTERY_STATUS(key = BatteryIntentHelper.BATTERY_STATUS, isSupported = isSupported(BatteryIntentHelper.BATTERY_STATUS), defaultsRes = R.array.status_data_for_notification_default),
@@ -57,8 +58,8 @@ class NotificationServiceUIBuilder(
             fun NotificationField.getLabel(context: Context, small: Boolean): String =
                 when {
                     label == 0 -> getLabel(context, key)
-                    labelModifier == 0 -> context.getString(if (small) label else labelLong)
-                    else -> context.getString(if (small) label else labelLong, context.getString(labelModifier))
+                    labelModifier == 0 -> context.getString(if (small || (labelLong == 0)) label else labelLong)
+                    else -> context.getString(if (small || (labelLong == 0)) label else labelLong, context.getString(labelModifier))
                 }
 
             fun NotificationField.getComments(context: Context): String? =
@@ -114,6 +115,16 @@ class NotificationServiceUIBuilder(
 
     fun toStringValue(context: Context, notificationField: NotificationField, prefs: NotificationPreferences, appPrefs: AppPreferences): String? =
         when(notificationField) {
+            NotificationField.BATTERY_STATUS_AND_LEVEL -> {
+                val statusString = toString(context, BATTERY_STATUS, appPrefs, false)
+                val levelString = toString(context, BATTERY_LEVEL, appPrefs, false)
+                when {
+                    statusString == null && levelString == null -> null
+                    statusString == null -> levelString
+                    levelString == null -> statusString
+                    else -> context.getString(R.string.battery_status_and_level_value, statusString, levelString)
+                }
+            }
             NotificationField.BATTERY_LEVEL -> {
                 when {
                     level < 0 -> null

@@ -102,6 +102,10 @@
     <string name="mah_value">%1$d mAh</string>
     <string name="mah_value_with_percent">%1$d mAh (%2$s)</string>
 
+    <string name="battery_status_and_level">@string/battery_status</string>
+    <string name="battery_status_and_level_comments">Shows the battery status and remaining battery percentage</string>
+    <string name="battery_status_and_level_value">%1$s (%2$s)</string>
+
     <string name="battery_level">Level</string>
     <string name="battery_level_notification_comments">Shows the remaining battery percentage and, if available, the remaining capacity (in mAh)</string>
     <string name="battery_level_icon">Level (icon)</string>

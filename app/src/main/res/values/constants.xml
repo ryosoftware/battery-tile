@@ -150,61 +150,66 @@
 
     -->
 
-    <string-array name="level_data_for_notification_default">
+    <string-array name="status_and_level_data_for_notification_default">
         <item>1</item>
-        <item>false</item>
+        <item>true</item>
     </string-array>
 
-    <string-array name="current_consumption_data_for_notification_default">
+    <string-array name="level_data_for_notification_default">
         <item>2</item>
         <item>false</item>
     </string-array>
 
-    <string-array name="status_data_for_notification_default">
+    <string-array name="current_consumption_data_for_notification_default">
         <item>3</item>
         <item>false</item>
     </string-array>
 
-    <string-array name="temperature_data_for_notification_default">
+    <string-array name="status_data_for_notification_default">
         <item>4</item>
         <item>false</item>
     </string-array>
 
-    <string-array name="voltage_data_for_notification_default">
+    <string-array name="temperature_data_for_notification_default">
         <item>5</item>
         <item>false</item>
     </string-array>
 
-    <string-array name="health_data_for_notification_default">
+    <string-array name="voltage_data_for_notification_default">
         <item>6</item>
         <item>false</item>
     </string-array>
 
-    <string-array name="cycles_count_data_for_notification_default">
+    <string-array name="health_data_for_notification_default">
         <item>7</item>
         <item>false</item>
     </string-array>
 
-    <string-array name="charging_time_data_for_notification_default">
+    <string-array name="cycles_count_data_for_notification_default">
         <item>8</item>
-        <item>true</item>
-        <item>true</item>
+        <item>false</item>
     </string-array>
 
-    <string-array name="recent_consumption_data_for_notification_default">
+    <string-array name="charging_time_data_for_notification_default">
         <item>9</item>
         <item>true</item>
         <item>true</item>
     </string-array>
 
-    <string-array name="data_since_last_stats_reset_data_for_notification_default">
+    <string-array name="recent_consumption_data_for_notification_default">
         <item>10</item>
         <item>true</item>
         <item>true</item>
     </string-array>
 
-    <string-array name="data_since_boot_data_for_notification_default">
+    <string-array name="data_since_last_stats_reset_data_for_notification_default">
         <item>11</item>
+        <item>true</item>
+        <item>true</item>
+    </string-array>
+
+    <string-array name="data_since_boot_data_for_notification_default">
+        <item>12</item>
         <item>true</item>
         <item>false</item>
     </string-array>
