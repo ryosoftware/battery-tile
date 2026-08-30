@@ -143,7 +143,8 @@ private fun List<ChargingSession>.mergeChargeGroup(): ChargingSession {
     val last = last()
     val startTime = first.startTime
     val endTime = last.endTime
-    val durationMinutes = if (endTime != null) (endTime - startTime) / DateUtils.MINUTE_IN_MILLIS else null
+    val effectiveEndTime = mapNotNull { it.chargedTimeStamp ?: it.endTime }.maxOrNull()
+    val durationMinutes = if (effectiveEndTime != null) (effectiveEndTime - startTime) / DateUtils.MINUTE_IN_MILLIS else null
 
     var weightedTempSum = 0.0
     var totalTempWeight = 0.0

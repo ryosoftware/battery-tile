@@ -1076,7 +1076,8 @@ class NotificationService : Service() {
                         currentChargeSession = currentChargeSession ?: repository.getOpenChargingSession()
 
                         if (currentChargeSession != null) {
-                            val durationMs = now - currentChargeSession.startTime
+                            val chargeEnd = currentChargeSession.chargedTimeStamp ?: now
+                            val durationMs = chargeEnd - currentChargeSession.startTime
 
                             if (durationMs > batteryReadingsHistoryWindowInMillis) {
                                 repository.deleteChargingSession(currentChargeSession.id)
