@@ -145,6 +145,30 @@ class NotificationService : Service() {
 
         private fun getDeepSleepTime(): Long = getDeepSleepTime(SystemClock.elapsedRealtime())
 
+        private fun getDeepSleepPercents(lastStatsResetTime: Long, deepSleepTimeAtLastStatsReset: Long): Pair<Float, Float>? {
+            val elapsedRealtime = SystemClock.elapsedRealtime()
+            val uptimeMillis = SystemClock.uptimeMillis()
+
+            if (elapsedRealtime <= 0L) return null
+
+            val deepSleepTimeSinceBoot = (elapsedRealtime - uptimeMillis).coerceIn(0L, elapsedRealtime)
+            val deepSleepPercentSinceBoot = deepSleepTimeSinceBoot * 100f / elapsedRealtime
+
+            val timeSinceLastStatsReset = elapsedRealtime - lastStatsResetTime
+
+            if (timeSinceLastStatsReset <= 0L) return null
+
+            val deepSleepTimeSinceLastStatsReset = deepSleepTimeSinceBoot - deepSleepTimeAtLastStatsReset
+
+            if ((deepSleepTimeSinceLastStatsReset < 0L) || (deepSleepTimeSinceLastStatsReset > timeSinceLastStatsReset)) {
+                return null
+            }
+
+            val deepSleepPercentSinceLastStatsReset = deepSleepTimeSinceLastStatsReset * 100f / timeSinceLastStatsReset
+
+            return deepSleepPercentSinceBoot to deepSleepPercentSinceLastStatsReset
+        }
+
         private fun getNotification(
             context: Context,
             channelId: String,
@@ -299,7 +323,7 @@ class NotificationService : Service() {
             }
 
             showLastStatsResetNotification(context, logger, reason)
-            
+
             context.sendBroadcast(Intent(ACTION_RESET_STATS).apply {
                 setPackage(context.packageName)
                 putExtra(EXTRA_REASON, reason.key)
@@ -671,6 +695,7 @@ class NotificationService : Service() {
         val now = System.currentTimeMillis()
 
         if (batteryIntentHelper != null) {
+            val (deepSleepPercentSinceBoot, deepSleepPercentSinceLastStatsReset) = getDeepSleepPercents(lastStatsResetTime, deepSleepTimeAtLastStatsReset) ?: (null to null)
             val index = recentReadings.binarySearchBy(now) { it.timestamp }
 
             recentReadings.add(
@@ -684,7 +709,9 @@ class NotificationService : Service() {
                     voltage = batteryIntentHelper.voltage,
                     health = batteryIntentHelper.health,
                     isCharging = batteryIntentHelper.isCharging,
-                    plugType = batteryIntentHelper.plugType
+                    plugType = batteryIntentHelper.plugType,
+                    deepSleepPercentSinceBoot = deepSleepPercentSinceBoot,
+                    deepSleepPercentSinceLastStatsReset = deepSleepPercentSinceLastStatsReset
                 )
             )
         }
@@ -954,9 +981,11 @@ class NotificationService : Service() {
         lastSavedIsCharging = isCharging
 
         val charge = batteryIntentHelper.charge
-        
+
         serviceScope.launch {
             try {
+                val (deepSleepPercentSinceBoot, deepSleepPercentSinceLastStatsReset) = getDeepSleepPercents(lastStatsResetTime, deepSleepTimeAtLastStatsReset) ?: (null to null)
+
                 repository.insertBatteryReading(BatteryReading(
                     timestamp = now,
                     batteryLevel = level,
@@ -966,7 +995,9 @@ class NotificationService : Service() {
                     voltage = batteryIntentHelper.voltage,
                     health = batteryIntentHelper.health,
                     isCharging = isCharging,
-                    plugType = batteryIntentHelper.plugType
+                    plugType = batteryIntentHelper.plugType,
+                    deepSleepPercentSinceBoot = deepSleepPercentSinceBoot,
+                    deepSleepPercentSinceLastStatsReset = deepSleepPercentSinceLastStatsReset
                 ))
 
                 logger.log("Battery reading stored at DB")

@@ -580,7 +580,7 @@ private fun enrichReadingsWithScreenStates(
                     it.timestamp > prev.timestamp && it.timestamp < curr.timestamp
                 }
                 for (state in intermediateStates) {
-                    val progress = (state.timestamp - prev.timestamp) / totalDuration
+                    val progress = (state.timestamp - prev.timestamp).toFloat() / totalDuration
                     result.add(
                         BatteryReading(
                             timestamp = state.timestamp,
@@ -591,7 +591,9 @@ private fun enrichReadingsWithScreenStates(
                             voltage = (prev.voltage + (curr.voltage - prev.voltage) * progress).toInt(),
                             health = prev.health,
                             isCharging = prev.isCharging,
-                            plugType = prev.plugType
+                            plugType = prev.plugType,
+                            deepSleepPercentSinceBoot = if (prev.deepSleepPercentSinceBoot != null && curr.deepSleepPercentSinceBoot != null) { prev.deepSleepPercentSinceBoot + (curr.deepSleepPercentSinceBoot - prev.deepSleepPercentSinceBoot) * progress } else { null },
+                            deepSleepPercentSinceLastStatsReset = if (prev.deepSleepPercentSinceLastStatsReset != null && curr.deepSleepPercentSinceLastStatsReset != null) { prev.deepSleepPercentSinceLastStatsReset + (curr.deepSleepPercentSinceLastStatsReset - prev.deepSleepPercentSinceLastStatsReset) * progress } else { null }
                         )
                     )
                 }
