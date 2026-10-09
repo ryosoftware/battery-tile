@@ -592,7 +592,9 @@ private fun enrichReadingsWithScreenStates(
                             isCharging = prev.isCharging,
                             plugType = prev.plugType,
                             deepSleepPercentSinceBoot = if (prev.deepSleepPercentSinceBoot != null && curr.deepSleepPercentSinceBoot != null) { prev.deepSleepPercentSinceBoot + (curr.deepSleepPercentSinceBoot - prev.deepSleepPercentSinceBoot) * progress } else { null },
-                            deepSleepPercentSinceLastStatsReset = if (prev.deepSleepPercentSinceLastStatsReset != null && curr.deepSleepPercentSinceLastStatsReset != null) { prev.deepSleepPercentSinceLastStatsReset + (curr.deepSleepPercentSinceLastStatsReset - prev.deepSleepPercentSinceLastStatsReset) * progress } else { null }
+                            deepSleepPercentSinceLastStatsReset = if (prev.deepSleepPercentSinceLastStatsReset != null && curr.deepSleepPercentSinceLastStatsReset != null) { prev.deepSleepPercentSinceLastStatsReset + (curr.deepSleepPercentSinceLastStatsReset - prev.deepSleepPercentSinceLastStatsReset) * progress } else { null },
+                            lastBootTime = prev.lastBootTime,
+                            lastStatsResetTime = prev.lastStatsResetTime
                         )
                     )
                 }
@@ -603,6 +605,18 @@ private fun enrichReadingsWithScreenStates(
 
     return result
 }
+
+private fun detectEpochBreaks(
+    readings: List<BatteryReading>,
+    epochOf: (BatteryReading) -> Long?
+): List<Pair<Long, Long>> =
+    readings.zipWithNext()
+        .filter { (prev, curr) ->
+            val prevEpoch = epochOf(prev)
+            val currEpoch = epochOf(curr)
+            prevEpoch != null && currEpoch != null && prevEpoch != currEpoch
+        }
+        .map { (prev, curr) -> prev.timestamp to curr.timestamp }
 
 private enum class AxisSide { LEFT, RIGHT }
 
@@ -616,7 +630,7 @@ private data class SeriesConfig(
     val referenceLineNormalizedY: Float? = null,
     val referenceLineLabel: String? = null,
     val referenceLineColor: Color = Color.Unspecified,
-    val segmentColorProvider: ((prev: BatteryReading, screenStates: List<ScreenState>) -> Color)? = null
+    val breakIntervals: List<Pair<Long, Long>> = emptyList()
 )
 
 @Composable
@@ -629,7 +643,6 @@ private fun UnifiedChart(
 
     val gridColor = MaterialTheme.colorScheme.outlineVariant
     val textColor = MaterialTheme.colorScheme.onSurface
-    val screenOnColor = MaterialTheme.colorScheme.primary
     val screenOffColor = MaterialTheme.colorScheme.outline
     val screenOffShade = screenOffColor.copy(alpha = 0.08f)
 
@@ -787,13 +800,13 @@ private fun UnifiedChart(
                             val prevValue = config.yValue(prev)
                             val currValue = config.yValue(reading)
                             if (prevValue == null || currValue == null) return@forEachIndexed
+                            if (config.breakIntervals.any { prev.timestamp >= it.first && reading.timestamp <= it.second }) return@forEachIndexed
                             val x1 = timeToX(prev.timestamp)
                             val y1 = paddingTop + chartDrawHeight * (1f - prevValue)
                             val x2 = timeToX(reading.timestamp)
                             val y2 = paddingTop + chartDrawHeight * (1f - currValue)
-                            val color = config.segmentColorProvider?.invoke(prev, screenStates) ?: config.lineColor
                             drawLine(
-                                color = color,
+                                color = config.lineColor,
                                 start = Offset(x1, y1),
                                 end = Offset(x2, y2),
                                 strokeWidth = 2.dp.toPx()
@@ -899,8 +912,10 @@ private fun CombinedChart(
     val errorColor = MaterialTheme.colorScheme.error
     val tertiaryColor = MaterialTheme.colorScheme.tertiary
     val secondaryColor = MaterialTheme.colorScheme.secondary
-    val outlineColor = MaterialTheme.colorScheme.outline
     val anyPercentSeries = showLevel || showDeepSleep
+
+    val bootBreakIntervals = remember(readings) { detectEpochBreaks(readings) { it.lastBootTime } }
+    val statsResetBreakIntervals = remember(readings) { detectEpochBreaks(readings) { it.lastStatsResetTime } }
 
     val percentYLabels: DrawScope.(textColor: Color) -> Unit = { textColor ->
         for (i in 0..4) {
@@ -961,10 +976,7 @@ private fun CombinedChart(
                 yLabels = percentYLabels,
                 lineColor = primaryColor,
                 labelWidthDp = 40.dp,
-                side = AxisSide.LEFT,
-                segmentColorProvider = { prev, states ->
-                    if (isScreenOnAt(prev.timestamp, states)) primaryColor else outlineColor
-                }
+                side = AxisSide.LEFT
             )
         )
     }
@@ -977,9 +989,7 @@ private fun CombinedChart(
                 lineColor = tertiaryColor,
                 labelWidthDp = 40.dp,
                 side = AxisSide.LEFT,
-                segmentColorProvider = { prev, states ->
-                    if (isScreenOnAt(prev.timestamp, states)) tertiaryColor else outlineColor
-                }
+                breakIntervals = bootBreakIntervals
             )
         )
         series.add(
@@ -990,9 +1000,7 @@ private fun CombinedChart(
                 lineColor = secondaryColor,
                 labelWidthDp = 40.dp,
                 side = AxisSide.LEFT,
-                segmentColorProvider = { prev, states ->
-                    if (isScreenOnAt(prev.timestamp, states)) secondaryColor else outlineColor
-                }
+                breakIntervals = statsResetBreakIntervals
             )
         )
     }

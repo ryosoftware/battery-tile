@@ -20,6 +20,8 @@ data class BatteryReading @Ignore constructor(
     val plugType: Int,
     val deepSleepPercentSinceBoot: Float? = null,
     val deepSleepPercentSinceLastStatsReset: Float? = null,
+    val lastBootTime: Long? = null,
+    val lastStatsResetTime: Long? = null,
     @Ignore val timestampString: String? = null
 ) {
     constructor(
@@ -34,9 +36,11 @@ data class BatteryReading @Ignore constructor(
         isCharging: Boolean,
         plugType: Int,
         deepSleepPercentSinceBoot: Float?,
-        deepSleepPercentSinceLastStatsReset: Float?
+        deepSleepPercentSinceLastStatsReset: Float?,
+        lastBootTime: Long?,
+        lastStatsResetTime: Long?
     ) : this(
         id, timestamp, batteryLevel, batteryCharge, batteryStatus,
-        temperatureCelsius, voltage, health, isCharging, plugType, deepSleepPercentSinceBoot, deepSleepPercentSinceLastStatsReset, null
+        temperatureCelsius, voltage, health, isCharging, plugType, deepSleepPercentSinceBoot, deepSleepPercentSinceLastStatsReset, lastBootTime, lastStatsResetTime, null
     )
 }

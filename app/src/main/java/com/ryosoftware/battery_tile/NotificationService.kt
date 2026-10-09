@@ -75,6 +75,8 @@ class NotificationServicePreferences(context: Context): Preferences(context, FIL
         const val KEY_LAST_STATS_RESET_BATTERY_LEVEL = "last-stats-reset-battery-level"
         const val KEY_DEEP_SLEEP_TIME_AT_LAST_STATS_RESET = "last-stats-reset-deep-sleep-time"
         const val KEY_TIME_SINCE_BOOT_AT_LAST_STATS_RESET = "last-stats-reset-time-since-boot"
+
+        const val KEY_LAST_BOOT_TIME = "last-boot-time"
         const val KEY_SCREEN_ON_TIME_SINCE_BOOT = "screen-on-time-since-boot"
         const val KEY_SCREEN_ON_TIME_SINCE_BOOT_IS_VALID = "screen-on-time-since-boot-is-valid"
         const val KEY_SCREEN_ON_TIME_SINCE_LAST_STATS_RESET = "screen-on-time-since-last-stats-reset"
@@ -292,13 +294,18 @@ class NotificationService : Service() {
                     batteryIntent?.let { BatteryIntentHelper(context, it, null) }
                 }
 
-                putLong(NotificationServicePreferences.KEY_LAST_STATS_RESET_TIME, now - interval)
+                val lastStatsResetTime = now - interval
+                putLong(NotificationServicePreferences.KEY_LAST_STATS_RESET_TIME, lastStatsResetTime)
                 putString(NotificationServicePreferences.KEY_LAST_STATS_RESET_REASON, reason.key)
                 putLong(NotificationServicePreferences.KEY_TIME_SINCE_BOOT_AT_LAST_STATS_RESET, millisSinceBoot - interval)
                 putLong(NotificationServicePreferences.KEY_DEEP_SLEEP_TIME_AT_LAST_STATS_RESET, getDeepSleepTime(millisSinceBoot).coerceIn(0L, millisSinceBoot - interval))
                 putInt(NotificationServicePreferences.KEY_LAST_STATS_RESET_BATTERY_LEVEL, batteryIntentHelper?.level ?: -1)
 
-                if (reason == LastStatsResetReason.DEVICE_REBOOT || reason == LastStatsResetReason.EXPIRED_DATA) {
+                if (reason == LastStatsResetReason.DEVICE_REBOOT) {
+                    putLong(NotificationServicePreferences.KEY_LAST_BOOT_TIME, lastStatsResetTime)
+                }
+
+                if ((reason == LastStatsResetReason.DEVICE_REBOOT) || (reason == LastStatsResetReason.EXPIRED_DATA)) {
                     putBoolean(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_BOOT_IS_VALID, reason == LastStatsResetReason.DEVICE_REBOOT)
                     remove(NotificationServicePreferences.KEY_SCREEN_ON_TIME_SINCE_BOOT)
                 }
@@ -400,6 +407,7 @@ class NotificationService : Service() {
     private var serviceStartTime = 0L
     private var disablePersistData = false
 
+    private var lastBootTime = 0L
     private var lastStatsResetTime = 0L
     private var lastStatsResetReason: LastStatsResetReason? = null
     private var deepSleepTimeAtLastStatsReset = 0L
@@ -520,6 +528,7 @@ class NotificationService : Service() {
         val lastSeenEventTime = servicePersistentData.getLong(NotificationServicePreferences.KEY_LAST_SEEN_EVENT_TIME, 0L)
         val intervalWithoutEvents = millisSinceBoot - lastSeenEventTime
 
+        lastBootTime = servicePersistentData.getLong(NotificationServicePreferences.KEY_LAST_BOOT_TIME, now - millisSinceBoot)
         lastStatsResetTime = now
         lastStatsResetReason = LastStatsResetReason.EXPIRED_DATA
         deepSleepTimeAtLastStatsReset = getDeepSleepTime()
@@ -711,7 +720,9 @@ class NotificationService : Service() {
                     isCharging = batteryIntentHelper.isCharging,
                     plugType = batteryIntentHelper.plugType,
                     deepSleepPercentSinceBoot = deepSleepPercentSinceBoot,
-                    deepSleepPercentSinceLastStatsReset = deepSleepPercentSinceLastStatsReset
+                    deepSleepPercentSinceLastStatsReset = deepSleepPercentSinceLastStatsReset,
+                    lastBootTime = lastBootTime,
+                    lastStatsResetTime = lastStatsResetTime
                 )
             )
         }
@@ -997,7 +1008,9 @@ class NotificationService : Service() {
                     isCharging = isCharging,
                     plugType = batteryIntentHelper.plugType,
                     deepSleepPercentSinceBoot = deepSleepPercentSinceBoot,
-                    deepSleepPercentSinceLastStatsReset = deepSleepPercentSinceLastStatsReset
+                    deepSleepPercentSinceLastStatsReset = deepSleepPercentSinceLastStatsReset,
+                    lastBootTime = lastBootTime,
+                    lastStatsResetTime = lastStatsResetTime
                 ))
 
                 logger.log("Battery reading stored at DB")
