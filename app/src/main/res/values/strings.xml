@@ -251,6 +251,8 @@
     <string name="combined_graphs_tab">Graphs</string>
     <string name="chart_show_level">Level</string>
     <string name="chart_show_temperature">Temperature</string>
+    <string name="chart_show_deep_sleep">Deep sleep</string>
+    <string name="chart_deep_sleep_since">Deep sleep (%1$s)</string>
     <string name="session_charging_label">Charge</string>
     <string name="session_discharge_label">Discharge</string>
     <string name="no_sessions">No sessions recorded yet.</string>
@@ -381,6 +383,7 @@
     <string name="excel_header_is_charging">Is charging?</string>
     <string name="excel_header_plug_type">Plug type</string>
     <string name="excel_header_screen_on">Is screen on?</string>
+    <string name="excel_header_deep_sleep_since">Deep sleep $1%s (%%)</string>
     <string name="excel_header_charge_counter">Charge (µAh)</string>
     <string name="screen_states_tab">Screen states</string>
     <string name="value_from_to">%1$s → %2$s</string>

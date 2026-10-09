@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import com.ryosoftware.battery_tile.ui.theme.Spacing
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -197,6 +198,7 @@ fun BatteryHistoryScreen(
     var selectedTab by remember { mutableIntStateOf(prefs.getInt("selected-tab", 0)) }
     var showLevel by remember { mutableStateOf(prefs.getBoolean("show-level", true)) }
     var showTemperature by remember { mutableStateOf(prefs.getBoolean("show-temperature", true)) }
+    var showDeepSleep by remember { mutableStateOf(prefs.getBoolean("show-deep-sleep", true)) }
 
     val falseDischarges = remember(dischargeSessions) {
         dischargeSessions.filter { it.isFalseDischarge() }
@@ -233,6 +235,9 @@ fun BatteryHistoryScreen(
     }
     LaunchedEffect(showTemperature) {
         prefs.edit { putBoolean("show-temperature", showTemperature) }
+    }
+    LaunchedEffect(showDeepSleep) {
+        prefs.edit { putBoolean("show-deep-sleep", showDeepSleep) }
     }
 
     val saveLauncher = rememberLauncherForActivityResult(
@@ -388,14 +393,16 @@ fun BatteryHistoryScreen(
                     when (selectedTab) {
                         0 -> {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 FilterChip(
                                     selected = showLevel,
                                     onClick = {
                                         val newShowLevel = !showLevel
-                                        if (newShowLevel || showTemperature) showLevel = newShowLevel
+                                        if (newShowLevel || showTemperature || showDeepSleep) showLevel = newShowLevel
                                     },
                                     label = { Text(stringResource(R.string.chart_show_level)) }
                                 )
@@ -403,47 +410,39 @@ fun BatteryHistoryScreen(
                                     selected = showTemperature,
                                     onClick = {
                                         val newShowTemperature = !showTemperature
-                                        if (newShowTemperature || showLevel) showTemperature =
+                                        if (newShowTemperature || showLevel || showDeepSleep) showTemperature =
                                             newShowTemperature
                                     },
                                     label = { Text(stringResource(R.string.chart_show_temperature)) }
+                                )
+                                FilterChip(
+                                    selected = showDeepSleep,
+                                    onClick = {
+                                        val newShowDeepSleep = !showDeepSleep
+                                        if (newShowDeepSleep || showLevel || showTemperature) showDeepSleep =
+                                            newShowDeepSleep
+                                    },
+                                    label = { Text(stringResource(R.string.chart_show_deep_sleep)) }
                                 )
                             }
 
                             Spacer(Modifier.height(Spacing.lg))
 
                             val displayReadings = readings.reversed()
-                            if (showLevel && showTemperature) {
-                                DualAxisChart(
-                                    context = context,
-                                    readings = displayReadings,
-                                    screenStates = screenStates,
-                                    thresholdTemperatureCelsius = remember {
-                                        NotificationPreferences(context).getBatteryTemperatureThreshold(
-                                            TemperatureUnit.CELSIUS
-                                        )
-                                    },
-                                    appPrefs = appPrefs
-                                )
-                            } else if (showTemperature) {
-                                TemperatureChart(
-                                    context = context,
-                                    readings = displayReadings,
-                                    screenStates = screenStates,
-                                    thresholdTemperatureCelsius = remember {
-                                        NotificationPreferences(context).getBatteryTemperatureThreshold(
-                                            TemperatureUnit.CELSIUS
-                                        )
-                                    },
-                                    appPrefs = appPrefs
-                                )
-                            } else {
-                                BatteryLevelChart(
-                                    context = context,
-                                    readings = displayReadings,
-                                    screenStates = screenStates
-                                )
-                            }
+                            CombinedChart(
+                                context = context,
+                                readings = displayReadings,
+                                screenStates = screenStates,
+                                showLevel = showLevel,
+                                showTemperature = showTemperature,
+                                showDeepSleep = showDeepSleep,
+                                thresholdTemperatureCelsius = remember {
+                                    NotificationPreferences(context).getBatteryTemperatureThreshold(
+                                        TemperatureUnit.CELSIUS
+                                    )
+                                },
+                                appPrefs = appPrefs
+                            )
 
                             Spacer(Modifier.height(Spacing.lg))
 
@@ -609,7 +608,7 @@ private enum class AxisSide { LEFT, RIGHT }
 
 private data class SeriesConfig(
     val label: String,
-    val yValue: (BatteryReading) -> Float,
+    val yValue: (BatteryReading) -> Float?,
     val yLabels: DrawScope.(textColor: Color) -> Unit,
     val lineColor: Color,
     val labelWidthDp: Dp,
@@ -635,7 +634,7 @@ private fun UnifiedChart(
     val screenOffShade = screenOffColor.copy(alpha = 0.08f)
 
     val chartHeightDp = 300.dp
-    val leftLabelWidth = series.filter { it.side == AxisSide.LEFT }.maxOf { it.labelWidthDp }
+    val leftLabelWidth = series.filter { it.side == AxisSide.LEFT }.maxOfOrNull { it.labelWidthDp } ?: 0.dp
     val rightLabelWidth = series.filter { it.side == AxisSide.RIGHT }.maxOfOrNull { it.labelWidthDp } ?: 0.dp
     @SuppressLint("ConfigurationScreenWidthHeight")
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
@@ -666,7 +665,7 @@ private fun UnifiedChart(
                     .padding(top = 8.dp, bottom = 30.dp)
             ) {
                 if (readings.size < 2) return@Canvas
-                val leftSeries = series.first { it.side == AxisSide.LEFT }
+                val leftSeries = series.firstOrNull { it.side == AxisSide.LEFT } ?: return@Canvas
                 leftSeries.yLabels(this, textColor)
 
                 if (leftSeries.referenceLineNormalizedY != null && leftSeries.referenceLineLabel != null) {
@@ -785,10 +784,13 @@ private fun UnifiedChart(
                         readings.forEachIndexed { index, reading ->
                             if (index == 0) return@forEachIndexed
                             val prev = readings[index - 1]
+                            val prevValue = config.yValue(prev)
+                            val currValue = config.yValue(reading)
+                            if (prevValue == null || currValue == null) return@forEachIndexed
                             val x1 = timeToX(prev.timestamp)
-                            val y1 = paddingTop + chartDrawHeight * (1f - config.yValue(prev))
+                            val y1 = paddingTop + chartDrawHeight * (1f - prevValue)
                             val x2 = timeToX(reading.timestamp)
-                            val y2 = paddingTop + chartDrawHeight * (1f - config.yValue(reading))
+                            val y2 = paddingTop + chartDrawHeight * (1f - currValue)
                             val color = config.segmentColorProvider?.invoke(prev, screenStates) ?: config.lineColor
                             drawLine(
                                 color = color,
@@ -844,22 +846,24 @@ private fun UnifiedChart(
             }
         }
 
-        Row(
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 4.dp),
             horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             for (config in series) {
-                Canvas(modifier = Modifier.size(12.dp)) {
-                    drawLine(color = config.lineColor, start = Offset(0f, size.height / 2), end = Offset(size.width, size.height / 2), strokeWidth = 3.dp.toPx())
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Canvas(modifier = Modifier.size(12.dp)) {
+                        drawLine(color = config.lineColor, start = Offset(0f, size.height / 2), end = Offset(size.width, size.height / 2), strokeWidth = 3.dp.toPx())
+                    }
+                    Text(
+                        text = config.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(start = 4.dp, end = 12.dp)
+                    )
                 }
-                Text(
-                    text = config.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(start = 4.dp, end = 12.dp)
-                )
             }
         }
     }
@@ -876,37 +880,85 @@ private fun UnifiedChart(
 }
 
 @Composable
-fun BatteryLevelChart(
+private fun CombinedChart(
     context: Context,
     readings: List<BatteryReading>,
     screenStates: List<ScreenState>,
+    showLevel: Boolean,
+    showTemperature: Boolean,
+    showDeepSleep: Boolean,
+    thresholdTemperatureCelsius: Float?,
+    appPrefs: AppPreferences
 ) {
+    if (!showLevel && !showTemperature && !showDeepSleep) return
+
     val enrichedReadings = remember(readings, screenStates) { enrichReadingsWithScreenStates(readings, screenStates) }
+    if (enrichedReadings.size < 2) return
+
     val primaryColor = MaterialTheme.colorScheme.primary
+    val errorColor = MaterialTheme.colorScheme.error
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
     val outlineColor = MaterialTheme.colorScheme.outline
-    UnifiedChart(
-        readings = enrichedReadings,
-        screenStates = screenStates,
-        series = listOf(
+    val anyPercentSeries = showLevel || showDeepSleep
+
+    val percentYLabels: DrawScope.(textColor: Color) -> Unit = { textColor ->
+        for (i in 0..4) {
+            val y = size.height * i / 4
+            val value = 100 - (i * 25)
+            drawContext.canvas.nativeCanvas.drawText(
+                context.getString(R.string.percent_value_integer, value),
+                size.width - 4.dp.toPx(),
+                y + 4.dp.toPx(),
+                Paint().apply {
+                    color = textColor.hashCode()
+                    textSize = 10.sp.toPx()
+                    textAlign = Paint.Align.RIGHT
+                }
+            )
+        }
+    }
+
+    val temps = remember(enrichedReadings) { enrichedReadings.map { it.temperatureCelsius } }
+    val minTemp = remember(temps) { (temps.min() - 5f).coerceAtLeast(0f) }
+    val maxTemp = remember(temps) { (temps.max() + 5f).coerceAtMost(60f) }
+    val tempRange = remember(minTemp, maxTemp) { maxTemp - minTemp }
+
+    val thresholdNormalizedY = remember(thresholdTemperatureCelsius, minTemp, tempRange) {
+        if (thresholdTemperatureCelsius != null && tempRange > 0f) {
+            ((thresholdTemperatureCelsius - minTemp) / tempRange).coerceIn(0f, 1f)
+        } else null
+    }
+    val thresholdLabel = remember(thresholdTemperatureCelsius, appPrefs.temperatureUnit) {
+        if (thresholdTemperatureCelsius != null) {
+            appPrefs.temperatureUnit.toString(context, appPrefs.temperatureUnit.fromCelsius(thresholdTemperatureCelsius), false)
+        } else null
+    }
+
+    val temperatureYLabels: DrawScope.(textColor: Color) -> Unit = { textColor ->
+        for (i in 0..4) {
+            val y = size.height * i / 4
+            val value = maxTemp - (tempRange * i / 4)
+            drawContext.canvas.nativeCanvas.drawText(
+                appPrefs.temperatureUnit.toString(context, appPrefs.temperatureUnit.fromCelsius(value), false),
+                if (anyPercentSeries) 4.dp.toPx() else 4.dp.toPx() + (size.width - 8.dp.toPx()),
+                y + 4.dp.toPx(),
+                Paint().apply {
+                    color = textColor.hashCode()
+                    textSize = 9.sp.toPx()
+                    textAlign = if (anyPercentSeries) Paint.Align.LEFT else Paint.Align.RIGHT
+                }
+            )
+        }
+    }
+
+    val series = mutableListOf<SeriesConfig>()
+    if (showLevel) {
+        series.add(
             SeriesConfig(
                 label = stringResource(R.string.chart_show_level),
                 yValue = { reading -> reading.batteryLevel / 100f },
-                yLabels = { textColor ->
-                    for (i in 0..4) {
-                        val y = size.height * i / 4
-                        val value = 100 - (i * 25)
-                        drawContext.canvas.nativeCanvas.drawText(
-                            context.getString(R.string.percent_value_integer, value),
-                            8.dp.toPx() + (size.width - 12.dp.toPx()),
-                            y + 4.dp.toPx(),
-                            Paint().apply {
-                                color = textColor.hashCode()
-                                textSize = 10.sp.toPx()
-                                textAlign = Paint.Align.RIGHT
-                            }
-                        )
-                    }
-                },
+                yLabels = percentYLabels,
                 lineColor = primaryColor,
                 labelWidthDp = 40.dp,
                 side = AxisSide.LEFT,
@@ -915,155 +967,55 @@ fun BatteryLevelChart(
                 }
             )
         )
-    )
-}
-
-@Composable
-fun TemperatureChart(
-    context: Context,
-    readings: List<BatteryReading>,
-    screenStates: List<ScreenState>,
-    thresholdTemperatureCelsius: Float?,
-    appPrefs: AppPreferences
-) {
-    val enrichedReadings = remember(readings, screenStates) { enrichReadingsWithScreenStates(readings, screenStates) }
-    val temps = remember(enrichedReadings) { enrichedReadings.map { it.temperatureCelsius } }
-    val minTemp = remember(temps) { (temps.min() - 5f).coerceAtLeast(0f) }
-    val maxTemp = remember(temps) { (temps.max() + 5f).coerceAtMost(60f) }
-    val tempRange = remember(minTemp, maxTemp) { maxTemp - minTemp }
-
-    val thresholdNormalizedY = remember(thresholdTemperatureCelsius, minTemp, tempRange) {
-        if (thresholdTemperatureCelsius != null && tempRange > 0f) {
-            ((thresholdTemperatureCelsius - minTemp) / tempRange).coerceIn(0f, 1f)
-        } else null
     }
-    val thresholdLabel = remember(thresholdTemperatureCelsius, appPrefs.temperatureUnit) {
-        if (thresholdTemperatureCelsius != null) {
-            appPrefs.temperatureUnit.toString(context, appPrefs.temperatureUnit.fromCelsius(thresholdTemperatureCelsius), false)
-        } else null
-    }
-
-    UnifiedChart(
-        readings = enrichedReadings,
-        screenStates = screenStates,
-        series = listOf(
+    if (showDeepSleep) {
+        series.add(
             SeriesConfig(
-                label = stringResource(R.string.chart_show_temperature),
-                yValue = { reading -> (reading.temperatureCelsius - minTemp) / tempRange },
-                yLabels = { textColor ->
-                    for (i in 0..4) {
-                        val y = size.height * i / 4
-                        val value = maxTemp - (tempRange * i / 4)
-                        drawContext.canvas.nativeCanvas.drawText(
-                            appPrefs.temperatureUnit.toString(context, appPrefs.temperatureUnit.fromCelsius(value), false),
-                            4.dp.toPx() + (size.width - 8.dp.toPx()),
-                            y + 4.dp.toPx(),
-                            Paint().apply {
-                                color = textColor.hashCode()
-                                textSize = 9.sp.toPx()
-                                textAlign = Paint.Align.RIGHT
-                            }
-                        )
-                    }
-                },
-                lineColor = MaterialTheme.colorScheme.error,
-                labelWidthDp = 50.dp,
-                side = AxisSide.LEFT,
-                referenceLineNormalizedY = thresholdNormalizedY,
-                referenceLineLabel = thresholdLabel,
-                referenceLineColor = MaterialTheme.colorScheme.error
-            )
-        )
-    )
-}
-
-@Composable
-private fun DualAxisChart(
-    context: Context,
-    readings: List<BatteryReading>,
-    screenStates: List<ScreenState>,
-    thresholdTemperatureCelsius: Float?,
-    appPrefs: AppPreferences
-) {
-    val enrichedReadings = remember(readings, screenStates) { enrichReadingsWithScreenStates(readings, screenStates) }
-    if (enrichedReadings.size < 2) return
-
-    val temps = remember(enrichedReadings) { enrichedReadings.map { it.temperatureCelsius } }
-    val minTemp = remember(temps) { (temps.min() - 5f).coerceAtLeast(0f) }
-    val maxTemp = remember(temps) { (temps.max() + 5f).coerceAtMost(60f) }
-    val tempRange = remember(minTemp, maxTemp) { maxTemp - minTemp }
-
-    val thresholdNormalizedY = remember(thresholdTemperatureCelsius, minTemp, tempRange) {
-        if (thresholdTemperatureCelsius != null && tempRange > 0f) {
-            ((thresholdTemperatureCelsius - minTemp) / tempRange).coerceIn(0f, 1f)
-        } else null
-    }
-    val thresholdLabel = remember(thresholdTemperatureCelsius, appPrefs.temperatureUnit) {
-        if (thresholdTemperatureCelsius != null) {
-            appPrefs.temperatureUnit.toString(context, appPrefs.temperatureUnit.fromCelsius(thresholdTemperatureCelsius), false)
-        } else null
-    }
-
-    val screenOnColor = MaterialTheme.colorScheme.primary
-    val screenOffColor = MaterialTheme.colorScheme.outline
-
-    UnifiedChart(
-        readings = enrichedReadings,
-        screenStates = screenStates,
-        series = listOf(
-            SeriesConfig(
-                label = stringResource(R.string.chart_show_level),
-                yValue = { reading -> reading.batteryLevel / 100f },
-                yLabels = { textColor ->
-                    for (i in 0..4) {
-                        val y = size.height * i / 4
-                        val value = 100 - (i * 25)
-                        drawContext.canvas.nativeCanvas.drawText(
-                            context.getString(R.string.percent_value_integer, value),
-                            size.width - 4.dp.toPx(),
-                            y + 4.dp.toPx(),
-                            Paint().apply {
-                                color = textColor.hashCode()
-                                textSize = 10.sp.toPx()
-                                textAlign = Paint.Align.RIGHT
-                            }
-                        )
-                    }
-                },
-                lineColor = MaterialTheme.colorScheme.primary,
+                label = stringResource(R.string.chart_deep_sleep_since, stringResource(R.string.since_boot)),
+                yValue = { reading -> reading.deepSleepPercentSinceBoot?.div(100f)?.coerceIn(0f, 1f) },
+                yLabels = percentYLabels,
+                lineColor = tertiaryColor,
                 labelWidthDp = 40.dp,
                 side = AxisSide.LEFT,
-                segmentColorProvider = { prev, _ ->
-                    if (isScreenOnAt(prev.timestamp, screenStates)) screenOnColor else screenOffColor
+                segmentColorProvider = { prev, states ->
+                    if (isScreenOnAt(prev.timestamp, states)) tertiaryColor else outlineColor
                 }
-            ),
+            )
+        )
+        series.add(
+            SeriesConfig(
+                label = stringResource(R.string.chart_deep_sleep_since, stringResource(R.string.since_last_stats_reset)),
+                yValue = { reading -> reading.deepSleepPercentSinceLastStatsReset?.div(100f)?.coerceIn(0f, 1f) },
+                yLabels = percentYLabels,
+                lineColor = secondaryColor,
+                labelWidthDp = 40.dp,
+                side = AxisSide.LEFT,
+                segmentColorProvider = { prev, states ->
+                    if (isScreenOnAt(prev.timestamp, states)) secondaryColor else outlineColor
+                }
+            )
+        )
+    }
+    if (showTemperature) {
+        series.add(
             SeriesConfig(
                 label = stringResource(R.string.chart_show_temperature),
                 yValue = { reading -> (reading.temperatureCelsius - minTemp) / tempRange },
-                yLabels = { textColor ->
-                    for (i in 0..4) {
-                        val y = size.height * i / 4
-                        val value = maxTemp - (tempRange * i / 4)
-                        drawContext.canvas.nativeCanvas.drawText(
-                            appPrefs.temperatureUnit.toString(context, appPrefs.temperatureUnit.fromCelsius(value), false),
-                            4.dp.toPx(),
-                            y + 4.dp.toPx(),
-                            Paint().apply {
-                                color = textColor.hashCode()
-                                textSize = 9.sp.toPx()
-                                textAlign = Paint.Align.LEFT
-                            }
-                        )
-                    }
-                },
-                lineColor = MaterialTheme.colorScheme.error,
+                yLabels = temperatureYLabels,
+                lineColor = errorColor,
                 labelWidthDp = 50.dp,
-                side = AxisSide.RIGHT,
+                side = if (anyPercentSeries) AxisSide.RIGHT else AxisSide.LEFT,
                 referenceLineNormalizedY = thresholdNormalizedY,
                 referenceLineLabel = thresholdLabel,
-                referenceLineColor = MaterialTheme.colorScheme.error
+                referenceLineColor = errorColor
             )
         )
+    }
+
+    UnifiedChart(
+        readings = enrichedReadings,
+        screenStates = screenStates,
+        series = series
     )
 }
 
@@ -1925,7 +1877,9 @@ private fun buildExcel(
             context.getString(R.string.excel_header_health),
             context.getString(R.string.excel_header_is_charging),
             context.getString(R.string.excel_header_plug_type),
-            context.getString(R.string.excel_header_screen_on)
+            context.getString(R.string.excel_header_screen_on),
+            context.getString(R.string.excel_header_deep_sleep_since, context.getString(R.string.since_boot)),
+            context.getString(R.string.excel_header_deep_sleep_since, context.getString(R.string.since_last_stats_reset))
         )
 
         val batteryReadingsHeaderRow = batteryReadingsSheet.createRow(0)
@@ -1948,6 +1902,8 @@ private fun buildExcel(
             batteryReadingsBodyRow.createCell(7).setCellValue(reading.isCharging)
             batteryReadingsBodyRow.createCell(8).setCellValue(formatPlugType(reading.plugType))
             batteryReadingsBodyRow.createCell(9).setCellValue(isScreenOnAt(reading.timestamp, screenStates))
+            if (reading.deepSleepPercentSinceBoot != null) batteryReadingsBodyRow.createCell(10).setCellValue(reading.deepSleepPercentSinceBoot.toDouble())
+            if (reading.deepSleepPercentSinceLastStatsReset != null) batteryReadingsBodyRow.createCell(11).setCellValue(reading.deepSleepPercentSinceLastStatsReset.toDouble())
         }
 
         val chargingSessionsSheet = workbook.createSheet(context.getString(R.string.excel_charging_sessions_tab))

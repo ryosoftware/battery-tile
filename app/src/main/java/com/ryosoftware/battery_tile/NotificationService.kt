@@ -143,31 +143,17 @@ class NotificationService : Service() {
 
         private fun getDeepSleepTime(millisSinceBoot: Long): Long = (millisSinceBoot - SystemClock.uptimeMillis()).coerceIn(0L, millisSinceBoot)
 
-        private fun getDeepSleepTime(): Long = getDeepSleepTime(SystemClock.elapsedRealtime())
-
-        private fun getDeepSleepPercents(lastStatsResetTime: Long, deepSleepTimeAtLastStatsReset: Long): Pair<Float, Float>? {
-            val elapsedRealtime = SystemClock.elapsedRealtime()
+        private fun getDeepSleepTimeAndPercent(millisSinceBoot: Long): Pair<Long, Float> {
             val uptimeMillis = SystemClock.uptimeMillis()
 
-            if (elapsedRealtime <= 0L) return null
+            val deepSleepTime = (millisSinceBoot - uptimeMillis).coerceIn(0L, millisSinceBoot)
+            val deepSleepPercent = deepSleepTime * 100f / millisSinceBoot
 
-            val deepSleepTimeSinceBoot = (elapsedRealtime - uptimeMillis).coerceIn(0L, elapsedRealtime)
-            val deepSleepPercentSinceBoot = deepSleepTimeSinceBoot * 100f / elapsedRealtime
-
-            val timeSinceLastStatsReset = elapsedRealtime - lastStatsResetTime
-
-            if (timeSinceLastStatsReset <= 0L) return null
-
-            val deepSleepTimeSinceLastStatsReset = deepSleepTimeSinceBoot - deepSleepTimeAtLastStatsReset
-
-            if ((deepSleepTimeSinceLastStatsReset < 0L) || (deepSleepTimeSinceLastStatsReset > timeSinceLastStatsReset)) {
-                return null
-            }
-
-            val deepSleepPercentSinceLastStatsReset = deepSleepTimeSinceLastStatsReset * 100f / timeSinceLastStatsReset
-
-            return deepSleepPercentSinceBoot to deepSleepPercentSinceLastStatsReset
+            return deepSleepTime to deepSleepPercent
         }
+
+        private fun getDeepSleepTime(): Long = getDeepSleepTime(SystemClock.elapsedRealtime())
+        private fun getDeepSleepTimeAndPercent(): Pair<Long, Float> = getDeepSleepTimeAndPercent(SystemClock.elapsedRealtime())
 
         private fun getNotification(
             context: Context,
@@ -691,11 +677,25 @@ class NotificationService : Service() {
         addToRecentBuffers(recentReadings, recentScreenStates, batteryIntentHelper, isScreenOn)
     }
 
+    private fun getDeepSleepPercents(): Pair<Float, Float>? {
+        val (deepSleepTimeSinceBoot, deepSleepPercentSinceBoot) = getDeepSleepTimeAndPercent()
+
+        val now = System.currentTimeMillis()
+        val timeSinceLastStatsReset = now - lastStatsResetTime
+
+        val deepSleepTimeSinceLastStatsReset = deepSleepTimeSinceBoot - deepSleepTimeAtLastStatsReset
+        if (deepSleepTimeSinceLastStatsReset < 0L) { return null }
+
+        val deepSleepPercentSinceLastStatsReset = deepSleepTimeSinceLastStatsReset * 100f / timeSinceLastStatsReset
+
+        return deepSleepPercentSinceBoot to deepSleepPercentSinceLastStatsReset
+    }
+
     private fun addToRecentBuffers(recentReadings: MutableList<BatteryReading>, recentScreenStates: MutableList<ScreenState>, batteryIntentHelper: BatteryIntentHelper?, screenOn: Boolean) {
         val now = System.currentTimeMillis()
 
         if (batteryIntentHelper != null) {
-            val (deepSleepPercentSinceBoot, deepSleepPercentSinceLastStatsReset) = getDeepSleepPercents(lastStatsResetTime, deepSleepTimeAtLastStatsReset) ?: (null to null)
+            val (deepSleepPercentSinceBoot, deepSleepPercentSinceLastStatsReset) = getDeepSleepPercents() ?: (null to null)
             val index = recentReadings.binarySearchBy(now) { it.timestamp }
 
             recentReadings.add(
@@ -984,7 +984,7 @@ class NotificationService : Service() {
 
         serviceScope.launch {
             try {
-                val (deepSleepPercentSinceBoot, deepSleepPercentSinceLastStatsReset) = getDeepSleepPercents(lastStatsResetTime, deepSleepTimeAtLastStatsReset) ?: (null to null)
+                val (deepSleepPercentSinceBoot, deepSleepPercentSinceLastStatsReset) = getDeepSleepPercents() ?: (null to null)
 
                 repository.insertBatteryReading(BatteryReading(
                     timestamp = now,

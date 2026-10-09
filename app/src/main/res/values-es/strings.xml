@@ -252,6 +252,8 @@
     <string name="combined_graphs_tab">Gráficos</string>
     <string name="chart_show_level">Nivel</string>
     <string name="chart_show_temperature">Temperatura</string>
+    <string name="chart_show_deep_sleep">Reposo profundo</string>
+    <string name="chart_deep_sleep_since">Reposo profundo (%1$s)</string>
     <string name="session_charging_label">Carga</string>
     <string name="session_discharge_label">Descarga</string>
     <string name="no_sessions">Aún no hay sesiones registradas.</string>
@@ -389,6 +391,7 @@
     <string name="excel_header_is_charging">¿Cargando?</string>
     <string name="excel_header_plug_type">Tipo de Cargador</string>
     <string name="excel_header_screen_on">¿Pantalla encendida?</string>
+    <string name="excel_header_deep_sleep_since">Reposo profundo %1$s (%%)</string>
     <string name="excel_header_charge_counter">Carga (µAh)</string>
     <string name="screen_states_tab">Estados de pantalla</string>
     <string name="value_from_to">%1$s → %2$s</string>
