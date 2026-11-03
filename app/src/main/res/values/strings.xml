@@ -225,6 +225,8 @@
     <string name="what_opens_app_battery_info">Battery Info (in this app)</string>
     <string name="what_opens_system_power_usage_summary">System power usage summary</string>
 
+    <string name="system_battery_info">@string/what_opens_system_power_usage_summary</string>
+
     <string name="debug_information">Debug information</string>
     <string name="debug_information_enabled">Logging to file enabled</string>
     <string name="debug_information_enabled_but_only_while_charging">Logging to file enabled while charging</string>

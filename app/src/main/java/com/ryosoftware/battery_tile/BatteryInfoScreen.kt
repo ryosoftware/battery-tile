@@ -2,6 +2,7 @@ package com.ryosoftware.battery_tile
 
 import android.content.Context
 import android.content.Context.BATTERY_SERVICE
+import android.content.Intent
 import android.os.BatteryManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -248,6 +249,20 @@ fun BatteryInfoContent(
             }
 
             Spacer(Modifier.height(Spacing.xxl))
+
+            IconButton(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_POWER_USAGE_SUMMARY)
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = stringResource(R.string.system_battery_info),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
         }
     }
 }
