@@ -248,17 +248,17 @@
     <!-- Overlay segments percents and colors -->
 
     <integer-array name="bar_overlay_battery_high_default">
-        <item>80</item>
+        <item>81</item>
         <item>@color/battery_overlay_preset_color_1</item>
     </integer-array>
 
     <integer-array name="bar_overlay_battery_good_default">
-        <item>50</item>
+        <item>51</item>
         <item>@color/battery_overlay_preset_color_1</item>
     </integer-array>
 
     <integer-array name="bar_overlay_battery_low_default">
-        <item>20</item>
+        <item>21</item>
         <item>@color/battery_overlay_preset_color_3</item>
     </integer-array>
 
