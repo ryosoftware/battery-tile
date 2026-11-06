@@ -15,7 +15,7 @@ open class Preferences(protected val context: Context, val filename: String) {
         prefs.edit { clear() }
 
     fun import(settings: Map<String, Any?>) {
-        prefs.edit {
+        prefs.edit(commit = true) {
             clear()
             for ((key, value) in settings) {
                 when (value) {
@@ -27,7 +27,6 @@ open class Preferences(protected val context: Context, val filename: String) {
                     else -> {}
                 }
             }
-            apply()
         }
     }
 }
